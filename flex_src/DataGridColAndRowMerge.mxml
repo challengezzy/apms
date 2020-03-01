@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   initialize="init()" height="600"  width="100%"
+			  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.nonroutinework.Wbs_RbsTable;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import mx.controls.DataGrid;
+			import mx.controls.TextInput;
+			import mx.events.AdvancedDataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.utils.ArrayUtil;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			private var nonRoutineWorkService:RemoteObject ;
+			private var endpoint:String = "http://localhost:8080/apms/messagebroker/amf";
+			private var apmsDest:String = ApmsUIConst.NONROUTINEWORK_SERVICE;
+			[Bindable]
+			private var nonRoutineWorkArr:ArrayCollection=new ArrayCollection([{label:"工作1"},{label:"工作2"},{label:"工作3"}]);;
+			public var fields:Array = null;
+			[Bindable]
+			private var arr:ArrayCollection=new ArrayCollection([
+				{processname:"警告",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+				equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+				env_i:"",env_d:"",riskprocess:""},
+				{processname:"构型",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"接近",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"拆卸",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"清洁",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"润滑",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"安装",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"调节",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"测试",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"恢复警告",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"区域",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""},
+				{processname:"风险分类值",riskDesc:"",tech_p:"",tech_i:"",tech_d:"",personal_p:"",personal_i:"",personal_d:"",tool_p:"",tool_i:"",tool_d:"",
+					equipment_p:"",equipment_i:"",equipment_d:"",file_p:"",file_i:"",file_d:"",mana_p:"",mana_i:"",mana_d:"",env_p:"",
+					env_i:"",env_d:"",riskprocess:""}
+			]);
+			private function init():void{
+				nonRoutineWorkService = new RemoteObject(apmsDest);
+				nonRoutineWorkService.endpoint = endpoint;
+				
+				nonRoutineWorkService.saveWbs_Rbs.addEventListener(ResultEvent.RESULT,getUserDataHandler);
+				nonRoutineWorkService.saveWbs_Rbs.addEventListener(FaultEvent.FAULT,faultHandlerSaveUserData);
+
+
+			}
+			
+			protected function save():void{
+				var arr:ArrayCollection=ArrayCollection(dg.dataProvider);
+				var arr_FlexData:ArrayCollection=new ArrayCollection();
+				for(var i:int=0;i<arr.length;i++){
+					var wrbsBean:Wbs_RbsTable=new Wbs_RbsTable();
+					wrbsBean.processname=arr[i].processname;
+					wrbsBean.riskDesc=arr[i].riskDesc;
+					wrbsBean.tech_p=arr[i].tech_p;
+					wrbsBean.tech_i=arr[i].tech_i;
+					wrbsBean.tech_d=arr[i].tech_d;
+					wrbsBean.personal_p=arr[i].personal_p;
+					wrbsBean.personal_i=arr[i].personal_i;
+					wrbsBean.personal_d=arr[i].personal_d;
+					wrbsBean.tool_p=arr[i].tool_p;
+					wrbsBean.tool_i=arr[i].tool_i;
+					wrbsBean.tool_d=arr[i].tool_d;
+					wrbsBean.equipment_p=arr[i].equipment_p;
+					wrbsBean.equipment_i=arr[i].equipment_i;
+					wrbsBean.equipment_d=arr[i].equipment_d;
+					wrbsBean.file_p=arr[i].file_p;
+					wrbsBean.file_i=arr[i].file_i;
+					wrbsBean.file_d=arr[i].file_d;
+					wrbsBean.mana_p=arr[i].mana_p;
+					wrbsBean.mana_i=arr[i].mana_i;
+					wrbsBean.mana_d=arr[i].mana_d;
+					wrbsBean.env_p=arr[i].env_p;
+					wrbsBean.env_i=arr[i].env_i;
+					wrbsBean.env_d=arr[i].env_d;
+					wrbsBean.riskprocess=arr[i].riskprocess;
+					arr_FlexData.addItem(wrbsBean);
+				}
+				nonRoutineWorkService.saveWbs_Rbs(arr_FlexData);
+			}
+			
+			protected function onGridEditEnd(event:AdvancedDataGridEvent):void{
+				var dataField:String = event.dataField;   
+				var initValue:String = ListCollectionView(dg.dataProvider).getItemAt(event.rowIndex)[event.dataField] as String;
+				var inputStr:String = TextInput(dg.itemEditorInstance).text;
+				if(event.dataField=="riskDesc"){//风险描述不转化成数字
+					ListCollectionView(dg.dataProvider).getItemAt(event.rowIndex)[event.dataField] = inputStr;
+				}else{
+					var newValue:Number = Number(Number(inputStr).toFixed(3));
+					if(isNaN(newValue)){   
+						TextInput(dg.itemEditorInstance).text = initValue;
+						return;   
+					　　}else{   
+						ListCollectionView(dg.dataProvider).getItemAt(event.rowIndex)["riskprocess"] = newValue;   
+						　　 ListCollectionView(dg.dataProvider).getItemAt(event.rowIndex)[event.dataField] = newValue;
+						if(event.dataField=="tech_d"||event.dataField=="personal_d"||event.dataField=="tool_d"||event.dataField=="equipment_d"
+							||event.dataField=="file_d"||event.dataField=="mana_d"){
+							var totalRiskType:Number=0;
+							for(var i:int=0;i<arr.length-1;i++){
+								totalRiskType+=ListCollectionView(dg.dataProvider).getItemAt(i)[event.dataField];
+							}
+							ListCollectionView(dg.dataProvider).getItemAt(arr.length-1)[event.dataField] = totalRiskType;
+						}
+					}
+				}
+				ListCollectionView(dg.dataProvider).refresh();  
+				
+			}
+			
+			/**
+			 * 服务器处理成功之后的返回结果
+			 **/
+			public function getUserDataHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				var messageStr:String=event.result as String;
+				SmartXMessage.show(messageStr);
+			}
+			/**
+			 * 保存失败
+			 **/
+			public function faultHandlerSaveUserData(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("保存失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			/**
+			 * 复制DataGrid数据
+			 */
+			public function copy():void{
+//				this.userDg.setHeadTextWhenExport(dateNum);
+				System.setClipboard(DataListExportUtil.generateCsvDataAdv(dg,"\t"));
+//				userDg.setHeadText(dateNum);
+			}
+			
+			/**
+			 * 监听按下的ctrl组合键
+			 **/
+			private function dataGridKeyDownHandler( event:KeyboardEvent ):void   
+			{     
+				if (event.ctrlKey && dg.getChildByName("clipboardProxy") == null )     
+				{       
+					// Add an invisible TextField object to the DataGrid       
+					var textFieldClipboard:TextField = new TextField();       
+					textFieldClipboard.name = "clipboardProxy";       
+					dg.addChild(textFieldClipboard);       
+					textFieldClipboard.visible = false;   
+					
+					textFieldClipboard.type = TextFieldType.INPUT;       
+					textFieldClipboard.multiline = true;       
+					textFieldClipboard.addEventListener(TextEvent.TEXT_INPUT, clipboardProxyPasteHandler);   
+					systemManager.stage.focus = textFieldClipboard;     
+				}   
+			}
+			
+			/**
+			 * 处理黏贴的效果
+			 * */
+			private function clipboardProxyPasteHandler(event:TextEvent):void   
+			{  
+				
+//				onclear();
+				
+				var str:String= event.text ;
+				getDatasFromText( event.text );  
+				// 一定要在这里把 textField移除，不然会报 Flash.events.event 到 indexChang eEvent 的类型转换错误
+				// 移去 textField
+				var textFieldClipboard:TextField = TextField(dg.getChildByName("clipboardProxy"));       
+				if ( textFieldClipboard != null )
+				{         
+					dg.removeChild(textFieldClipboard);
+				}  
+				
+			} 
+			
+			/**
+			 * 处理黏贴的数据
+			 * */
+			private function getDatasFromText(text:String):void   
+			{     
+				var rows:Array = text.split("\n");
+				if( rows == null )
+				{
+					SmartXMessage.show("没有数据或数据格式不正确！");	
+					return;	
+				}  
+				if (!rows[rows.length - 1])
+				{       
+					rows.pop();
+				}     
+				if( rows.length <=1 )
+				{
+					SmartXMessage.show( "没有数据或数据格式不正确！" );						
+					return;
+				}
+				var rwHeader:String = rows[0];
+				var fieldsHeader:Array = rwHeader.split( "\t" );
+				if(!(fieldsHeader[fieldsHeader.length-1]))
+				{
+					fieldsHeader.pop();
+				} 				
+				var headTextData:String=rows[0];
+				var headTextArr:Array=headTextData.split("\t");
+				var objTemp:Object=["WBS-RBS矩阵","风险描述","P","I","D","P","I","D","P","I","D","P","I","D","P","I","D","P","I","D","P","I","D","步骤风险"];
+				var headTextArrFixed:Array=objTemp as Array;
+				if(!arraysAreEqual(headTextArr,headTextArrFixed)){
+					SmartXMessage.show("表头数据不正确！");
+					return;
+				}
+
+				arr=null;
+				arr=new ArrayCollection();
+				var row:String = null;
+				
+				var rowIdx:int;
+				var data:Object = null;
+				for( rowIdx=1; rowIdx<rows.length; rowIdx=rowIdx+1 )//从第二行开始是排班数据
+				{
+					data = new Object();
+					row = rows[rowIdx];
+					fields = row.split("\t");
+					var wrbsBean:Wbs_RbsTable=new Wbs_RbsTable();
+					if(StringUtil.StringReplaceAll(fields[0].toString(),'\"',"")!=""){
+						wrbsBean.processname=StringUtil.StringReplaceAll(fields[0].toString(),'\"',"");
+					}else{
+						wrbsBean.processname="";
+					}
+					wrbsBean.riskDesc=fields[1];
+					if(StringUtil.StringReplaceAll(fields[1].toString(),'\"',"")!=""){
+						wrbsBean.riskDesc=StringUtil.StringReplaceAll(fields[1].toString(),'\"',"");
+					}else{
+						wrbsBean.riskDesc="";
+					}
+					if(StringUtil.StringReplaceAll(fields[2].toString(),'\"',"")!=""){
+						wrbsBean.tech_p=Number(StringUtil.StringReplaceAll(fields[2].toString(),'\"',""));
+					}else{
+						wrbsBean.tech_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[3].toString(),'\"',"")!=""){
+						wrbsBean.tech_i=Number(StringUtil.StringReplaceAll(fields[3].toString(),'\"',""));
+					}else{
+						wrbsBean.tech_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[4].toString(),'\"',"")!=""){
+						wrbsBean.tech_d=Number(StringUtil.StringReplaceAll(fields[4].toString(),'\"',""));
+					}else{
+						wrbsBean.tech_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[5].toString(),'\"',"")!=""){
+						wrbsBean.personal_p=Number(StringUtil.StringReplaceAll(fields[5].toString(),'\"',""));
+					}else{
+						wrbsBean.personal_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[6].toString(),'\"',"")!=""){
+						wrbsBean.personal_i=Number(StringUtil.StringReplaceAll(fields[6].toString(),'\"',""));
+					}else{
+						wrbsBean.personal_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[7].toString(),'\"',"")!=""){
+						wrbsBean.personal_d=Number(StringUtil.StringReplaceAll(fields[7].toString(),'\"',""));
+					}else{
+						wrbsBean.personal_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[8].toString(),'\"',"")!=""){
+						wrbsBean.tool_p=Number(StringUtil.StringReplaceAll(fields[8].toString(),'\"',""));
+					}else{
+						wrbsBean.tool_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[9].toString(),'\"',"")!=""){
+						wrbsBean.tool_i=Number(StringUtil.StringReplaceAll(fields[9].toString(),'\"',""));
+					}else{
+						wrbsBean.tool_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[10].toString(),'\"',"")!=""){
+						wrbsBean.tool_d=Number(StringUtil.StringReplaceAll(fields[10].toString(),'\"',""));
+					}else{
+						wrbsBean.tool_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[11].toString(),'\"',"")!=""){
+						wrbsBean.equipment_p=Number(StringUtil.StringReplaceAll(fields[11].toString(),'\"',""));
+					}else{
+						wrbsBean.equipment_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[12].toString(),'\"',"")!=""){
+						wrbsBean.equipment_i=Number(StringUtil.StringReplaceAll(fields[12].toString(),'\"',""));
+					}else{
+						wrbsBean.equipment_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[13].toString(),'\"',"")!=""){
+						wrbsBean.equipment_d=Number(StringUtil.StringReplaceAll(fields[13].toString(),'\"',""));
+					}else{
+						wrbsBean.equipment_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[14].toString(),'\"',"")!=""){
+						wrbsBean.file_p=Number(StringUtil.StringReplaceAll(fields[14].toString(),'\"',""));
+					}else{
+						wrbsBean.file_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[15].toString(),'\"',"")!=""){
+						wrbsBean.file_i=Number(StringUtil.StringReplaceAll(fields[15].toString(),'\"',""));
+					}else{
+						wrbsBean.file_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[16].toString(),'\"',"")!=""){
+						wrbsBean.file_d=Number(StringUtil.StringReplaceAll(fields[16].toString(),'\"',""));
+					}else{
+						wrbsBean.file_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[17].toString(),'\"',"")!=""){
+						wrbsBean.mana_p=Number(StringUtil.StringReplaceAll(fields[17].toString(),'\"',""));
+					}else{
+						wrbsBean.mana_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[18].toString(),'\"',"")!=""){
+						wrbsBean.mana_i=Number(StringUtil.StringReplaceAll(fields[18].toString(),'\"',""));
+					}else{
+						wrbsBean.mana_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[19].toString(),'\"',"")!=""){
+						wrbsBean.mana_d=Number(StringUtil.StringReplaceAll(fields[19].toString(),'\"',""));
+					}else{
+						wrbsBean.mana_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[20].toString(),'\"',"")!=""){
+						wrbsBean.env_p=Number(StringUtil.StringReplaceAll(fields[20].toString(),'\"',""));
+					}else{
+						wrbsBean.env_p=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[21].toString(),'\"',"")!=""){
+						wrbsBean.env_i=Number(StringUtil.StringReplaceAll(fields[21].toString(),'\"',""));
+					}else{
+						wrbsBean.env_i=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[22].toString(),'\"',"")!=""){
+						wrbsBean.env_d=Number(StringUtil.StringReplaceAll(fields[22].toString(),'\"',""));
+					}else{
+						wrbsBean.env_d=0;
+					}
+					if(StringUtil.StringReplaceAll(fields[23].toString(),'\"',"")!=""){
+						wrbsBean.riskprocess=Number(StringUtil.StringReplaceAll(fields[23].toString(),'\"',""));
+					}else{
+						wrbsBean.riskprocess=0;
+					}
+					arr.addItem(wrbsBean);
+				}
+
+			}
+			
+		private	function arraysAreEqual(arr1:Array, arr2:Array):Boolean {
+				if (arr1.length != arr2.length) {
+					return false;
+				}
+				var len:Number = arr1.length;
+				for (var i:Number = 0; i < len; i++) {
+					if (StringUtil.StringReplaceAll(arr1[i].toString(),'\"',"") != StringUtil.StringReplaceAll(arr2[i].toString(),'\"',"")) {
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingTop="5" paddingLeft="1" paddingRight="1" horizontalAlign="center" >
+		<mx:HBox>
+			<mx:Label text="选择非例行工作:"/>
+			<mx:ComboBox id="nonRoutineWorkBox" dataProvider="{nonRoutineWorkArr}" width="100" height="20">
+				
+			</mx:ComboBox>
+		</mx:HBox>
+		<mx:AdvancedDataGrid id="dg" dataProvider="{arr}" editable="true"  height="415" sortExpertMode="true"  sortableColumns="false"  width="100%"
+					  itemEditEnd="onGridEditEnd(event)" keyDown="dataGridKeyDownHandler(event)">
+			
+			<mx:groupedColumns>
+				<mx:AdvancedDataGridColumnGroup headerText="WBS-RBS矩阵" width="100"   dataField="processname" editable="false" fontWeight="bold">
+				</mx:AdvancedDataGridColumnGroup>
+				<mx:AdvancedDataGridColumnGroup headerText="风险描述"  dataField="riskDesc" width="65">
+				</mx:AdvancedDataGridColumnGroup>
+				<mx:AdvancedDataGridColumnGroup headerText="风险分解">
+					<mx:AdvancedDataGridColumnGroup headerText="人员">
+						<mx:AdvancedDataGridColumnGroup headerText="知识技能">
+							<mx:AdvancedDataGridColumn headerText="P" editable="true" dataField="tech_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" editable="true" dataField="tech_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" editable="true" dataField="tech_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+						<mx:AdvancedDataGridColumnGroup headerText="个人因素">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="personal_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="personal_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="personal_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+					</mx:AdvancedDataGridColumnGroup>
+					<mx:AdvancedDataGridColumnGroup headerText="机" >
+						<mx:AdvancedDataGridColumnGroup headerText="工具设备">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="tool_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="tool_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="tool_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+					</mx:AdvancedDataGridColumnGroup>
+					<mx:AdvancedDataGridColumnGroup headerText="料">
+						<mx:AdvancedDataGridColumnGroup headerText="器材">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="equipment_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="equipment_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="equipment_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+					</mx:AdvancedDataGridColumnGroup>
+					<mx:AdvancedDataGridColumnGroup headerText="法" >
+						<mx:AdvancedDataGridColumnGroup headerText="维修文件">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="file_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="file_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="file_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+						<mx:AdvancedDataGridColumnGroup headerText="维修管理">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="mana_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="mana_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="mana_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+					</mx:AdvancedDataGridColumnGroup>
+					<mx:AdvancedDataGridColumnGroup headerText="环">
+						<mx:AdvancedDataGridColumnGroup headerText="现场环境">
+							<mx:AdvancedDataGridColumn headerText="P" dataField="env_p"/>
+							<mx:AdvancedDataGridColumn headerText="I" dataField="env_i"/>
+							<mx:AdvancedDataGridColumn headerText="D" dataField="env_d"/>
+						</mx:AdvancedDataGridColumnGroup>
+					</mx:AdvancedDataGridColumnGroup>
+				</mx:AdvancedDataGridColumnGroup>
+				<mx:AdvancedDataGridColumnGroup headerText="步骤风险" dataField="riskprocess" width="70">
+				</mx:AdvancedDataGridColumnGroup>
+			</mx:groupedColumns>
+		</mx:AdvancedDataGrid>
+		<mx:HBox horizontalAlign="center">
+			<mx:Button id="saveButton"  label="保存"   click="save()" horizontalCenter="0" />
+			<mx:Button id="cancelButton"  label="复制"   click="copy()" horizontalCenter="0"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</s:Application>

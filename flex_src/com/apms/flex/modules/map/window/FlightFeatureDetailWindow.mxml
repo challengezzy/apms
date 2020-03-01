@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" showCloseButton="true"
+					   width="700" height="430" 
+					   title="航班详情" 
+					   >
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.map.FlightScheduleMapMonitor;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			
+			[Bindable]
+			private var flightData:Object;
+			
+			public var flightlistMonitor:FlightScheduleMapMonitor;
+			
+			[Bindable]
+			public var acnum:String = "";
+			[Bindable]
+			public var acmodel:String = "";
+			[Bindable]
+			public var flightno_union:String = "";
+			[Bindable]
+			public var apt_union:String = "";
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(flag_tip.label==""||flag_tip.label==null){
+					flag_tip.mouseEnabled=false;
+				}
+				if(flag_ddm.label==""||flag_ddm.label==null){
+					flag_ddm.mouseEnabled=false;
+				}
+				if(fault.label==""||fault.label==null){
+					fault.mouseEnabled=false;
+				}
+				if(warning.label==""||warning.label==null){
+					warning.mouseEnabled=false;
+				}
+			}
+			
+			public function set flightFeatureData(_featureData:Object):void{
+				flightData = _featureData;
+				
+				acnum = flightData["acnum"];
+				acmodel = flightData["acmodel"];
+			}
+			
+			protected function taskDispatchBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onFlihtTaskDispatchHandler(flightData);
+			}
+			
+			protected function workstateBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onWorkStateHandler(flightData);
+			}
+			
+			protected function acstateBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onAcStateHandler(flightData);
+			}
+			
+			protected function reportBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onReporterHandler(event);
+			}
+			
+			protected function changeInfoBtn_clickHandler(event:MouseEvent):void{
+				flightlistMonitor.onChangeLogConfirmHander(event);
+			}
+			protected function runtipBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onRuntipHandler(flightData);
+			}
+			
+			protected function ddBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onDDinfoHandler(flightData);
+			}
+			
+			protected function mtworkBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onMtworkInfoHandler(flightData);
+			}
+			
+			protected function acstopBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onAcstopHandler(flightData);
+			}
+			
+			protected function cfdBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onFaultHandler(flightData);
+			}
+			
+			protected function cfdWarningBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onWarningHandler(flightData);
+			}
+			
+			protected function confirmBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onFlihtConfirmHandler(flightData);
+			}
+			
+			protected function flightInfoBtn_clickHandler(event:MouseEvent):void
+			{
+				flightlistMonitor.onRunningAirInfoHandler(flightData);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingTop="10" paddingLeft="10" paddingRight="10" paddingBottom="10">
+		<mx:HBox width="100%">
+			<mx:Label text="航班日期" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.flt_date_str}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="航班号" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.flightno_union}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="经停" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.apt_union}"  color="red"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="飞机号" width="60" />
+			<mx:TextInput editable="false" width="120" text="{acnum}"   color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="型号" width="60" />
+			<mx:TextInput editable="false" width="120" text="{acmodel}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="飞机状态" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.acportstate}"  color="red"/>
+		</mx:HBox>
+		
+		<mx:HBox width="100%">
+			<mx:Label text="计划时间" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.stda}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="预达" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.t_eta}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="预起" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.t_etd}"  color="red"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="维护类别" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.maintaintype}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="机位" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.ac_stop}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="工作状态" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.workforce_state_name}"  color="red"/>
+			
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="放行人员" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.release_user}" color="red" />
+			<s:Spacer width="10" />
+			<mx:Label text="维修人员" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.maintain_user}"  color="red"/>
+			<s:Spacer width="10" />
+			<mx:Label text="勤务人员" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.duty_user}"  color="red"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="提醒单" width="60" />
+			<mx:Button id="flag_tip" label="{flightData.flag_tip}" width="120" click="runtipBtn_clickHandler(event)"/>
+			<s:Spacer width="10" />
+			<mx:Label text="DD" width="60" />
+			<mx:Button id="flag_ddm" label="{flightData.flag_ddm}" width="120" click="ddBtn_clickHandler(event)"/>
+			<s:Spacer width="10" />
+			<mx:Label text="故障" width="60" />
+			<mx:Button id="fault" label="{flightData.ishavefault}" width="120" click="cfdBtn_clickHandler(event)"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="告警" width="60" />
+			<mx:Button id="warning" label="{flightData.ishavewarning}" width="120" click="cfdWarningBtn_clickHandler(event)"/>
+			<s:Spacer width="10" />
+			<mx:Label text="备注" width="60" />
+			<mx:TextInput editable="false" width="120" text="{flightData.flightdesc}"  color="red"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="OMIS" width="60" />
+			<mx:TextInput editable="false" width="500" text="{flightData.memo}"  color="red"/>
+		</mx:HBox>
+		<s:Spacer height="5" />
+		<mx:HBox width="100%" verticalAlign="middle" paddingLeft="10" horizontalAlign="center">
+			<mx:Button id="taskDispatchBtn" label="工作分配" click="taskDispatchBtn_clickHandler(event)" width="110"/>
+			<mx:Button id="workstateBtn" label="工作状态反馈"  width="110" click="workstateBtn_clickHandler(event)"/>
+			<mx:Button id="acstateBtn" label="飞机状态反馈"  width="110" click="acstateBtn_clickHandler(event)"/>
+			<mx:Button id="reportBtn" label="工作通报"  width="110" click="reportBtn_clickHandler(event)"/>
+		</mx:HBox>
+		<mx:HBox width="100%" verticalAlign="middle" paddingLeft="10" horizontalAlign="center">
+			<mx:Button id="changeInfoBtn" label="变动信息"  width="110" click="changeInfoBtn_clickHandler(event)"/>
+			<mx:Button id="acstopBtn" label="机位提醒"  width="110" click="acstopBtn_clickHandler(event)"/>
+			<mx:Button id="confirmBtn" label="航班确认"  width="110" click="confirmBtn_clickHandler(event)"/>
+			<mx:Button id="flightInfoBtn" label="接机信息单"  width="110" click="flightInfoBtn_clickHandler(event)"/>
+		</mx:HBox>
+		<mx:HBox width="100%" verticalAlign="middle" paddingLeft="10" horizontalAlign="center">
+			<mx:Button id="mtworkBtn" label="维修工作"  width="110" click="mtworkBtn_clickHandler(event)"/>
+		</mx:HBox>
+		<s:Spacer height="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</s:VGroup>
+</mx:TitleWindow>

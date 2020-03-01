@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		 initialize="initializeHandler(event)" 
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:core="smartx.flex.components.core.*" xmlns:containers="net.brandonmeyer.containers.*">
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="getLastFlightSynInfo" result="result4getLastFlightSynInfo(event)" 
+					   fault="fault4getLastFlightSynInfo(event)">
+			</mx:method>
+			<mx:method name="setFlightChangeLogBoardCast" result="result4setFlightBoardCast(event)" 
+					   fault="fault4setFlightBoardCast(event)">
+			</mx:method>
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.flight.info.FlightSchConfirmWindow;
+			import com.apms.flex.modules.flight.info.FlightSchDetailWindow;
+			import com.apms.flex.modules.flight.info.FlightSchTaskDispatchWindow;
+			import com.apms.flex.modules.flight.vo.FlightConstVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			/** 定时器 */
+			private var timer:Timer;
+			
+			private var timerChg:Timer;
+			
+			[Bindable]
+			private var aptName:String = "SHA"; //机场名称
+			private var aptCode:String = "SHA"; //机场代码
+			[Bindable]
+			private var intfUpdateTime:String = "同步时间:";
+			[Bindable]
+			private var intfToolTip:String = ""; 
+			
+			[Bindable]
+			private var changeContent:String = "";
+			
+			private var depCondPanel:FlightFilterCondtionPanel = new FlightFilterCondtionPanel();
+			private var arrCondPanel:FlightFilterCondtionPanel = new FlightFilterCondtionPanel();
+			private var changeCondPanel:FlightChgLogFilterCondtionPanel = new FlightChgLogFilterCondtionPanel();
+			
+			private var taskDispatchPanel:FlightSchTaskDispatchWindow = new FlightSchTaskDispatchWindow();
+			private var confirmPanel:FlightSchConfirmWindow = new FlightSchConfirmWindow();
+			
+			private var detailPanel:FlightSchDetailWindow = new FlightSchDetailWindow();
+			
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				endpoint = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_GLOBAL_DEBUGMODE) != null)
+					debugMode = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_GLOBAL_DEBUGMODE);
+				
+				timer = new Timer(60000);
+				timer.addEventListener(TimerEvent.TIMER,onTimerHandler);
+				
+				timerChg = new Timer(30000);
+				timerChg.addEventListener(TimerEvent.TIMER,onTimerChgHandler );
+				timerChg.start();
+				
+				fltChgListPanel.dataGrid.addEventListener(ListEvent.CHANGE,onChgListPanelItemClickHander);
+			}
+			
+			/** 定时器处理 */
+			private function onTimerChgHandler(evnet:TimerEvent):void{
+				onChangeListQuery();
+				srvFlight.getLastFlightSynInfo();
+				
+			}
+			
+			/** 定时器处理 */
+			private function onTimerHandler(evnet:TimerEvent):void{
+				onArrFlightQuery();
+				onDepFlightQuery();
+				
+			}
+			
+			//	分页查询相关		begin
+			private function fault4getLastFlightSynInfo(event:FaultEvent):void
+			{
+				SmartXMessage.show("查询最新航班同步信息失败！");
+			}	
+			
+			private function result4getLastFlightSynInfo(event:ResultEvent):void 
+			{
+				//SmartXMessage.show("同步信息查询成功！");
+				var synlog:Object = event.result;
+				var changeTime:Date = synlog["updatetime"];
+				intfUpdateTime = "同步时间：" +DateUtil.dateToFormatStr(changeTime,"MM-DD JJ:NN");
+				intfToolTip = "更新："+synlog["num_update"]+"条，新增："+synlog["num_add"]+"条，取消："+synlog["num_cancel"]+"条";
+			}
+			
+			private function onChgListPanelItemClickHander(event:ListEvent):void{
+				var chgObj:Object = fltChgListPanel.getSelectedRowValue();
+				changeContent = chgObj["CHANGECONTENT"];
+			}
+			
+			private function onArrFilterCondSet():void{
+				arrCondPanel.airportCode = aptCode;
+				arrCondPanel.filterType = "ARR";
+				arrCondPanel.okFunc = onArrFlightQuery;
+				
+				PopUpManager.addPopUp(arrCondPanel,this);
+				PopUpManager.centerPopUp(arrCondPanel);
+				
+			}
+			
+			private function onDepFilterCondSet():void{
+				depCondPanel.airportCode = aptCode;
+				depCondPanel.filterType = "DEP";
+				depCondPanel.okFunc = onDepFlightQuery;
+				
+				PopUpManager.addPopUp(depCondPanel,this);
+				PopUpManager.centerPopUp(depCondPanel);
+			}
+			
+			protected function onArrFlightQuery():void
+			{
+				if(arrCondPanel.isSetted == false ){
+					SmartXMessage.show("请先设置航班过滤条件!");
+					return;
+				}
+				aptCode = arrCondPanel.airportCode;
+				aptName = arrCondPanel.aptName;
+				
+				//如果开启自动刷新，则启动定时器
+				if(timer && !timer.running && cbAutoRefresh.selected ){
+					timer.start();
+				}
+				
+				//查询航班数据
+				arrFltListPanel.initQueryCondition = arrCondPanel.conditionStr + " and arr_apt='"+aptCode+"'";
+				arrFltListPanel.query(false,false);
+				
+			}
+			
+			protected function onDepFlightQuery():void
+			{
+				if(depCondPanel.isSetted == false ){
+					SmartXMessage.show("请先设置航班过滤条件!");
+					return;
+				}
+				aptCode = depCondPanel.airportCode;
+				aptName = depCondPanel.aptName;
+				
+				//查询航班数据
+				depFltListPanel.initQueryCondition = depCondPanel.conditionStr + " and dep_apt='"+aptCode+"'";
+				
+				depFltListPanel.query(false,false);
+				
+			}
+			
+			protected function onAutoRefresh_changeHandler():void
+			{
+				//开启、关闭自动刷新
+				if(cbAutoRefresh.selected){
+					if(timer && !timer.running){
+						timer.start();
+					}
+				}else{
+					timer.stop();
+				}
+				
+			}
+			
+			private function onChangeLogBoradcast():void{
+				if(fltChgListPanel.getSelectedRowValue() != null){
+					var row:Object = fltChgListPanel.getSelectedRowValue();
+					var changelogId:String = row["ID"];
+					
+					srvFlight.setFlightChangeLogBoardCast(changelogId);
+					
+					OperatingTipUtil.startOperat("正在更新报时状态");
+				}else{
+					SmartXMessage.show("Please select a row！");
+				}
+				
+			}
+			
+			private function fault4setFlightBoardCast(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班变动报时失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4setFlightBoardCast(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班变动报时成功！");
+				
+			}
+			
+			private function onChangeFilterCondSet():void{
+				changeCondPanel.okFunc = onChangeListQuery;
+				
+				PopUpManager.addPopUp(changeCondPanel,this);
+				PopUpManager.centerPopUp(changeCondPanel);
+				
+			}
+			
+			protected function onChangeListQuery():void
+			{
+				if(aptCode != null && aptCode != ""){
+					//只查询和该机场相关的航班
+					var chgFilter:String = changeCondPanel.conditionStr + " AND ( DEP_APT='"+aptCode+"' OR ARR_APT='"+aptCode+"' ) ";
+					fltChgListPanel.initQueryCondition = chgFilter;
+					fltChgListPanel.query(false,false);
+					
+					changeContent = "";
+				}
+				
+			}
+			
+			protected function depFltListPanel_doubleClickHandler(event:MouseEvent):void
+			{
+				if(depFltListPanel.getSelectedRowValue() != null){
+					var row:Object = depFltListPanel.getSelectedRowValue();
+					detailPanel.flightValue = row;
+					
+					PopUpManager.addPopUp(detailPanel,this);
+					PopUpManager.centerPopUp(detailPanel);
+				}
+				
+			}
+			
+			protected function arrFltListPanel_doubleClickHandler(event:MouseEvent):void
+			{
+				if(arrFltListPanel.getSelectedRowValue() != null){
+					var row:Object = arrFltListPanel.getSelectedRowValue();
+					detailPanel.flightValue = row;
+					
+					PopUpManager.addPopUp(detailPanel,this);
+					PopUpManager.centerPopUp(detailPanel);
+				}
+				
+			}
+			
+			protected function onUserDispatch_clickHandler(event:MouseEvent,flightType:String):void
+			{
+				var selectedObj:Object = null;
+				//人员分配
+				if(flightType == FlightConstVo.FLIGHTINOUT_IN){
+					selectedObj = arrFltListPanel.getSelectedRowValue();
+					taskDispatchPanel.flightListPanel = arrFltListPanel;
+				}else{
+					selectedObj = depFltListPanel.getSelectedRowValue();
+					taskDispatchPanel.flightListPanel = depFltListPanel;
+				}
+				if(selectedObj != null){
+					taskDispatchPanel.flightInOutType = flightType;
+					taskDispatchPanel.flightValue = selectedObj;
+					
+					PopUpManager.addPopUp(taskDispatchPanel,this);
+					PopUpManager.centerPopUp(taskDispatchPanel);
+				}
+				
+			}
+			
+			protected function onFltConfirm_clickHandler(event:MouseEvent,flightType:String):void
+			{
+				//航班确认
+				var selectedObj:Object = null;
+				if(flightType == FlightConstVo.FLIGHTINOUT_IN){
+					selectedObj = arrFltListPanel.getSelectedRowValue();
+					confirmPanel.flightListPanel = arrFltListPanel;
+				}else{
+					selectedObj = depFltListPanel.getSelectedRowValue();
+					confirmPanel.flightListPanel = depFltListPanel;
+				}
+				if(selectedObj != null){
+					confirmPanel.flightInOutType = flightType;
+					confirmPanel.flightValue = selectedObj;
+					
+					PopUpManager.addPopUp(confirmPanel,this);
+					PopUpManager.centerPopUp(confirmPanel);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	<mx:VBox x="0" y="0" width="100%" height="100%" paddingLeft="10" paddingRight="10" horizontalAlign="center">
+		<mx:HBox verticalAlign="middle" paddingLeft="40" width="100%">
+			<mx:Label text="{intfUpdateTime}" toolTip="{intfToolTip}" width="145"/>
+			<s:Spacer width="5" />
+			<mx:CheckBox id="cbAutoRefresh" label="自动刷新" change="onAutoRefresh_changeHandler()" selected="false" />
+		</mx:HBox>
+		<mx:HBox id="btnBox" verticalAlign="middle" paddingLeft="40" width="100%" >
+			<!--
+			<mx:Button id="btnAcState" label="飞机状态" enabled="false"  />
+			<mx:Button id="btnWfState" label="工作状态" enabled="false"  />
+			<mx:Button id="btnVehicle" label="车辆需求" enabled="false"  />
+			<mx:Button id="btnDD" label="DD单"  />
+			<mx:Button id="btnAcTip" label="运行提示单"  />
+			-->
+		</mx:HBox>
+		<mx:VDividedBox height="100%" width="100%">
+			<mx:VBox height="100%" width="100%">
+				<mx:HBox width="100%" verticalAlign="middle" >
+					<mx:Label text="离港航班" fontWeight="bold" color="blue" />
+					<mx:Label text="{aptName}" fontWeight="bold" color="blue" />
+					<mx:Button label="过滤条件" click="onDepFilterCondSet()" />
+					<mx:Button label="刷新" click="onDepFlightQuery()"/>
+					<mx:Button id="btnFltConfirmDep" label="航班确认" click="onFltConfirm_clickHandler(event,'DEP')" />
+					<mx:Button id="btnUserDispatchDep" label="人员分配" click="onUserDispatch_clickHandler(event,'DEP')" />
+				</mx:HBox>
+				<core:BillListPanel id="depFltListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+									templetCode="T_FLIGHTSCH_MONITOR_DEP" debugMode="{debugMode}" showQuickQueryPanel="false"
+									cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400"
+									doubleClick="depFltListPanel_doubleClickHandler(event)">
+				</core:BillListPanel>
+				<mx:HRule width="98%" />
+			</mx:VBox>
+			
+			<mx:VBox height="100%" width="100%">
+				<mx:HBox width="100%" verticalAlign="middle" >
+					<mx:Label text="到港航班" fontWeight="bold" color="red" />
+					<mx:Label text="{aptName}" fontWeight="bold" color="red" />
+					<mx:Button label="过滤条件" click="onArrFilterCondSet()" />
+					<mx:Button label="刷新" click="onArrFlightQuery()" />
+					<mx:Button id="btnFltConfirmArr" label="航班确认" click="onFltConfirm_clickHandler(event,'ARR')" />
+					<mx:Button id="btnUserDispatchArr" label="人员分配" click="onUserDispatch_clickHandler(event,'ARR')" />
+				</mx:HBox>
+				<core:BillListPanel id="arrFltListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+									templetCode="T_FLIGHTSCH_MONITOR_ARR" debugMode="{debugMode}" showQuickQueryPanel="false"
+									cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400" 
+									doubleClick="arrFltListPanel_doubleClickHandler(event)">
+				</core:BillListPanel>
+				
+			</mx:VBox>
+		</mx:VDividedBox>
+	</mx:VBox>
+	<containers:SuperPanel title="航班变动" width="700" height="400" right="5" top="1"
+						   allowDrag="true" allowMinimize="true" allowResize="true" >
+		<mx:HBox width="100%" verticalAlign="middle" paddingTop="5" paddingRight="20">
+			<s:Spacer width="20" />
+			<mx:Button label="确认报时" click="onChangeLogBoradcast()"/>
+			<s:Spacer width="100%" />
+			<mx:Button label="过滤条件" click="onChangeFilterCondSet()" />
+			<mx:Button label="刷新" click="onChangeListQuery()" />
+		</mx:HBox>
+			
+		<core:BillListPanel id="fltChgListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false"
+							rownumWidth="36" rowCountPerPage="200"
+							templetCode="T_FLIGHT_CHANGELOG_MONITOR" showQuickQueryPanel="false" showLoadingWindow="false">
+		</core:BillListPanel>
+		<mx:TextArea width="90%" height="50" paddingTop="5" paddingLeft="10" text="{changeContent}" editable="false">
+			
+		</mx:TextArea>
+	</containers:SuperPanel>
+	
+</s:BorderContainer>

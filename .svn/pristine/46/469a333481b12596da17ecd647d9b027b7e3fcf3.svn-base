@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="100%" height="100%" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A27报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*"
+			   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a27vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a27Data:Object;//译后报文内容
+			
+			
+			[Bindable]
+			private var _27tmr_pp:String;
+			[Bindable]
+			private var cktmr_pp:String;
+			[Bindable]
+			private var endtmr_pp:String;
+			[Bindable]
+			private var detq_pp:String;
+			[Bindable]
+			private var endtq_pp:String;
+			[Bindable]
+			private var oiqext_pp:String;
+			
+			[Bindable]
+			private var oiq_eng1_z4:String;
+			[Bindable]
+			private var oiq_eng2_z4:String;
+			[Bindable]
+			private var eng_shuttime_z4:String;
+			[Bindable]
+			private var oiq_eng1_z5:String;
+			[Bindable]
+			private var oiq_eng2_z5:String;
+			[Bindable]
+			private var eng_shuttime_z5:String;
+			
+			[Bindable]
+			private var oiladd_al:String;
+			[Bindable]
+			private var time_al:String;
+			[Bindable]
+			private var pfad_al:String;
+			[Bindable]
+			private var n20s_al:String;
+			[Bindable]
+			private var oiqst_al:String;
+			[Bindable]
+			private var oiqold_al:String;
+			[Bindable]
+			private var oiladd_ar:String;
+			[Bindable]
+			private var time_ar:String;
+			[Bindable]
+			private var pfad_ar:String;
+			[Bindable]
+			private var n20s_ar:String;
+			[Bindable]
+			private var oiqst_ar:String;
+			[Bindable]
+			private var oiqold_ar:String;
+			
+			[Bindable]
+			private var qdt0_ml:String;
+			[Bindable]
+			private var qdt0_time_dl:String;
+			[Bindable]
+			private var qdt1_ml:String;
+			[Bindable]
+			private var qdt1_time_dl:String;
+			[Bindable]
+			private var qdt2_ml:String;
+			[Bindable]
+			private var qdt2_time_dl:String;
+			[Bindable]
+			private var qdt3_ml:String;
+			[Bindable]
+			private var qdt3_time_dl:String;
+			[Bindable]
+			private var qdt4_ml:String;
+			[Bindable]
+			private var qdt4_time_dl:String;
+			[Bindable]
+			private var qdt0_nr:String;
+			[Bindable]
+			private var qdt0_time_dr:String;
+			[Bindable]
+			private var qdt1_nr:String;
+			[Bindable]
+			private var qdt1_time_dr:String;
+			[Bindable]
+			private var qdt2_nr:String;
+			[Bindable]
+			private var qdt2_time_dr:String;
+			[Bindable]
+			private var qdt3_nr:String;
+			[Bindable]
+			private var qdt3_time_dr:String;
+			[Bindable]
+			private var qdt4_nr:String;
+			[Bindable]
+			private var qdt4_time_dr:String;
+			
+			[Bindable]
+			private var cla_ga_cl:String;
+			[Bindable]
+			private var cla_air_cl:String;
+			[Bindable]
+			private var oiqav_cl:String;
+			[Bindable]
+			private var oiqdt_cl:String;
+			[Bindable]
+			private var oiqcnt_cl:String;
+			[Bindable]
+			private var cla_ga_cr:String;
+			[Bindable]
+			private var cla_air_cr:String;
+			[Bindable]
+			private var oiqav_cr:String;
+			[Bindable]
+			private var oiqdt_cr:String;
+			[Bindable]
+			private var oiqcnt_cr:String;
+			
+			[Bindable]
+			private var qt_el:String;
+			[Bindable]
+			private var fh_el:String;
+			[Bindable]
+			private var oilcal_el:String;
+			[Bindable]
+			private var employid_el:String;
+			[Bindable]
+			private var qt_er:String;
+			[Bindable]
+			private var fh_er:String;
+			[Bindable]
+			private var oilcal_er:String;
+			
+
+			private function creationComplete():void
+			{
+				a27Data = a27vo.dataMap;
+				
+				_27tmr_pp = a27Data['tmr27_pp']
+				cktmr_pp = a27Data['cktmr_pp'];
+				endtmr_pp = a27Data['endtmr_pp'];
+				detq_pp = a27Data['detq_pp'];			
+				endtq_pp = a27Data['endtq_pp']
+				oiqext_pp = a27Data['oiqext_pp'];
+
+				oiq_eng1_z4 = a27Data['oiq_eng1_z4'];
+				oiq_eng2_z4 = a27Data['oiq_eng2_z4'];
+				var dtUtc_z4:Date = a27Data['eng_shuttime_z4'] as Date;
+				eng_shuttime_z4 = DateUtil.dateToString(dtUtc_z4,1);
+				oiq_eng1_z5 = a27Data['oiq_eng1_z5'];
+				oiq_eng2_z5 = a27Data['oiq_eng2_z5'];
+				eng_shuttime_z5 = a27Data['eng_shuttime_z5'];
+				var dtUtc_z5:Date = a27Data['eng_shuttime_z5'] as Date;
+				eng_shuttime_z5 = DateUtil.dateToString(dtUtc_z5,1);
+				
+				oiladd_al = a27Data['oiladd_eng1'];
+				var dtUtc_al:Date = a27Data['addtime_eng1'] as Date;
+				time_al = DateUtil.dateToString(dtUtc_al,5);
+				pfad_al = a27Data['pfad_eng1'];
+				n20s_al = a27Data['pre20s_eng1'];
+				oiqst_al = a27Data['oiqst_eng1'];
+				oiqold_al = a27Data['oiqold_eng1'];
+				oiladd_ar = a27Data['oiladd_eng2'];
+				var dtUtc_ar:Date = a27Data['addtime_eng2'] as Date;
+				time_ar = DateUtil.dateToString(dtUtc_ar,5);
+				pfad_ar = a27Data['pfad_eng2'];
+				n20s_ar = a27Data['pre20s_eng2'];
+				oiqst_ar = a27Data['oiqst_eng2'];
+				oiqold_ar = a27Data['oiqold_eng2'];
+				
+				qdt0_ml = a27Data['qdt0_eng1'];
+				var dtUtc_qdt0_dl:Date = a27Data['qdt0_time_eng1'] as Date;
+				qdt0_time_dl = DateUtil.dateToString(dtUtc_qdt0_dl,5);
+				qdt1_ml = a27Data['qdt1_eng1'];
+				var dtUtc_qdt1_dl:Date = a27Data['qdt1_time_eng1'] as Date;
+				qdt1_time_dl = DateUtil.dateToString(dtUtc_qdt1_dl,5);
+				qdt2_ml = a27Data['qdt2_eng1'];
+				var dtUtc_qdt2_dl:Date = a27Data['qdt2_time_eng1'] as Date;
+				qdt2_time_dl = DateUtil.dateToString(dtUtc_qdt2_dl,5);
+				qdt3_ml = a27Data['qdt3_eng1'];
+				var dtUtc_qdt3_dl:Date = a27Data['qdt3_time_eng1'] as Date;
+				qdt3_time_dl = DateUtil.dateToString(dtUtc_qdt3_dl,5);
+				qdt4_ml = a27Data['qdt4_eng1'];
+				var dtUtc_qdt4_dl:Date = a27Data['qdt4_time_eng1'] as Date;
+				qdt4_time_dl = DateUtil.dateToString(dtUtc_qdt4_dl,5);
+				qdt0_nr = a27Data['qdt0_eng2'];
+				var dtUtc_qdt0_dr:Date = a27Data['qdt0_time_eng2'] as Date;
+				qdt0_time_dr = DateUtil.dateToString(dtUtc_qdt0_dr,5);
+				qdt1_nr = a27Data['qdt1_eng2'];
+				var dtUtc_qdt1_dr:Date = a27Data['qdt1_time_eng2'] as Date;
+				qdt1_time_dr = DateUtil.dateToString(dtUtc_qdt1_dr,5);
+				qdt2_nr = a27Data['qdt2_eng2'];
+				var dtUtc_qdt2_dr:Date = a27Data['qdt2_time_eng2'] as Date;
+				qdt2_time_dr = DateUtil.dateToString(dtUtc_qdt2_dr,5);
+				qdt3_nr = a27Data['qdt3_eng2'];
+				var dtUtc_qdt3_dr:Date = a27Data['qdt3_time_eng2'] as Date;
+				qdt3_time_dr = DateUtil.dateToString(dtUtc_qdt3_dr,5);
+				qdt4_nr = a27Data['qdt4_eng2'];
+				var dtUtc_qdt4_dr:Date = a27Data['qdt4_time_eng2'] as Date;
+				qdt4_time_dr = DateUtil.dateToString(dtUtc_qdt4_dr,5);
+				
+				cla_ga_cl = a27Data['cal_ga_eng1'];
+				cla_air_cl = a27Data['cal_air_eng1'];
+				oiqav_cl = a27Data['oiqav_eng1'];
+				oiqdt_cl = a27Data['oiqdt_eng1'];
+				oiqcnt_cl = a27Data['oiqcnt_eng1'];
+				cla_ga_cr = a27Data['cal_ga_eng2'];
+				cla_air_cr = a27Data['cal_air_eng2'];
+				oiqav_cr = a27Data['oiqav_eng2'];
+				oiqdt_cr = a27Data['oiqdt_eng2'];
+				oiqcnt_cr = a27Data['oiqcnt_eng2'];
+				
+				qt_el = a27Data['qt_eng1'];
+				fh_el = a27Data['fh_eng1'];
+				oilcal_el = a27Data['oilcal_eng1'];
+				qt_er = a27Data['qt_eng2'];
+				fh_er = a27Data['fh_eng2'];
+				oilcal_er = a27Data['oilcal_eng2'];
+				
+				employid_el= a27Data['employid'];
+
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A27 报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+		<mx:HDividedBox id="contentBox" width="950" height="600"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT27" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE OIL ADDING DET RPT (27)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a27vo}" height="190"/>
+			
+				
+				<mx:HRule width="100%" />
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="PARAMETERS PRESET" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="27TMR" color="red" width="80"/><mx:Label text="CKTMR" color="red" width="70"/>
+					<mx:Label text="ENDTMR" color="red" width="80"/><mx:Label text="DETQ" color="red" width="70"/><mx:Label text="ENDTQ" color="red" width="105"/>
+					<mx:Label text="OIQEXT" color="red" width="60"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="报文结束时间" color="blue" width="80"/><mx:Label text="滑油量变化" color="blue" width="70"/>
+	                <mx:Label text="滑油增量判断" color="blue" width="80"/><mx:Label text="滑油添加" color="blue" width="70"/><mx:Label text="滑油添加结束判断" color="blue" width="105"/>
+					<mx:Label text="采集最大" color="blue" width="60"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text=" " color="blue" width="80"/><mx:Label text="校验时间" color="blue" width="70"/>
+					<mx:Label text="停止时间" color="blue" width="80"/><mx:Label text="增量门限值" color="blue" width="70"/><mx:Label text="增量门限值" color="blue" width="105"/>
+					<mx:Label text="时间间隔" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="PP" width="30"/><mx:Label text="{_27tmr_pp}" width="80"/><mx:Label text="{cktmr_pp}" width="70"/>
+					<mx:Label text="{endtmr_pp}" width="80"/><mx:Label text="{detq_pp}" width="70"/><mx:Label text="{endtq_pp}" width="105"/>
+					<mx:Label text="{oiqext_pp}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="POST ENGINE SHUT DOWN FOR 10MINs" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIQ_ENG1" color="red" width="105"/><mx:Label text="OIQ_ENG2" color="red" width="105"/>
+					<mx:Label text="ENG_SHUTTIME" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发关车后滑油量" color="blue" width="105"/><mx:Label text="右发关车后滑油量" color="blue" width="105"/>
+					<mx:Label text="发动机关车时间 " color="blue" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="Z4" width="30"/><mx:Label text="{oiq_eng1_z4}" width="105"/><mx:Label text="{oiq_eng2_z4}" width="105"/>
+					<mx:Label text="{eng_shuttime_z4}" width="150"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="POST ENGINE SHUT DOWN FOR 45MINs OR 5s PER NEXT MES" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="Z5" width="30"/><mx:Label text="{oiq_eng1_z5}" width="105"/><mx:Label text="{oiq_eng2_z5}" width="105"/>
+					<mx:Label text="{eng_shuttime_z5}" width="150"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE OIL ADDING EVENT DETECTOR" fontWeight="bold" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="3MINS INTERVAL WITHIN 10MINS" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OILADD" color="red" width="60"/><mx:Label text="TIME" color="red" width="80"/>
+					<mx:Label text="PFAD" color="red" width="105"/><mx:Label text="-20S" color="red" width="75"/><mx:Label text="OIQST" color="red" width="70"/>
+					<mx:Label text="OIQOLD" color="red" width="115"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="是否加油" color="blue" width="60"/><mx:Label text="加油时间" color="blue" width="80"/>
+					<mx:Label text="加油断电添加标志 " color="blue" width="105"/><mx:Label text="前20秒油量 " color="blue" width="75"/><mx:Label text="加油时油量 " color="blue" width="70"/>
+					<mx:Label text="非易失存储数据油量" color="blue" width="115"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="AL" width="30"/><mx:Label text="{oiladd_al}" width="60"/><mx:Label text="{time_al}" width="80"/>
+					<mx:Label text="{pfad_al}" width="105"/><mx:Label text="{n20s_al}" width="75"/><mx:Label text="{oiqst_al}" width="70"/>
+					<mx:Label text="{oiqold_al}" width="115"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="AR" width="30"/><mx:Label text="{oiladd_ar}" width="60"/><mx:Label text="{time_ar}" width="80"/>
+					<mx:Label text="{pfad_ar}" width="105"/><mx:Label text="{n20s_ar}" width="75"/><mx:Label text="{oiqst_ar}" width="70"/>
+					<mx:Label text="{oiqold_ar}" width="115"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="QDT0" color="red" width="80"/><mx:Label text="QDT1" color="red" width="80"/>
+					<mx:Label text="QDT2" color="red" width="80"/><mx:Label text="QDT3" color="red" width="80"/><mx:Label text="QDT4" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油增量0" color="blue" width="80"/><mx:Label text="滑油增量1" color="blue" width="80"/>
+					<mx:Label text="滑油增量2" color="blue" width="80"/><mx:Label text="滑油增量3" color="blue" width="80"/><mx:Label text="滑油增量4" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="ML" width="30"/><mx:Label text="{qdt0_ml}" width="80"/><mx:Label text="{qdt1_ml}" width="80"/>
+					<mx:Label text="{qdt2_ml}" width="80"/><mx:Label text="{qdt3_ml}" width="80"/><mx:Label text="{qdt4_ml}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="DL" width="30"/><mx:Label text="{qdt0_time_dl}" width="80"/><mx:Label text="{qdt1_time_dl}" width="80"/>
+						<mx:Label text="{qdt2_time_dl}" width="80"/><mx:Label text="{qdt3_time_dl}" width="80"/><mx:Label text="{qdt4_time_dl}" width="80"/>
+				</mx:HBox>		
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="QDT0" color="red" width="80"/><mx:Label text="QDT1" color="red" width="80"/>
+					<mx:Label text="QDT2" color="red" width="80"/><mx:Label text="QDT3" color="red" width="80"/><mx:Label text="QDT4" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油增量0" color="blue" width="80"/><mx:Label text="滑油增量1" color="blue" width="80"/>
+					<mx:Label text="滑油增量2" color="blue" width="80"/><mx:Label text="滑油增量3" color="blue" width="80"/><mx:Label text="滑油增量4" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="NR" width="30"/><mx:Label text="{qdt0_nr}" width="80"/><mx:Label text="{qdt1_nr}" width="80"/>
+					<mx:Label text="{qdt2_nr}" width="80"/><mx:Label text="{qdt3_nr}" width="80"/><mx:Label text="{qdt4_nr}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="DR" width="30"/><mx:Label text="{qdt0_time_dr}" width="80"/><mx:Label text="{qdt1_time_dr}" width="80"/>
+					<mx:Label text="{qdt2_time_dr}" width="80"/><mx:Label text="{qdt3_time_dr}" width="80"/><mx:Label text="{qdt4_time_dr}" width="80"/>
+				</mx:HBox>	
+						
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="RATE SINCE LAST OIL ADDING(Qt/Hr)" fontWeight="bold" />
+				</mx:HBox>
+								
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="CAL(G+A)" color="red" width="145"/><mx:Label text="CAL(AIR)" color="red" width="110"/>
+					<mx:Label text="OIQAV" color="red" width="90"/><mx:Label text="OIQDT" color="red" width="80"/><mx:Label text="OIQCNT" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油消耗量(空中+地面)" color="blue" width="145"/><mx:Label text="滑油消耗量(空中)" color="blue" width="110"/>
+					<mx:Label text="滑油添加量均值" color="blue" width="90"/><mx:Label text="滑油探测总量" color="blue" width="80"/><mx:Label text="滑油探测次数" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="CL" width="30"/><mx:Label text="{cla_ga_cl}" width="145"/><mx:Label text="{cla_air_cl}" width="110"/>
+					<mx:Label text="{oiqav_cl}" width="90"/><mx:Label text="{oiqdt_cl}" width="80"/><mx:Label text="{oiqcnt_cl}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="CR" width="30"/><mx:Label text="{cla_ga_cr}" width="145"/><mx:Label text="{cla_air_cr}" width="110"/>
+					<mx:Label text="{oiqav_cr}" width="90"/><mx:Label text="{oiqdt_cr}" width="80"/><mx:Label text="{oiqcnt_cr}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="OIL ADDING MANUAL RECORD" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="QT" color="red" width="90"/><mx:Label text="PH" color="red" width="165"/>
+					<mx:Label text="OILCAL" color="red" width="105"/><mx:Label text="EMPLOYID" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="人工输入滑油量" color="blue" width="90"/><mx:Label text="人工输入加滑油间隔飞行小时" color="blue" width="165"/>
+					<mx:Label text="人工输入计算滑耗" color="blue" width="105"/><mx:Label text="员工ID" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EL" width="30"/><mx:Label text="{qt_el}" width="90"/><mx:Label text="{fh_el}" width="165"/>
+					<mx:Label text="{oilcal_el}" width="105"/><mx:Label text="{employid_el}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="ER" width="30"/><mx:Label text="{qt_er}" width="90"/><mx:Label text="{fh_er}" width="165"/>
+					<mx:Label text="{oilcal_er}" width="105"/><mx:Label text=" " width="80"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a27Data.acmodel}" rptno="A27"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

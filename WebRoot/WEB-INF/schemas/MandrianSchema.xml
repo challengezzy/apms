@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<Schema name="test_schema" >
+  <Cube name="testcube1" >
+  	<Table name="DW_CUBE_FACT_TALBE_41" />
+    <Dimension name="MAP实体"  foreignKey="MAPID_ID">
+      <Hierarchy hasAll="true" allMemberName="MAP实体" primaryKey="ID">
+        <Table name="DW_DIMENSION_TALBE_34"/>
+        <Level name="ID号" type="String" uniqueMembers="false" column="ID" nameColumn="ID" />
+        <Level name="表名" type="String" uniqueMembers="false" column="DETAILTABLENAME" nameColumn="DETAILTABLENAME" />
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="测试同义词维度1" foreignKey="RULENAME_ID">
+      <Hierarchy hasAll="true" allMemberName="testsyndimension1" primaryKey="ID">
+        <Table name="DW_DIMENSION_SYNONYMS_31"/>
+        <Level name="名称" type="String" uniqueMembers="false" column="NAME" nameColumn="NAME" />
+        <Level name="数值" type="String" uniqueMembers="false" column="VALUE" nameColumn="VALUE" />
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="测试时间维度1" type="TimeDimension" foreignKey="CREATETIME_ID">
+      <Hierarchy hasAll="true" allMemberName="测试时间维度1" primaryKey="ID" >
+        <Table name="DW_DIMENSION_YEARMONTHDAY"/>
+        <Level levelType="TimeYears" name="年" type="String" uniqueMembers="true" column="YEARNAME" nameColumn="YEARNAME"/>
+        <Level levelType="TimeMonths" name="月" type="String" uniqueMembers="true" column="MONTHNAME" nameColumn="MONTHNAME"/>
+        <Level levelType="TimeDays" name="日" type="String" uniqueMembers="true" column="DAYNAME" nameColumn="DAYNAME"/>
+      </Hierarchy>
+    </Dimension>
+    <Dimension name="实体编码" >
+      <Hierarchy hasAll="true" allMemberName="testsyndime" >
+        <Level name="名称" type="String" uniqueMembers="false" column="ENTITYCODE" nameColumn="ENTITYCODE" />
+      </Hierarchy>
+    </Dimension>
+    <Measure name="总和" column="COUNT_ID" aggregator="sum" formatString="Standard"/>
+    <Measure name="平均数" column="COUNT_ID" aggregator="avg" formatString="#,###.000"/>
+    <Measure name="最大数" column="COUNT_ID" aggregator="max" formatString="Standard"/>
+    <Measure name="最小数" column="COUNT_ID" aggregator="min" formatString="Standard"/>
+    <Measure name="记录数" column="COUNT_ID" aggregator="count" formatString="Standard"/>
+  </Cube>
+</Schema>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   showCloseButton="true"
+			   title="模块展示选择"
+			   width="900" height="400" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			
+		]]>
+	</fx:Script>
+		
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<mx:VBox>
+		<mx:VBox>
+			<s:Label text="性能基本参数"/>
+			<mx:HBox>
+				<s:CheckBox label="PDI性能参数" width="260"/>
+				<s:CheckBox label="EGTA_COR(排气温度修正)" width="260"/>			
+				<s:CheckBox label="PT_COR(排气温度修正)" width="260"/>			
+			</mx:HBox>
+			<mx:HBox>
+				<s:CheckBox label="IGV(IGV角度)" width="260"/>
+			    <s:CheckBox label="APU自启动时间" width="260"/>		
+			</mx:HBox>
+		</mx:VBox>
+		<mx:VBox>
+			<s:Label text="滑油系统"/>
+			<mx:HBox>
+				<s:CheckBox label="OTA(滑油温度)" width="260"/>
+				<s:CheckBox label="(OT)OTA_LCIT温度" width="260"/>
+				<s:CheckBox label="LCIT_MAX(压气机进口温度)" width="260"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:VBox>
+			<s:Label text="气路模块"/>
+			<mx:HBox>
+				<s:CheckBox label="PT_COR(引气压力修正)" width="260"/>
+				<s:CheckBox label="IGV(IGV角度)" width="260"/>
+				<s:CheckBox label="P2A_COR(压气机进口压力修正)" width="260"/>			
+			</mx:HBox>
+			<mx:HBox>	
+				<s:CheckBox label="WB_COR(引气流量kg/sec修正)" width="260"/>
+				<s:CheckBox label="APR_COR(引气出口与进口的增压比修正)" width="260"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:VBox>
+			<s:Label text="涡轮模块"/>
+			<mx:HBox>
+				<s:CheckBox label="EGTP_COR(APU自启动EGT峰值修正)" width="260"/>
+				<s:CheckBox label="NPA_COR(APU自启动EGT峰值的转速%修正)" width="260"/>
+				<s:CheckBox label="APU自启动时间" width="260"/>		
+			</mx:HBox>
+			<mx:HBox>
+				<s:CheckBox label="EGTP(APU自启动EGT峰值)" width="260"/>	
+				<s:CheckBox label="NPA(APU自启动EGT峰值的转速%)" width="260"/>
+				<s:CheckBox label="LCIT_MAX(压气机进口温度)" width="260"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:VBox>
+			<s:Label text="传感器模块"/>
+			<mx:HBox>
+				<s:CheckBox label="TAT(外界温度)" width="260"/>
+				<s:CheckBox label="ALT(气压海拔)" width="260"/>
+				<s:CheckBox label="LCIT_MAX(压气机进口温度)" width="260"/>					
+			</mx:HBox>
+			<mx:HBox>
+				<s:CheckBox label="GLA_MAX(发电机负载%)" width="260"/>
+				<s:CheckBox label="EGTA(排气温度)" width="260"/>
+				<s:CheckBox label="EGTA_COR(排气温度修正)" width="260"/>				
+			</mx:HBox>
+			<mx:HBox>
+				<s:CheckBox label="PT_MAX(压气机进口温度)" width="260"/>
+				<s:CheckBox label="PT_COR(引气压力修正)" width="260"/>
+				<s:CheckBox label="P2A_MAX(压气机进口压力)" width="260"/>				
+			</mx:HBox>
+			<mx:HBox>
+				<s:CheckBox label="P2A_COR(压气机进口压力修正)" width="260"/>
+				<s:CheckBox label="WB_MAX(引起流量kg/sec)" width="260"/>
+				<s:CheckBox label="WB_COR(引气流量修正)" width="260"/>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:VBox>
+</mx:TitleWindow>

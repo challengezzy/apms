@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.apms.flex.component.*"
+		  xmlns:core="smartx.flex.components.core.*"
+		  initialize="initializeHandler(event)"   width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var apmsService:RemoteObject ;
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			[Bindable]
+			private var flightNum:ArrayCollection=new ArrayCollection();
+			[Bindable]
+			private var startDate:Date;
+			[Bindable]
+			private var endDate:Date;
+			public var dateNum:int;
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				var today:Date=new Date();
+				startDate=DateUtil.moveDay(today,-6);
+				endDate=today;
+				apmsService = new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				apmsService.selectFlightForOrglineEveryday.addEventListener(ResultEvent.RESULT,selectedUserDataHandler);
+				apmsService.selectFlightForOrglineEveryday.addEventListener(FaultEvent.FAULT,faultHandlerGetUserData);
+
+			}
+			private function selectFlightForOrglineEveryday():void{
+				onclear();
+				var  startDay:String=start_date.text;
+				var  endDay:String=end_date.text;
+				if(DateUtil.stringToDateDay(startDay).valueOf()>DateUtil.stringToDateDay(endDay).valueOf()){
+					SmartXMessage.show("开始日期比结束日期大！");
+				}else if(DateUtil.moveDay(DateUtil.stringToDateDay(startDay),59).valueOf()<=DateUtil.stringToDateDay(endDay).valueOf()){
+					SmartXMessage.show("查询日期范围最大为60天！");
+				}else{
+					apmsService.selectFlightForOrglineEveryday(startDay,endDay);
+					OperatingTipUtil.startOperat("正在查询....",this);
+				}
+			}
+			private function selectedUserDataHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				var flightArr:Array=event.result as Array;
+				var flightsForOrglineVo:FlightsForOrglineVo=null;
+				dateNum=DateUtil.compareTwoDates(startDate,endDate)+1;
+				for(var i:int=0;i<flightArr.length;i++){
+					var date:Date=startDate;
+					flightsForOrglineVo=new FlightsForOrglineVo();
+					var obj:Object = flightArr[i].dataMap;
+					flightsForOrglineVo.name=obj.name;
+					for(var j:int=0;j<dateNum;j++){
+						flightsForOrglineVo.pubFun4setPeriodDataValue(j,obj[DateUtil.dateToString(date,2)]);
+						date=DateUtil.moveDay(date,1);
+					}
+					flightNum.addItem(flightsForOrglineVo);
+					
+				}
+				if(flightArr.length<=0){
+					SmartXMessage.show("未检索到数据！");
+				}else if(flightArr.length>0){
+					flightForOrgline.setHeadText(startDate,dateNum);
+				}
+			}
+			/**
+			 * 初始化界面
+			 */
+			public function onclear():void{
+				this.flightForOrgline.initHeadText(dateNum);
+				this.flightNum.removeAll();
+				dateNum=0;
+			}
+			private function faultHandlerGetUserData(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightForOrgline,"车间负载列表");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%">
+			<mx:Label text="开始时间:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="2"/>
+			<mx:Label text="结束时间:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="2"/>
+			<mx:Button label="查询" width="100" click="selectFlightForOrglineEveryday()" />
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:FlightForOrglineDataGrid id="flightForOrgline" width="100%" height="100%"
+											  dataProvider="{flightNum}" />
+	</mx:VBox>
+	
+</mx:Module>

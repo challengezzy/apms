@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:component="com.apms.flex.component.*">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.graphics.IFill;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			
+			[Bindable]
+			private var changePointRadius:Number = ChartUtil.changePointRadius;			
+			
+			[Bindable]
+			public var chartTitle_left:String = "";
+			[Bindable]
+			public var chartTitle_right:String = "";
+			[Bindable]
+			public var chartTitle_middle:String = "";
+			[Bindable]
+			public var colorTipVisible:Boolean=false;
+			[Bindable]
+			public var chartName:String = "图表名称";
+			[Bindable]
+			public var point1Name:String = "点1";
+			[Bindable]
+			public var point2Name:String = "点2";	
+			[Bindable]
+			public var point3Name:String = "点3";	
+			
+			[Bindable]
+			public var axisX:IAxis;//横坐标	
+			[Bindable]
+			public var axisY:IAxis;//纵坐标
+			
+			[Bindable]
+			public var xField:String;//X坐标字段
+			[Bindable]
+			public var valField1:String;//原值字段1
+			[Bindable]
+			public var valField2:String;//原值字段2
+			[Bindable]
+			public var valField3:String;//原值字段2
+			
+			/**是否有5点均
+			 * */
+			public var isAvg5:Boolean = false;//
+			[Bindable]
+			public var avg5Field1:String;//5点均字段
+			
+			[Bindable]
+			public var avg5Field2:String;//5点均字段
+			
+			public var isRedLine:Boolean = false;//是否有红线值
+			[Bindable]
+			public var redlineField:String;//红线值字段
+			
+			public var tipFunction:Function;//点提示信息自定义函数
+			
+			public var isAxisSet:Boolean = true;//Y轴坐标可设置
+			public var isSlope:Boolean = false;//是否显示斜率数据
+			
+			private var isZoomed:Boolean = false;//是否被缩放过
+			
+			[Bindable]
+			public var changList1:ArrayCollection;//切换点			
+			[Bindable]
+			public var allList1:ArrayCollection;//普通点		
+			[Bindable]
+			public var slopeList1:ArrayCollection;//斜率点
+			
+			[Bindable]
+			public var changList2:ArrayCollection;//切换点
+			[Bindable]
+			public var changList3:ArrayCollection;//切换点
+			[Bindable]
+			public var allList2:ArrayCollection;//普通点		
+			[Bindable]
+			public var allList3:ArrayCollection;//普通点	
+			[Bindable]
+			public var slopeList2:ArrayCollection;//斜率点
+			[Bindable]
+			public var unitStr:String="";
+			[Bindable]
+			public var blueStrValue:String="左";
+			[Bindable]
+			public var greenStrValue:String="右";
+			[Bindable]
+			public var redStrValue:String="";
+			[Bindable]
+			public var redlineFieldUpperLimitValue:String;
+			[Bindable]
+			public var redlineFieldLowerLimitValue:String;
+			[Bindable]
+			public var colorLeft:uint=0x00cd00;
+			
+			/** 判断飘点的字段,如果是飘点，该点为空心点 */
+			public var pointTypeField1:String = "V_POINTTYPE";
+			public var pointTypeField2:String = "V_POINTTYPE";
+			
+			//实际的坐标范围
+			private var realXMin:Number;
+			private var realXMax:Number;
+			private var realYMin:Number;
+			private var realYMax:Number;
+			
+			
+			public function set xMinNum(minNum:Number):void{
+				lineAxis.minimum = minNum;
+			}
+			
+			public function set xMaxNum(maxNum:Number):void{
+				lineAxis.maximum = maxNum;
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//为坐标轴设置默认值
+				if(axisX == null)
+					axisX = dayAxis;
+				
+				if(axisY == null)
+					axisY = lineAxis;
+				
+				if(isRedLine == false)
+					headBox.removeChild(redlineChk);
+				
+				if(isAvg5 == false)
+					headBox.removeChild(avg5Chk);
+				
+				if(isSlope == false){
+					headBox.removeChild(slopeChk);
+				}
+				
+				if(tipFunction != null)
+					plotChart.dataTipFunction = tipFunction;
+				
+				if(isAxisSet == false)
+					headBox.removeChild(axisSetBox);
+				
+			}
+			
+			protected function itemDoubleClickHandler(event:ChartItemEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			private function fillByType1(element:ChartItem, index:Number):IFill {
+				//左发绿色
+				var sc:SolidColor = new SolidColor(colorLeft);//默认绿色
+				pointStroke1.color=colorLeft;
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var pointType:Number = new Number(itemObj[pointTypeField1]+"");
+				if(pointType == 1){
+					sc.alpha = 0;
+					pointStroke1.color=colorLeft;
+				}
+				
+				return sc;
+			}
+			
+			private function fillByType2(element:ChartItem, index:Number):IFill {
+				//右发蓝色
+				var sc:SolidColor = new SolidColor(0x0000FF);//蓝色
+				
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var pointType:Number = new Number(itemObj[pointTypeField2]+"");
+				if(pointType == 1){
+					sc.alpha = 0;
+				}
+				
+				return sc;
+			}
+			
+			private function fillByType3(element:ChartItem, index:Number):IFill {
+				//第三个点红色
+				var sc:SolidColor = new SolidColor(0xFF0000);//红色
+				
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var pointType:Number = new Number(itemObj[pointTypeField2]+"");
+				if(pointType == 1){
+					sc.alpha = 0;
+				}
+				
+				return sc;
+			}
+			
+			protected function axisSetBtnclickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var min:Number = new Number(minTextInput.text);
+				var max:Number = new Number(maxTextInput.text);
+				
+				if(max <= min){
+					SmartXMessage.show("坐标值范围设置不合法！");
+					return;
+				}
+				
+				lineAxis.minimum = min;
+				lineAxis.maximum = max;
+				
+				PopUpManager.removePopUp(axisSetWindow);
+			}
+			
+			protected function zoomBtn_clickHandler(event:MouseEvent):void
+			{
+				if(isZoomed){
+					isZoomed = false;
+					zoomLinkBtn.setStyle("icon",AssetsFileLib.zoomOutIcon);
+					
+					dayAxis.minimum = DateUtil.parseMsToDate(realXMin);
+					dayAxis.maximum = DateUtil.parseMsToDate(realXMax);
+					
+					lineAxis.minimum = realYMin;
+					lineAxis.maximum = realYMax;
+				}else{
+					if(rangeSel.dLeft >= rangeSel.dRight || rangeSel.dTop <= rangeSel.dBottom){
+						SmartXMessage.show("请选择要缩放的范围！");
+						return ;
+					}
+					
+					realXMin = dayAxis.minimum.getTime();
+					realXMax = dayAxis.maximum.getTime();
+					realYMin = lineAxis.minimum;
+					realYMax = lineAxis.maximum;
+					
+					isZoomed = true;
+					zoomLinkBtn.setStyle("icon",AssetsFileLib.zoomNormalIcon);
+					//重新设置坐标值
+					dayAxis.minimum = DateUtil.parseMsToDate(rangeSel.dLeft);
+					dayAxis.maximum = DateUtil.parseMsToDate(rangeSel.dRight);
+					
+					lineAxis.minimum = rangeSel.dBottom;
+					lineAxis.maximum = rangeSel.dTop;
+				}
+				
+			}
+			
+			
+			
+			protected function axisSetBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.addPopUp(axisSetWindow,desktop,true);
+				PopUpManager.centerPopUp(axisSetWindow);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:LinearAxis id="lineAxis" baseAtZero="false" autoAdjust="true" />
+		<mx:DateTimeAxis id="dayAxis" labelUnits="days" dataUnits="days" /> 
+		
+		<mx:SolidColor id="greenColor" color="green"/>
+		<mx:SolidColor id="blueColor"  color="blue"/>
+		<mx:SolidColor id="redColor"  color="red"/>
+		
+		<s:SolidColorStroke id="pointStroke" weight="1" alpha="1"/>
+		<s:SolidColorStroke id="pointStroke1" weight="1" alpha="1" color="green"/>
+		<s:SolidColorStroke id="pointStroke2" weight="1" alpha="1" color="blue"/>
+		<s:SolidColorStroke id="pointStroke3" weight="1" alpha="1" color="red"/>
+		<s:SolidColorStroke id="slopeStroke" weight="1" alpha="1"/>
+		<s:SolidColorStroke id="avgLineStroke" color="0x00ff00" weight="2" alpha="1"/>
+		<s:SolidColorStroke id="lineStroke" weight="1" alpha="0.5"/>
+		<s:SolidColorStroke id="redLineStroke" color="0xFF0000" weight="2" alpha="1"/>
+		
+		<mx:TitleWindow id="axisSetWindow" width="280" height="160" showCloseButton="true" layout="vertical" 
+					 title="Y坐标轴范围设置"	close="{PopUpManager.removePopUp(axisSetWindow)}" >
+			<mx:HBox id="axisSetBox" width="100%" height="100%" horizontalAlign="center">
+				<mx:TextInput id="minTextInput" restrict="0-9\-\." width="50" text="0"/>
+				<mx:Label text="-->" />
+				<mx:TextInput id="maxTextInput" restrict="0-9\-\." width="50" text="100"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button id="setOkBtn" label="确认" click="axisSetBtnclickHandler(event)" />
+			</mx:HBox>
+		</mx:TitleWindow>
+	</fx:Declarations>
+	
+	<mx:HBox id="headBox" width="100%"  paddingRight="10" horizontalGap="3" verticalAlign="middle">                                                
+		<mx:Label text="{chartName}"/>
+		<s:HGroup verticalAlign="middle" visible="{colorTipVisible}">
+			<s:Ellipse width="5" height="5" x="48" y="224">
+				<s:fill>
+					<s:SolidColor color="{colorLeft}" />
+				</s:fill>
+				<s:stroke> 
+					<s:SolidColorStroke color="{colorLeft}" weight="2"/> 
+				</s:stroke>
+			</s:Ellipse>
+		</s:HGroup>
+		<mx:Label text="{chartTitle_left}"/>
+		<s:HGroup verticalAlign="middle" visible="{colorTipVisible}">
+			<s:Ellipse width="5" height="5" x="48" y="224">
+				<s:fill>
+					<s:SolidColor color="#FF0000CD" />
+				</s:fill>
+				<s:stroke> 
+					<s:SolidColorStroke color="0x0000ff" weight="2"/> 
+				</s:stroke>
+			</s:Ellipse>
+		</s:HGroup>
+		<mx:Label text="{chartTitle_right}"/>
+		<s:HGroup verticalAlign="middle" visible="{colorTipVisible}">
+			<s:Ellipse width="5" height="5" x="48" y="224">
+				<s:fill>
+					<s:SolidColor color="#FFFF0000" />
+				</s:fill>
+				<s:stroke> 
+					<s:SolidColorStroke color="0xff0000" weight="2"/> 
+				</s:stroke>
+			</s:Ellipse>
+		</s:HGroup>
+		<mx:Label text="{chartTitle_middle}"/>
+		<mx:LinkButton id="zoomLinkBtn" click="zoomBtn_clickHandler(event)" icon="{AssetsFileLib.zoomInIcon}" toolTip="选中范围，进行图表放大" />
+		<mx:LinkButton id="axisSetBtn" click="axisSetBtn_clickHandler(event)" icon="{AssetsFileLib.axisZoomIcon}" toolTip="设置图表Y轴范围" />
+		<mx:Spacer width="100%"/>
+		<mx:CheckBox id="leftChk" selected="true" label="{greenStrValue}"/>
+		<mx:CheckBox id="rightChk" selected="true" label="{blueStrValue}"/>
+		<mx:CheckBox id="thirdChk" selected="true" label="{redStrValue}"/>
+		<mx:CheckBox id="slopeChk" selected="false" label="斜率" />
+		<mx:CheckBox id="redlineChk" selected="false" label="红线" />                                   
+		<mx:CheckBox id="avg5Chk" selected="false" label="5点均" />                                                      
+		<mx:CheckBox id="pointChk" selected="true" label="原值点"/>
+	</mx:HBox>                     <!--dataTipFunction="trendTipFunc"-->                                                                   
+	<mx:PlotChart id="plotChart" width="98%" height="240" showDataTips="true" doubleClickEnabled="true"
+				  itemDoubleClick="itemDoubleClickHandler(event)" 
+				  horizontalAxis="{dayAxis}" verticalAxis="{lineAxis}" >                    
+		<mx:series>                                                                                     
+			<mx:PlotSeries  id="changePlot1" dataProvider="{changList1}" 
+							yField="{valField1}" xField="{xField}" displayName="{point1Name}"
+							fill="{greenColor}" radius="{changePointRadius}" visible="{leftChk.selected}"                                   
+							itemRenderer="mx.charts.renderers.DiamondItemRenderer"/> 
+			<mx:PlotSeries  id="allPlot1" dataProvider="{allList1}" 
+							yField="{valField1}" xField="{xField}"  displayName="{point1Name}"
+							fillFunction="fillByType1" visible="{ pointChk.selected?leftChk.selected:false}" 
+							radius="3" stroke="{pointStroke1}"  
+							itemRenderer="mx.charts.renderers.CircleItemRenderer"/> 
+			<mx:LineSeries  id="avg5Line1" dataProvider="{allList1}" displayName="5点均1"                    
+							yField="{avg5Field1}" xField="{xField}"
+							visible="{avg5Chk.selected?leftChk.selected:false}"
+							radius="1" lineStroke="{avgLineStroke}" />
+			
+			<mx:PlotSeries  id="changePlot2" dataProvider="{changList2}"
+							yField="{valField2}" xField="{xField}" displayName="{point2Name}"
+							fill="{blueColor}" radius="{changePointRadius}"  visible="{rightChk.selected}"                                   
+							itemRenderer="mx.charts.renderers.DiamondItemRenderer"/> 
+			<mx:PlotSeries  id="allPlot2" dataProvider="{allList2}"
+							yField="{valField2}" xField="{xField}"  displayName="{point2Name}"
+							fillFunction="fillByType2" visible="{pointChk.selected?rightChk.selected:false}" 
+							radius="3"  stroke="{pointStroke2}"
+							itemRenderer="mx.charts.renderers.CircleItemRenderer"/>	
+			
+			<mx:LineSeries  id="avg5Line2" dataProvider="{allList2}" displayName="5点均2"                    
+							yField="{avg5Field2}" xField="{xField}"
+							visible="{avg5Chk.selected?rightChk.selected:false}"
+							radius="1" lineStroke="{avgLineStroke}" />
+			<mx:PlotSeries  id="changePlot3" dataProvider="{changList3}"
+							yField="{valField3}" xField="{xField}" displayName="{point3Name}"
+							fill="{redColor}" radius="{changePointRadius}"  visible="{thirdChk.selected}"                                   
+							itemRenderer="mx.charts.renderers.DiamondItemRenderer"/> 
+			<mx:PlotSeries  id="allPlot3" dataProvider="{allList3}" 
+							yField="{valField3}" xField="{xField}"  displayName="{point3Name}"
+							fillFunction="fillByType3" visible="{ pointChk.selected?thirdChk.selected:false}" 
+							radius="3" stroke="{pointStroke3}"  
+							itemRenderer="mx.charts.renderers.CircleItemRenderer"/>
+			<mx:LineSeries id="rlLine1" visible="{redlineChk.selected}" 
+						   displayName="红线值(上限)" lineStroke="{redLineStroke}" radius="1" dataProvider="{allList1}"
+						   xField="{xField}" yField="{redlineFieldUpperLimitValue}"/>
+			<mx:LineSeries id="rlLine2" visible="{redlineChk.selected}" 
+						   displayName="红线值(下限)" lineStroke="{redLineStroke}" radius="1" dataProvider="{allList1}"
+						   xField="{xField}" yField="{redlineFieldLowerLimitValue}"/>
+			
+			<mx:LineSeries  id="slopeLine" dataProvider="{slopeList1}" displayName="斜率"
+							yField="y" xField="x"  
+							visible="{slopeChk.selected}" interpolateValues="false"
+							radius="1" lineStroke="{slopeStroke}" />
+			<mx:LineSeries  id="slopeLineUp" dataProvider="{slopeList1}" displayName="范围上限"
+							yField="upValue" xField="x"  
+							visible="{slopeChk.selected}" interpolateValues="false"
+							radius="1" lineStroke="{slopeStroke}" />
+			<mx:LineSeries  id="slopeLineDown" dataProvider="{slopeList1}" displayName="范围下限"
+							yField="downValue" xField="x"  
+							visible="{slopeChk.selected}" interpolateValues="false"
+							radius="1" lineStroke="{slopeStroke}" />
+		</mx:series>
+		
+		<mx:annotationElements>
+			<component:RangeSelector id="rangeSel" />
+		</mx:annotationElements>
+	</mx:PlotChart>                                                                                   
+</mx:VBox>

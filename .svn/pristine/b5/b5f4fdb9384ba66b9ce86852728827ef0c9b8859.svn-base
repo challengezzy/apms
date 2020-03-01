@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationComplete()"
+		 verticalGap="1"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			public var headHashVo:SimpleHashVO;
+			
+			[Bindable]
+			public var headData:Object;//译后报文内容
+			
+			[Bindable]
+			private var acnum:String;
+			[Bindable]
+			private var date_utc:String;
+			[Bindable]
+			private var fly_from:String;
+			[Bindable]
+			private var fly_to:String;
+			[Bindable]
+			private var flt:String;
+			[Bindable]
+			private var ph:String;
+			[Bindable]
+			private var cnt:String;
+			[Bindable]
+			private var code:String;
+			[Bindable]
+			private var bleed_status:String;
+			[Bindable]
+			private var apu:String;
+			
+			[Bindable]
+			private var tat:String;
+			[Bindable]
+			private var alt:String;
+			[Bindable]
+			private var mn:String;
+			[Bindable]
+			private var dmu:String;
+			[Bindable]
+			private var prv:String;
+			[Bindable]
+			private var tiebck:String;
+			[Bindable]
+			private var mod:String;
+			[Bindable]
+			private var ap1:String;
+			[Bindable]
+			private var ap2:String;
+			[Bindable]
+			private var sys:String;
+			
+			private function creationComplete():void
+			{
+				headData = headHashVo.dataMap;
+				
+				acnum = headData['acnum'];
+				date_utc = headData['date_utc'];
+				fly_from = headData['fly_from'];
+				fly_to = headData['fly_to'];
+				flt = headData['flt'];
+				
+				ph = headData['ph'];
+				cnt = headData['cnt'];
+				code = headData['code'];
+				apu = headData['apu'];
+				bleed_status = headData['bleed_status'];
+				
+				tat = headData['tat'];
+				alt = headData['alt'];
+				mn = headData['mn'];
+				dmu = headData['dmu'];
+				prv = headData['prv'];
+				tiebck = headData['tieback'];
+				mod = headData['mod'];
+				ap1 = headData['ap1'];
+				ap2 = headData['ap2'];
+				sys = headData['sys'];
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:HBox width="100%" height="19">					
+		<mx:Label text="  " width="30"/><mx:Label text="A/C ID" color="red" width="60"/><mx:Label text="FROM" color="red" width="60"/>
+		<mx:Label text="TO" color="red" width="60"/><mx:Label text="FLT" color="red" width="60"/>
+		<mx:Label text="CODE" color="red" width="60"/><mx:Label text="CNT" color="red" width="60"/>
+		<mx:Label text="DATE UTC" color="red" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">					
+		<mx:Label text="  " width="30"/><mx:Label text="机号" color="blue" width="60"/><mx:Label text="起飞站" color="blue" width="60"/>
+		<mx:Label text="落地站" color="blue" width="60"/><mx:Label text="航班号" color="blue" width="60"/>
+		<mx:Label text="计数" color="blue" width="60"/><mx:Label text="触发代码" color="blue" width="60"/>
+		<mx:Label text="UTC时间" color="blue" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="C1" width="30"/><mx:Label text="{acnum}" width="60"/><mx:Label text="{fly_from}" width="60"/>
+		<mx:Label text="{fly_to}" width="60"/><mx:Label text="{flt}" width="60"/><mx:Label text="{code}" width="60"/>
+		<mx:Label text="{cnt}" width="60"/><mx:Label text="{date_utc}" width="150"/>
+	</mx:HBox>
+	
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="  " width="30"/><mx:Label text="PRV" color="red" width="60"/><mx:Label text="PH" color="red" width="60"/>
+		<mx:Label text="TIEBCK" color="red" width="60"/>
+		<mx:Label text="MOD" color="red" width="60"/><mx:Label text="AP1" color="red" width="60"/>
+		<mx:Label text="AP2" color="red" width="60"/><mx:Label text="DMU" color="red" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="  " width="30"/><mx:Label text="PRV" color="blue" width="60"/><mx:Label text="航段" color="blue" width="60"/>
+		<mx:Label text="TIEBCK" color="blue" width="60"/>
+		<mx:Label text="MOD" color="blue" width="60"/><mx:Label text="AP1" color="blue" width="60"/>
+		<mx:Label text="AP2" color="blue" width="60"/><mx:Label text="DMU版本" color="blue" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="C2" width="30"/><mx:Label text="{prv}" width="60"/><mx:Label text="{ph}" width="60"/>
+		<mx:Label text="{tiebck}" width="60"/>
+		<mx:Label text="{mod}" width="60"/><mx:Label text="{ap1}" width="60"/>
+		<mx:Label text="{ap2}" width="60"/><mx:Label text="{dmu}" width="140"/>
+	</mx:HBox>
+	
+	
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="  " width="30"/><mx:Label text="TAT" color="red" width="60"/><mx:Label text="ALT" color="red" width="60"/>
+		<mx:Label text="MN" color="red" width="60"/><mx:Label text="SYS" color="red" width="60"/>
+		<mx:Label text="APU" color="red" width="100"/><mx:Label text="BLEED STATUS" color="red" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="  " width="30"/><mx:Label text="总温" color="blue" width="60"/><mx:Label text="标准高度" color="blue" width="60"/>
+		<mx:Label text="马赫速" color="blue" width="60"/><mx:Label text="SYS" color="blue" width="60"/>
+		<mx:Label text="APU引气活门" color="blue" width="100"/><mx:Label text="引气活门状态" color="blue" width="140"/>
+	</mx:HBox>
+	<mx:HBox width="100%" height="19">
+		<mx:Label text="C3" width="30"/><mx:Label text="{tat}" width="60"/><mx:Label text="{alt}" width="60"/>
+		<mx:Label text="{mn}" width="60"/><mx:Label text="{sys}" width="60"/>
+		<mx:Label text="{apu}" width="100"/><mx:Label text="{bleed_status}" width="140"/>
+	</mx:HBox>
+</mx:VBox>

@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="1000" height="100%" allowClose="true"
+					   close="PopUpManager.removePopUp(this);"
+					   allowDrag="true" title="接机工作列表"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   initialize="initializeHandler(event)"
+					   creationComplete="creationComplete()" visible="false"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import smartx.flex.components.util.SmartXMessage;
+			import myreport.ReportDesigner;
+			import myreport.ReportEngine;
+			import myreport.ReportViewer;
+			import myreport.export.ExportEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var acnum:String;
+			
+			private var flt_date:String;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private var flightService:RemoteObject = new RemoteObject;
+			private var apmsDsst:String = ApmsUIConst.FLIGHT_SERVICE;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			[Bindable]
+			public var flightObj:Object; 
+			
+			[Bindable]
+			public var user:String="";
+			
+			private var mhWorkList:ArrayCollection=new ArrayCollection();
+			private var otherWorkList:ArrayCollection=new ArrayCollection();
+			private var threeDayCompWorkList:ArrayCollection=new ArrayCollection();
+			
+			private var airLineName:String = "";
+			private var sumMH:String ="";
+			private var totalTime:String  = "";
+			public function setAcnum(_acnum:String):void{
+				this.acnum = _acnum;
+			}
+			
+			public function setFltDate(flt_date:String):void{
+				this.flt_date = flt_date;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				flightService.endpoint = endpoint;
+				flightService.destination = apmsDsst;
+				
+				ReportViewer.Instance.addEventListener(ExportEvent.EXPORT, OnExport);
+				
+				flightService.getWorkOrderPlane.addEventListener(ResultEvent.RESULT,setListInfo);
+				flightService.getWorkOrderPlane.addEventListener(FaultEvent.FAULT,faultHandler);	
+				
+				flightService.getWorkOrderPlane(acnum,flt_date);
+				//"B6048" "2016-01-25"
+				
+			}
+			
+			private function setListInfo(event:ResultEvent):void{
+				var res:Object = event.result;
+				mhWorkList = res["mhWorkList"];
+				otherWorkList = res["otherWorkList"] ;
+				threeDayCompWorkList  = res["threeDayCompWorkList"];
+				sumMH  = res["sumMH"];
+				airLineName = res["airLineName"];
+					
+				HandleReport(1);
+				myreport.ReportViewer.Instance.width = 1000;
+				PopUpManager.centerPopUp(myreport.ReportViewer.Instance);
+			}
+			
+			private function OnExport(event:ExportEvent):void
+			{
+				var file:FileReference;
+				if(event.FileType == ExportEvent.FILE_TYPE_PDF)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "接机工作项目清单表.pdf");
+				}
+				else if(event.FileType == ExportEvent.FILE_TYPE_XLS)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "接机工作项目清单表.xls");
+				}
+			}
+			
+			
+			private function faultHandler(event:FaultEvent):void{
+				SmartXMessage.show("查询接机工作项目清单出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				
+			}
+			
+			
+			
+			private function creationComplete():void{
+				
+			}
+			/**
+			 * @param cmd: 0编辑, 1预览, 2直接打印
+			 */
+			private function HandleReport(mode:int):void
+			{
+				var url:String = "com/apms/flex/reportxml/XmlRunningAirItemWorkWindow2.xml";//XmlRunningAirInfoWindow2
+				var table:* = GetSubReportTableData1();
+				var params:* = GetParameterData();
+				
+				
+				switch(mode)
+				{
+					case 0://编辑
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportDesigner.Instance.Show(url, table, params);
+						break;
+					case 1://预览
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportViewer.Instance.Show(url, table, params);
+						break;
+					case 2://直接打印
+						myreport.ReportEngine.LoadAndPrintAsync(url, table, params);
+						break;
+				}
+				
+			}
+			
+			
+			
+			private function GetParameterData():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				dict["主标题"] = "接机工作项目清单表";
+				dict["打印时间"] = new Date();
+				dict["打印人"] = user;
+				dict["工时总和"] = sumMH;
+				dict["机号"] = flightObj.acnum!=null ? flightObj.acnum : "";
+				dict["机型"] = flightObj.acmodel!=null ? flightObj.acmodel : "";
+				dict["所属基地"] = flightObj.baseorg!= null?flightObj.baseorg : "";
+				dict["航空公司"] = airLineName;
+				dict["放行人"] = flightObj.release_user!= null ?flightObj.release_user: "";
+				
+				
+				//dict["子报表1表格"] = GetSubReportTableData1();
+				dict["子报表2表格"] = GetSubReportTableData2();
+				dict["子报表2参数"] = GetSubReportParameterData2();
+
+				dict["子报表3表格"] = GetSubReportTableData3();
+				dict["子报表3参数"] = GetSubReportParameterData3();
+				
+				
+				return dict;
+			}
+			/** 准备子报表1表格数据 */ 
+			private function GetSubReportTableData1():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if( mhWorkList!=null){
+					for(var i:int=0;i<mhWorkList.length;i++){  
+						var obj:Object = mhWorkList.getItemAt(i);  
+						list.addItem({
+							项次: obj.ROWNUM!=null?obj.ROWNUM:"",
+							工作内容: obj.CONTEXTCN!=null?obj.CONTEXTCN:"",
+							指令号: obj.PLANSN!=null?obj.PLANSN:"",
+							编号:obj.WORKORDERSN!=null?obj.WORKORDERSN:"",
+							工时:obj.MH!=null?obj.MH:""
+							
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						项次: "",
+						工作内容:"",
+						指令号:"",
+						编号:"",
+						工时:""
+					});
+				}
+				return list;
+			}
+			
+			/** 准备子报表2表格数据 */ 
+			private function GetSubReportTableData2():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if(otherWorkList!=null){
+					for(var i:int=0;i<otherWorkList.length;i++){  
+						var obj:Object = otherWorkList.getItemAt(i);  
+						list.addItem({
+							项次: obj.ROWNUM!=null?obj.ROWNUM:"",
+							工作内容: obj.CONTEXTCN!=null?obj.CONTEXTCN:"",
+							指令号: obj.PLANSN!=null?obj.PLANSN:"",
+							编号:obj.WORKORDERSN!=null?obj.WORKORDERSN:"",
+							工时:obj.MH!=null?obj.MH:""
+							
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						项次: "",
+						工作内容:"",
+						指令号:"",
+						编号:"",
+						工时:""
+					});
+				}
+				return list;
+			}
+			/** 准备子报表3表格数据 */ 
+			private function GetSubReportTableData3():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if( threeDayCompWorkList!=null){
+					for(var i:int=0;i<threeDayCompWorkList.length;i++){  
+						var obj:Object = threeDayCompWorkList.getItemAt(i);  
+						list.addItem({
+							指令号: obj.PLANSN!=null?obj.PLANSN:"",
+							编号:obj.WORKORDERSN!=null?obj.WORKORDERSN:"",
+							件号:obj.PARTPN!=null?obj.PARTPN:"",
+							序号: obj.PARTSN!=null?obj.PARTSN:"",
+							工作内容: obj.CONTEXTCN!=null?obj.CONTEXTCN:"",
+							工作日期:obj.OPDY!=null?DateUtil.dateToString(obj.OPDY,2):""
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						指令号:"",
+						编号:"",
+						件号:"",
+						序号:"",
+						工作内容:"",
+						工作日期:""
+					});
+				}
+				return list;
+			}
+			
+			private function GetSubReportParameterData2():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["工时总和"] = sumMH;
+				
+				return dict;
+			}
+			
+			/** 准备子报表3参数数据 */ 
+			private function GetSubReportParameterData3():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "3天前完成的工作项目";
+				
+				return dict;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</containers:SuperPanel>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   initialize="initHandler(event)"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="850" height="600"  xmlns:core="smartx.flex.components.core.*"
+			   title="A14报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.assets.AssetsFileLib;
+
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a14vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a14Data:Object;//译后报文内容
+			
+			[Bindable]
+			private var acnum:String;
+			[Bindable]
+			private var date_utc:String;
+			[Bindable]
+			private var fly_from:String;
+			[Bindable]
+			private var fly_to:String;
+			[Bindable]
+			private var flt:String;
+			[Bindable]
+			private var ph:String;
+			[Bindable]
+			private var cnt:String;
+			[Bindable]
+			private var code:String;
+			[Bindable]
+			private var bleed_status:String;
+			[Bindable]
+			private var apu:String;
+			
+			[Bindable]
+			private var tat:String;
+			[Bindable]
+			private var alt:String;
+			[Bindable]
+			private var cas:String;
+			[Bindable]
+			private var mn:String;
+			[Bindable]
+			private var gw:String;
+			[Bindable]
+			private var cg:String;
+			[Bindable]
+			private var dmu:String;
+			
+			[Bindable]
+			private var eTitleXml:XML = <root>
+								<item field="" asn="ASN" ahrs="AHRS" acyc="ACYC" pfad="PFAD" acw3="ACW3" acw4="ACW4"/>
+								<item field="" asn="ASN" ahrs="AHRS" acyc="ACYC" pfad="PFAD" acw3="ACW3" acw4="ACW4"/>
+							</root>;
+			
+				
+			[Bindable]
+			private var e1Xml:XML = <root></root>;
+			[Bindable]
+			private var nxXml:XML = <root></root>;
+			
+			[Bindable]
+			private var asn:String;
+			[Bindable]
+			private var ahrs:int;
+			[Bindable]
+			private var acyc:String;
+			[Bindable]
+			private var pfad:String;
+			[Bindable]
+			private var acw3:String;
+			[Bindable]
+			private var acw4:String;
+			
+			[Bindable]
+			private var initCondition:String;
+			
+			[Bindable]
+			private var a14Arr:ArrayCollection = new ArrayCollection();
+			
+			private function creationComplete():void
+			{
+			
+				a14Data = a14vo.dataMap;
+				
+				asn = a14Data['asn'];
+				ahrs = a14Data['ahrs']/60;
+				acyc = a14Data['acyc'];
+				pfad = a14Data['pfad'];
+				acw3 = a14Data['acw3'];
+				acw4 = a14Data['acw4'];
+
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				a14Data = a14vo.dataMap;
+				var msg_no:String = a14Data['msg_no'];
+				
+				initCondition = " MSG_NO = " + msg_no;
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A14 APU停车报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%">
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   APU PARKING REPORT14" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="A320 APU SHUTDOWN REPORT (14)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a14vo}" height="190"/>
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ASN" color="red" width="60"/><mx:Label text="AHRS" color="red" width="60"/>
+					<mx:Label text="ACYC" color="red" width="60"/><mx:Label text="PFAD" color="red" width="60"/>
+					<mx:Label text="ACW3" color="red" width="60"/><mx:Label text="ACW4" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="APU序号" color="blue" width="60"/><mx:Label text="APU小时" color="blue" width="60"/>
+					<mx:Label text="APU循环" color="blue" width="60"/><mx:Label text="APU性能调整参数" color="blue" width="60"/>
+					<mx:Label text="控制字3" color="blue" width="60"/><mx:Label text="控制字4" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="E1" width="30"/><mx:Label text="{asn}" width="60"/><mx:Label text="{ahrs}" width="60"/>
+					<mx:Label text="{acyc}" width="60"/><mx:Label text="{pfad}" width="60"/>
+					<mx:Label text="{acw3}" width="60"/><mx:Label text="{acw4}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="PRE EVENT, 'Y14.1' SEC INTERVAL" fontWeight="bold" />
+				</mx:HBox>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="100%" id="listPanel" 
+									templetCode="T_A_DFD_A14_LIST_DATA" debugMode="false"
+									initQueryCondition="{initCondition}"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

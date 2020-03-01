@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="500" height="400"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="航班维护种类确认"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" 
+					   xmlns:component="com.apms.flex.component.*" xmlns:item="com.cool.components.item.*" 
+					   >
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvAcars" destination="{ApmsUIConst.ACARS_SERVICE}">
+			<mx:method name="dfdParseStateReset" result="result4dfdParseStateReset(event)" 
+					   fault="fault4dfdParseStateReset(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.ItemComponentEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var modelItemVo:TempletItemVO = new TempletItemVO();
+			
+			[Bindable]
+			public var modelcode:String = "";
+			[Bindable]
+			public var errState:String = "";
+			
+			[Bindable]
+			private var stateArr:ArrayCollection = new ArrayCollection([
+				{value:"19",desc:"无对应机型解析类"},{value:"20",desc:"不支持的软件版本号"},{value:"21",desc:"报文头解析异常"},
+				{value:"2",desc:"解码异常"},{value:"4",desc:"设备号无法获取"}		]);
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				modelItemVo = new TempletItemVO();
+				modelItemVo.itemtype="参照";
+				modelItemVo.itemname="选择机型";
+				modelItemVo.itemkey="ACMODEL";
+				modelItemVo.refdesc="SELECT AM.MODELCODE 型号编码,AM.MODELSERIES 型号序列,AM.MODELCODE NAME# FROM B_AIRCRAFT_MODEL AM;ds=datasource_apms";
+			}
+			
+//			private function acmodelChangeHandler(event:ItemComponentEvent):void{
+//				if(modelRef.returnVO != null){
+//					//获取参照的返回值
+//					modelcode = modelRef.returnVO.code;
+//				}else{
+//					modelcode = null;
+//				}
+//			}
+			
+			protected function onOkClickHandler(event:MouseEvent):void
+			{
+				if(errintCmb.selectedItem == null){
+					SmartXMessage.show("必须选择一个异常状态！");
+					return;
+				}
+				
+				var qryObj:Object = new Object;
+				qryObj["ERRINT"] = errintCmb.selectedItem.value;
+				qryObj["RPTNO"] = rptnoText.text;
+				qryObj["ACNUM"] = acnumText.text;
+				qryObj["MODELCODE"] = modelText.text;
+				qryObj["BEGINTIME"] = time_begin.text;
+				qryObj["ENDTIME"] = time_end.text;
+				
+				srvAcars.dfdParseStateReset(user, qryObj);
+				OperatingTipUtil.startOperat("正在重置中...");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4dfdParseStateReset(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("重置状态["+errintCmb.selectedItem.desc+"]为未解析失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4dfdParseStateReset(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("重置状态["+errintCmb.selectedItem.desc+"]为未解析成功，共重置["+event.result+"]条数据！");
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" horizontalAlign="center" verticalAlign="middle" height="100%" paddingTop="10" paddingBottom="5" paddingLeft="10">
+			<s:Spacer height="15" />
+			<mx:HBox  width="300">
+				<mx:Label text="维护种类" width="60" color="red"/>
+				<mx:ComboBox id="errintCmb" dataProvider="{stateArr}" labelField="desc" color="red" />
+			</mx:HBox>
+			<mx:HBox  width="300">
+				<mx:Label text="报文号" width="60" color="red"/>
+				<mx:TextInput id="rptnoText" width="80" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox  width="300">
+				<mx:Label text="飞机号" width="60" color="red"/>
+				<mx:TextInput id="acnumText" width="80" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox  width="300">
+				<mx:Label text="机型" width="60" />
+				<mx:TextInput id="modelText" width="80" fontWeight="bold" />
+				<!--
+				<item:ItemRefField id="modelRef" templetItemVO="{modelItemVo}" destination="{smartxDest}" endpoint="{endpoint}"
+								   showLabel="false" realValueChange="acmodelChangeHandler(event)" />
+				-->
+			</mx:HBox>
+			
+			
+			<mx:HBox  width="300">
+				<mx:Label text="起始时间" width="60" />
+				<component:DateTimeChooser id="time_begin" editable="true" />
+			</mx:HBox>
+			<mx:HBox  width="300">
+				<mx:Label text="结束时间" width="60" />
+				<component:DateTimeChooser id="time_end" editable="true" />
+			</mx:HBox>
+			
+		</mx:VBox>
+		
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button label="异常状态重置" click="onOkClickHandler(event)" />
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

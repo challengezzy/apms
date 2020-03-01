@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="950" height="600" allowClose="true" layout="vertical"
+					   initialize="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this);"
+					   title="未关闭DD单"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:bill="com.cool.components.bill.*" 
+					   xmlns:MaintenanceManage="com.apms.flex.modules.MaintenanceManage.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var condStr:String = " 1=2 ";
+			
+			public function setAcnum(_acnum:String):void{
+				this.acid = _acnum;
+				condStr = " finish_sign = any(0, 2)  and ((TARGET_DATE is null) or (trunc(sysdate) <= TARGET_DATE and trunc(sysdate) > ISSUE_DATE)) AND AC_ID='"
+					+ acid +"' ";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					
+					//查询未关闭和延期的DD单
+					listPanel.query(false,false,true);
+					ddInfoWindow.ddInfoData = new Object();
+				}
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				listPanel.addEventListener(BillListPanelEvent.INITCOMPLETE,onBillListInitCompleteHandler);
+			}
+			
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListPanelItemClickHandler(event:ListEvent):void{
+				var selectedObj:Object = listPanel.getSelectedRowValue();
+				//cardPanel.setDataValue(selectedObj);
+				ddInfoWindow.ddInfoData = selectedObj;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%"   height="100%">
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="bottom" height="26">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+		<mx:VBox  height="100%">
+			<bill:BillListPanel id="listPanel" height="160" width="900" initQueryCondition="{condStr}" showDataAfterInit="true"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" 
+								showQuickQueryPanel="false" showLoadingWindow="true" showPageBox="false"
+								endpoint="{endpoint}" templetCode="T_DD_INFO_FLIGHTMONITOR"
+								>
+			</bill:BillListPanel>
+			<MaintenanceManage:DdinfoViewWindow id="ddInfoWindow" width="100%" height="100%">
+			</MaintenanceManage:DdinfoViewWindow>
+		</mx:VBox>
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="top" height="26">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,1462 @@
+<ReportSettings version="1.2">
+  <PageWidth>27.5</PageWidth>
+  <PageHeight>27.7</PageHeight>
+  <LeftMargin>0.15</LeftMargin>
+  <RightMargin>0.15</RightMargin>
+  <TopMargin>1</TopMargin>
+  <BottomMargin>1</BottomMargin>
+  <TableHeaderRepeat>true</TableHeaderRepeat>
+  <TableFooterRepeat>true</TableFooterRepeat>
+  <FitToPrintSize>true</FitToPrintSize>
+  <CanGrow>true</CanGrow>
+  <PageHeaderSettings>
+  <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@主标题</Value>
+          <Width>27.5</Width>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>18</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+   		<ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>编号：</Value>
+          <Width>23.6</Width>
+          <Style>
+          <TextAlign>right</TextAlign>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@编号</Value>
+          <Width>4</Width>
+           <Style>
+          <TextAlign>left</TextAlign>
+          </Style>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageHeaderSettings>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.35</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    
+  </TableColumnSettings>
+  <TableHeaderSettings>
+    <ItemSetting type="TableRowSetting">
+    <Height>1.5</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>航班号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@航班号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>日期</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@日期</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <Format>yyyy-mm-dd</Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>实际开门时间</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@实际开门时间</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+           <Format>yyyy-mm-dd hh:MM:ss</Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        	<Value>计划起飞时间</Value>
+            <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        	<Value>=@计划起飞时间</Value>
+         	 <Style>
+         	 <TextAlign>center</TextAlign>
+           	 	<FontSize>12</FontSize>
+           	 	<FontBold>true</FontBold>
+             </Style>
+             <ColSpan>3</ColSpan>
+              <Format>yyyy-mm-dd hh:MM:ss</Format>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+         <ItemSetting type="TableCellSetting"/>
+         <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+      
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+    <Height>1.5</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>机号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@机号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>机型</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@机型</Value>
+          <Style>
+           <TextAlign>center</TextAlign>
+          	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <Format></Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>实际关门时间</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@实际关门时间</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+          <Format>yyyy-mm-dd hh:MM:ss</Format>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+          <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>延误时间</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@延误时间</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+          <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+         <ItemSetting type="TableCellSetting"/>
+         <ItemSetting type="TableCellSetting"/>
+         <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第三行 -->
+    <ItemSetting type="TableRowSetting">
+    <Height>1.5</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>拆下件号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@拆下件号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>拆下序号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@拆下序号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>8</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第四行 -->
+    <ItemSetting type="TableRowSetting">
+    <Height>1.5</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>装上件号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@装上件号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>装上序号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@装上序号</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>8</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第五行 -->
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>发生航站</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@发生航站</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>类别</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting">
+         	<Value>=@返航</Value>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">返航</Set>
+          </Control>
+          <Style>
+          <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@改航</Value>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">改航</Set>
+          </Control>
+           <Style>
+          <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@滑回</Value>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">滑回</Set>
+         </Control>
+          <Style>
+         	 <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@换机</Value>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">换机</Set>
+          </Control>
+           <Style>
+          <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@火警</Value>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">火警</Set>
+          </Control>
+           <Style>
+          <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@地面停车</Value>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">地面停车</Set>
+          </Control>
+           <Style>
+          <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@空中停车</Value>
+        <ColSpan>2</ColSpan>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">left</Set>
+            <Set name="sLabel">空中停车</Set>
+          </Control>
+           <Style>
+       		 <BottomBorder>false</BottomBorder>
+          	 <LeftBorder>false</LeftBorder>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+       	 <Border>false</Border>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    
+    <!-- 第六行 -->
+    <ItemSetting type="TableRowSetting">
+   		 <TableCellSettings>
+   		 <ItemSetting type="TableCellSetting"/>
+   		 <ItemSetting type="TableCellSetting">
+   		 <ColSpan>3</ColSpan>
+   		 <Style>
+   		 <Border>false</Border>
+   		 </Style>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting">
+   		 <border>false</border>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting">
+   		 <border>false</border>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@延误</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">延误</Set>
+            </Control>
+            <Style>
+          	 <!--<Border>false</Border>  -->
+          	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+       	    </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@取消</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">取消</Set>
+            </Control>
+            <Style>
+          	  <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+       	    </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@冲出跑道</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">冲出跑道</Set>
+            </Control>
+            <Style>
+          	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+       	    </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@中止起飞</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">中止起飞</Set>
+            </Control>
+            <Style>
+          	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+       	    </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+            <Value>=@中断起飞</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">中断起飞</Set>
+            </Control>
+            <Style>
+          	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+       	    </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@其它_类型</Value>
+        	<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">left</Set>
+            <Set name="sLabel">其它</Set>
+            </Control>
+            <Style>
+          	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <LeftBorder>false</LeftBorder>
+       	    </Style>
+       	    <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Style>
+        <Border>false</Border>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Style>
+        <Border>false</Border>
+        </Style>
+        </ItemSetting>
+       </TableCellSettings>
+    </ItemSetting>
+    
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Style>
+        <TextAlign>center</TextAlign>
+        <FontSize>12</FontSize>
+        <FontBold>true</FontBold>
+        </Style>
+        <Value>上次航后完成基地</Value>
+        <RowSpan>2</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@上次航后完成基地</Value>
+          <Style>
+          <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <ColSpan>3</ColSpan>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>发生阶段</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting">
+         <Value>=@地面</Value>
+          <Style>
+      	  <Border>false</Border>
+        	</Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">地面</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@起飞</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">起飞</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@巡航</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">巡航</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@着陆</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">着陆</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@滑行</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">滑行</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@爬升</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">爬升</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@下降</Value>
+         <Style>
+        <Border>false</Border>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">下降</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@其它_发生阶段</Value>
+        <Style>
+        	 <BottomBorder>false</BottomBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">其它</Set>
+          </Control>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting"/>
+   		 <ItemSetting type="TableCellSetting">
+   		 <ColSpan>3</ColSpan>
+   		 <Style>
+   		 <Border>false</Border>
+   		 </Style>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting">
+   		 <border>false</border>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting">
+   		 <border>false</border>
+   		 </ItemSetting>
+   		 <ItemSetting type="TableCellSetting">
+        <Value>维修级别</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting">
+         <Value>=@航前</Value>
+          <Style>
+         	<BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+        </Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">航前</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@过站</Value>
+         <Style>
+         	<BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">过站</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@航后</Value>
+         <Style>
+         	<BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">航后</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@定检</Value>
+         <Style>
+         	<BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">定检</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@指令</Value>
+         <Style>
+        	 <BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <RightBorder>false</RightBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">指令</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@其它_维修级别</Value>
+         <Style>
+         	<BottomBorder>true</BottomBorder>
+          	 <TopBorder>false</TopBorder>
+          	 <LeftBorder>false</LeftBorder>
+        </Style>
+         <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">left</Set>
+            <Set name="sLabel">其它</Set>
+          </Control>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Style>
+        <Border>false</Border>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Style>
+        <Border>false</Border>
+        </Style>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Value>事件描述:</Value>
+        <ColSpan>13</ColSpan>
+         <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <Height>4</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@事件描述</Value>
+        <ColSpan>13</ColSpan>
+        <Style>
+        	<VerticalAlign>top</VerticalAlign>
+        	<BottomBorder>false</BottomBorder>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+   <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Value>此事故是否属于三次故障:</Value>
+        <ColSpan>3</ColSpan>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<RightBorder>false</RightBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting">
+   			<Value>=@是</Value>
+   			<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">是</Set>
+          </Control>
+          <Style>
+        	<LeftBorder>false</LeftBorder>
+        	<RightBorder>false</RightBorder>
+        	<TopBorder>false</TopBorder>
+          </Style>
+   		</ItemSetting>
+   		<ItemSetting type="TableCellSetting">
+   			<Value>=@否</Value>
+   			<Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">center</Set>
+           		 <Set name="sLabel">否</Set>
+         	 </Control>
+         	 <Style>
+        	<LeftBorder>false</LeftBorder>
+        	<RightBorder>false</RightBorder>
+        	<TopBorder>false</TopBorder>
+          </Style> 
+   		</ItemSetting>
+   		<ItemSetting type="TableCellSetting">
+   			<Value>=@不涉及</Value>
+   			<Control type="CheckLabel">
+            <Set name="eHorizontalAlign">left</Set>
+            <Set name="sLabel">不涉及</Set>
+         	 </Control>
+         	  <Style>
+        	<LeftBorder>false</LeftBorder>
+        	<TopBorder>false</TopBorder>
+          </Style>
+         	<ColSpan>8</ColSpan>
+   		</ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting> 
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Value>事件处理及原因分析:(若延误达到或超过小时请详细描述生产现场,组织每60分钟时间段所采取措施的情况)</Value>
+        <ColSpan>13</ColSpan>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+     <Height>4</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@事件处理及原因分析</Value>
+        <ColSpan>13</ColSpan>
+        <Style>
+       		<VerticalAlign>top</VerticalAlign>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+     <Height>1.3</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+        <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           		 <Set name="sLabel">原因不详,于4小时内以续报形式进行补充说明</Set>
+         	 </Control>
+        <ColSpan>13</ColSpan>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <Height>1.3</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+           <Value>不属于工程机务原因:</Value>
+        <ColSpan>2</ColSpan>
+        <Style>
+        	<RightBorder>false</RightBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		
+   		<ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">当地责任界定主管部门已认可</Set>
+         	 </Control>
+        <ColSpan>11</ColSpan>
+        <Style>
+        	<LeftBorder>false</LeftBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+           <Value>不属于工程机务原因:</Value>
+        <ColSpan>2</ColSpan>
+        <Style>
+        	<RightBorder>false</RightBorder>
+        	<BottomBorder>false</BottomBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		
+   		<ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">当地责任界定主管部门未认可</Set>
+         	 </Control>
+        <ColSpan>11</ColSpan>
+        <Style>
+        	<LeftBorder>false</LeftBorder>
+        	<BottomBorder>false</BottomBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+  	  <TableCellSettings>
+   		<ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">符合MEL</Set>
+         	 </Control>
+        <Style>
+        	<RightBorder>false</RightBorder>
+        	<BottomBorder>false</BottomBorder>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          	 <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">符合CDL</Set>
+         	 </Control>
+       		 <Style>
+	        	<RightBorder>false</RightBorder>
+	        	<BottomBorder>false</BottomBorder>
+	        	<TopBorder>false</TopBorder>
+	        	<LeftBorder>false</LeftBorder>
+	        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+       		 </Style>
+       		 <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>章节:</Value>
+        <ColSpan>9</ColSpan>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<LeftBorder>false</LeftBorder>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>	 
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+   		<ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign"></Set>
+           	  <Set name="sLabel">其他经批准的技术文件：</Set>
+         	 </Control>
+       
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<BottomBorder>false</BottomBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+         <ColSpan>13</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+   		<ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">其他情况:</Set>
+         	 </Control>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+        </Style>
+        <ColSpan>13</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+	     <ItemSetting type="TableCellSetting">
+	        <Value>工程机务分类:</Value>
+	        <RowSpan>2</RowSpan>
+	        <Style>
+	        <TextAlign>center</TextAlign>
+	        <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+	        </Style>
+	       </ItemSetting>
+   		<ItemSetting type="TableCellSetting">
+   			<Value>=@机械故障</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">机械故障</Set>
+         	 </Control>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<RightBorder>false</RightBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Value>=@维修不当</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">维修不当</Set>
+         	 </Control>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<RightBorder>false</RightBorder>
+        	<LeftBorder>false</LeftBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+       	 <Value>=@生产计划</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">生产计划</Set>
+         	 </Control>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<RightBorder>false</RightBorder>
+        	<LeftBorder>false</LeftBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+       	 <Value>=@设备实施</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">设备实施</Set>
+         	 </Control>
+        <Style>
+        	<BottomBorder>false</BottomBorder>
+        	<LeftBorder>false</LeftBorder>
+        </Style>
+        <ColSpan>9</ColSpan>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+   		<ItemSetting type="TableCellSetting">
+   		<Value>=@质量</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">质量</Set>
+         	 </Control>
+        <Style>
+        	<RightBorder>false</RightBorder>
+        	<TopBorder>false</TopBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">人力</Set>
+         	 </Control>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<RightBorder>false</RightBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@航材</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">航材</Set>
+         	 </Control>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<LeftBorder>false</LeftBorder>
+        	<RightBorder>false</RightBorder>
+        </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+       	 <Value>=@工程</Value>
+           <Control type="CheckLabel">
+          	  <Set name="eHorizontalAlign">left</Set>
+           	  <Set name="sLabel">工程</Set>
+         	 </Control>
+        <Style>
+        	<TopBorder>false</TopBorder>
+        	<LeftBorder>false</LeftBorder>
+        </Style>
+        <ColSpan>10</ColSpan>
+        </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+     <ItemSetting type="TableRowSetting">
+     <Height>1.3</Height>
+    <TableCellSettings>
+   		<ItemSetting type="TableCellSetting">
+           <Value>报告单位</Value>
+           <Style>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <TextAlign>center</TextAlign>
+           </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>=@报告单位</Value>
+           <Style>
+           <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>MCC填报人</Value>
+           <Style>
+           <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting">
+           <Value>=@MCC填报人</Value>
+           <Style>
+           <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>报告时间</Value>
+           <Style>
+           <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+            <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+           <Value>=@报告时间</Value>
+          <ColSpan>6</ColSpan>
+          <Style>
+          <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+         </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    <!-- 第行 -->
+    <ItemSetting type="TableRowSetting">
+    <Height>1.3</Height>
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+           <Value>声明：此表代表MCC经理向执管维修基地报告事件情况，可由MCC值班人员填写，其责任由MCC经理负责！</Value>
+           <Style>
+           <TextAlign>center</TextAlign>
+           <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+           </Style>
+          <ColSpan>13</ColSpan>
+         </ItemSetting>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+   		<ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+    
+  </TableHeaderSettings>
+  <PageFooterSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+      <ItemSetting type="CaptionCellSetting">
+          <Value>报：对于非执管基地飞机，报执管基地MCC；对于执管飞机，报AMC。</Value>
+          <Width>13</Width>
+          <Style>
+            <TextAlign>left</TextAlign>
+             <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>FAX:</Value>
+          <Width>10</Width>
+          <Style>
+            <TextAlign>right</TextAlign>
+             <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@空白</Value>
+          <Width>3.9</Width>
+          <Style>
+            <TextAlign>left</TextAlign>
+             <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Underline>true</Underline>
+          </Style>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+      <ItemSetting type="CaptionCellSetting">
+          <Value>(CCA-MD-009)</Value>
+          <Width>18</Width>
+          <Style>
+            <TextAlign>left</TextAlign>
+             <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageFooterSettings>
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting"/>
+  </TableGroupSettings>
+</ReportSettings>

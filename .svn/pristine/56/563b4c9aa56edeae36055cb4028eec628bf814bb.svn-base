@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="490" height="220" 
+					   title="机位地理信息编辑" allowDrag="true" allowClose="true" 
+					   >
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="flightService" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="updateAcstopGeoInfo" result="result4updateAcstopGeoInfo(event)" 
+					   fault="fault4updateAcstopGeoInfo(event)">
+			</mx:method>
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.map.AirportMapCache;
+			import com.apms.flex.modules.map.vo.AcstopVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.openscales.geometry.basetypes.Location;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			[Bindable] 
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			[Bindable]
+			private var rotationArr:ArrayCollection = new ArrayCollection([
+				{value:"0"},{value:"45"},{value:"90"},{value:"135"},{value:"180"},{value:"225"},{value:"270"},{value:"315"}
+			]);
+			
+			//机场
+			[Bindable]
+			public var aptName:String;
+			[Bindable]
+			public var aptId:String;
+			[Bindable]
+			public var acstop:String;
+			[Bindable]
+			public var _stopRotation:String = "0";
+			[Bindable]
+			public var stopX:String;
+			[Bindable]
+			public var stopY:String;
+			
+			public var confirmFunc:Function = function():void{ };
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				for each(var obj:Object in rotationArr){
+					if(obj.value == _stopRotation){
+						cmbRotation.selectedItem = obj;
+						break;
+					}
+				}
+			}
+			
+			public function set stopRotation(_rotation:String):void{
+				if(cmbRotation == null){
+					return;
+				}
+				_stopRotation = _rotation;
+				for each(var obj:Object in rotationArr){
+					if(obj.value == _rotation){
+						cmbRotation.selectedItem = obj;
+						break;
+					}
+				}
+			}
+			
+			protected function onOKHandler(event:MouseEvent):void
+			{
+				if(txtStop.text == null || txtStop.text == ""){
+					SmartXMessage.show("机位号不能为空！");
+					return;
+				}
+//				if(txtRotation.text == null || txtRotation.text == ""){
+//					SmartXMessage.show("旋转角度不能为空！");
+//					return;
+//				}
+				if(cmbRotation.selectedIndex < 0){
+					SmartXMessage.show("旋转角度不能为空！");
+					return;
+				}
+				if(txtX.text == null || txtX.text == ""){
+					SmartXMessage.show("经度不能为空！");
+					return;
+				}
+				if(txtY.text == null || txtY.text == ""){
+					SmartXMessage.show("纬度不能为空！");
+					return;
+				}
+				
+				stopX = txtX.text;
+				stopY = txtY.text;
+				acstop = txtStop.text;
+				_stopRotation = cmbRotation.selectedItem.value;
+				flightService.updateAcstopGeoInfo(aptId, txtStop.text, txtX.text, txtY.text, cmbRotation.selectedItem.value);
+				OperatingTipUtil.startOperat("更新中...");
+			}
+			
+			private function fault4updateAcstopGeoInfo(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("更新机位信息失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4updateAcstopGeoInfo(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("机位[ "+txtStop.text+" ]信息更新成功!");
+				PopUpManager.removePopUp(this);
+				
+				//回调刷新缓存
+				if(confirmFunc != null){
+					confirmFunc();
+				}
+			}
+			
+			protected function onUserOldValueclickHandler(event:MouseEvent):void
+			{
+				var stopVo:AcstopVo = AirportMapCache.getAcstopVo(aptId,txtStop.text);
+				if(stopVo != null && stopVo.x !=0 && stopVo.y != 0){
+					stopX = stopVo.x +"";
+					stopY = stopVo.y +"";
+					stopRotation = stopVo.rotation +"";
+					
+				}else if(stopVo == null) {
+					SmartXMessage.show("对应的机位[" + txtStop.text + "]不存在！");
+				}else if(stopVo.x == 0 && stopVo.y == 0){
+					SmartXMessage.show("对应的机位[" + txtStop.text + "]X或Y坐标为空,不使用！");
+				}	
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingTop="30" paddingLeft="10" paddingRight="10" paddingBottom="20">
+		<mx:HBox width="100%">
+			<mx:Label text="机场" width="50" />
+			<mx:TextInput editable="false" width="140" text="{aptName}" fontWeight="bold" />
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="机位号" width="50" />
+			<mx:TextInput id="txtStop" width="80" text="{acstop}" fontWeight="bold" />
+			<mx:Button label="原值" click="onUserOldValueclickHandler(event)"/>
+			<s:Spacer width="20" />
+			<mx:Label text="旋转度" width="50" />
+			<!--
+			<mx:TextInput id="txtRotation" width="140" text="{stopRotation}" fontWeight="bold" restrict = "0-9\-" />
+			-->
+			<mx:ComboBox id="cmbRotation" dataProvider="{rotationArr}" labelField="value" />
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="经度" width="50" />
+			<mx:TextInput id="txtX" width="140" text="{stopX}" fontWeight="bold" restrict = "0-9\-\."/>
+			<s:Spacer width="20" />
+			<mx:Label text="纬度" width="50" />
+			<mx:TextInput id="txtY" width="140" text="{stopY}" fontWeight="bold" restrict = "0-9\-\."/>
+		</mx:HBox>
+		<s:Spacer height="100%" />
+		<s:HGroup width="100%" horizontalAlign="center" >
+			<mx:Button id="btnOk" label="更新" click="onOKHandler(event)" />
+			<s:Spacer width="5" />
+			<mx:Button id="btnClose" label="取消" click="PopUpManager.removePopUp(this);" />
+		</s:HGroup>
+	</s:VGroup>
+</containers:SuperPanel>

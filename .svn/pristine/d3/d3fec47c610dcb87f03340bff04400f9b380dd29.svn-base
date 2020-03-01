@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:LinearAxis id="lineAxis" baseAtZero="false" autoAdjust="true" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.HitData;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.MetadataTemplet;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var engineService:RemoteObject = new RemoteObject;
+			private var engineFormDest:String = ApmsUIConst.ENGINFORMSERVICE;
+			private var formService:RemoteObject;
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			
+			private var acnum:String ;//查询机号
+			private var acmodel:String="";
+			
+			
+			private var egt_maxvalue_redline:String="egt_maxvalue_redline";
+			private var egt_minvalue_redline:String="egt_minvalue_redline";
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var allA01LeftChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01RightChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04LeftChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04RightChangedList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable]
+			private var allA01Compu_oip_1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_oip_2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_div_oip:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_oit_1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_oit_2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_div_oit:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_oip_1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_oip_2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_div_oip:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_oit_1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_oit_2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_div_oit:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01List:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var allA04List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA27List1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA27List2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var changList1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var changList2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var oip_left:String="";
+			
+			[Bindable]
+			private var oip_right:String="";
+			
+			[Bindable]
+			private var oit_left:String="";
+			
+			[Bindable]
+			private var oit_right:String="";
+						
+			[Bindable]
+			private var middle_left:String="";
+			
+			[Bindable]
+			private var middle_right:String="";
+			
+			[Bindable]
+			private var around_left:String="";
+			
+			[Bindable]
+			private var around_right:String="";
+			//Flex页面初始化处理
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				
+				beginTime = DateUtil.moveMonth(endTime,-1);
+				
+				engineService.endpoint = endpoint;
+				engineService.destination = engineFormDest;
+				
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				//远程服务添加监听
+				engineService.getCfmEngineSildeOilChartData.addEventListener(ResultEvent.RESULT,getCfmEngineSildeOilChartDataHandler);
+				engineService.getCfmEngineSildeOilChartData.addEventListener(FaultEvent.FAULT,getCfmEngineSildeOilChartDataErrorHandler);	
+			}
+			//Flex页面构建完处理
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,M.MODELSERIES MODELSERIES#,AIRCRAFTSN 机号,M.MODELCODE 机型,(select model from B_ENGINE_INFO E, B_ENGINE_MODEL EM where E.Engmodelid=EM.Id and E.AIRCRAFTID=A.Id and rownum=1) 发动机型号 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+				oip_left="OIP左";
+				oip_right="OIP右";
+				engine_a01_chart_oip.colorTipVisible=true;
+				engine_a01_chart_div_oip.colorTipVisible=true;
+				
+				oit_left="OIT左";
+				oit_right="OIT右";
+				engine_a01_chart_oit.colorTipVisible=true;
+				engine_a01_chart_div_oit.colorTipVisible=true;
+				
+				middle_left="EGT1 空中加地面消耗率";
+				middle_right="EGT2 空中加地面消耗率";
+				oil1_ratechart.colorTipVisible=true;
+				oil1_ratechart.colorTipVisible=true;
+				
+				around_left="EGT1 滑油消耗率";
+				around_right="EGT2 滑油消耗率";
+				engine_a01_chart_oit.colorTipVisible=true;
+				engine_a01_chart_div_oit.colorTipVisible=true;
+				
+				engine_a04_chart_oip.colorTipVisible=true;
+				engine_a04_chart_div_oip.colorTipVisible=true;
+				engine_a04_chart_oit.colorTipVisible=true;
+				engine_a04_chart_div_oit.colorTipVisible=true;
+				
+				
+				
+				engine_a01_chart_oip.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				engine_a01_chart_div_oip.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				engine_a01_chart_oit.plotChart.dataTipFunction=trendTipStrFuncC;
+				engine_a01_chart_div_oit.plotChart.dataTipFunction=trendTipStrFuncC;
+				
+				engine_a04_chart_oip.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				engine_a04_chart_div_oip.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				engine_a04_chart_oit.plotChart.dataTipFunction=trendTipStrFuncC;
+				engine_a04_chart_div_oit.plotChart.dataTipFunction=trendTipStrFuncC;
+				oil1_rategachart2.plotChart.dataTipFunction=trendTipStrFuncQth;
+				oil1_ratechart.plotChart.dataTipFunction=trendTipStrFuncQth;
+
+			}
+			//查询按钮处理
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				OperatingTipUtil.startOperat("正在查询....",this);
+				engineService.getCfmEngineSildeOilChartData(time_begin.text,time_end.text,acnum);
+			}
+			//导出按钮处理
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"Cfm滑油性能");
+			}
+			//远程监听返回结果处理
+			private function getCfmEngineSildeOilChartDataHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				allA01LeftChangedList = res["allA01LeftChangedList"];
+				allA01RightChangedList = res["allA01RightChangedList"];
+				
+				allA04LeftChangedList = res["allA04LeftChangedList"];
+				allA04RightChangedList = res["allA04RightChangedList"];
+				
+				allA01Compu_oip_1 = res["allA01Compu_oip_1"];
+				allA01Compu_oip_2 = res["allA01Compu_oip_2"];
+
+				allA01Compu_div_oip = res["allA01Compu_div_oip"];
+				allA01Compu_oit_1 = res["allA01Compu_oit_1"];
+				allA01Compu_oit_2 = res["allA01Compu_oit_2"];
+
+				allA01Compu_div_oit = res["allA01Compu_div_oit"];
+				allA04Compu_oip_1 = res["allA04Compu_oip_1"];
+				allA04Compu_oip_2 = res["allA04Compu_oip_2"];
+
+				allA04Compu_div_oip = res["allA04Compu_div_oip"];
+				allA04Compu_oit_1 = res["allA04Compu_oit_1"];
+				allA04Compu_oit_2 = res["allA04Compu_oit_2"];
+
+				allA04Compu_div_oit = res["allA04Compu_div_oit"];
+				
+				allA01List = res["allA01List"];
+				allA04List = res["allA04List"];
+				
+				allA27List1 = res["allA27List1"];
+				allA27List2 = res["allA27List2"];
+				changList1 = res["changList1"];
+				changList2 = res["changList2"];
+				allList = res["allList"];
+				trace(".......");
+				
+			}
+			//远程监听失败处理
+			private function getCfmEngineSildeOilChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询Cfm发动机滑油数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			
+			public function trendTipStrFuncC(e:HitData):String{
+				return trendTipStrFunc(e,"°C");
+			}
+			public function trendTipStrFuncPsi(e:HitData):String{
+				return trendTipStrFunc(e,"psi");
+			}
+			public function trendTipStrFuncQth(e:HitData):String{
+				return trendTipStrFunc(e,"Qt/h");
+			}
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var position:String;
+				var number:String;
+				if(e.contextColor==0x0000ff){
+					position = "1#";
+					number = item["ESN_1"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}else if(e.contextColor==0xff0000){
+					position = "2#";
+					number = item["ESN_2"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}
+				if(item[xField] is Date){
+					tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				}else if(item[xField] is Number){
+					var dateTemp:Date = DateUtil.parseMsToDate(item[xField]);
+					tip += "\n"+ DateUtil.dateToString(dateTemp,1);
+				}
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a01_chart_oip" chartName="OIP(巡航滑油压力)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											isAvg5="true" avg5Field1="ROLL5" avg5Field2="ROLL5"
+											valField1="VALUE" point1Name="OIP左"
+											valField2="VALUE" point2Name="OIP右"
+											allList1="{allA01Compu_oip_1}" allList2="{allA01Compu_oip_2}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+
+											chartTitle_left="{oip_left}" chartTitle_right="{oip_right}">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a01_chart_div_oip" chartName="DIV OIP(巡航滑油压力差分)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											valField1="DIV_OIP_1" point1Name="OIP左(DIV)"
+											valField2="DIV_OIP_2" point2Name="OIP右(DIV)"
+											allList1="{allA01List}" allList2="{allA01List}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											chartTitle_left="{oip_left}" chartTitle_right="{oip_right}">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a01_chart_oit" chartName="OIT(巡航滑油温度)" height="100%" width="100%"
+											xField="UTCDATE"  colorAttribute="ALARMNUM" 
+											isAvg5="true" avg5Field1="ROLL5" avg5Field2="ROLL5"
+											valField1="VALUE" point1Name="OIT左"
+											valField2="VALUE" point2Name="OIT右"
+											allList1="{allA01Compu_oit_1}" allList2="{allA01Compu_oit_2}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											chartTitle_left="{oit_left}" chartTitle_right="{oit_right}">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a01_chart_div_oit" chartName="DIV OIT(巡航滑油温度差分)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											valField1="DIV_OIT_1" point1Name="OIT左(DIV)"
+											valField2="DIV_OIT_2" point2Name="OIT右(DIV)"
+											allList1="{allA01List}" allList2="{allA01List}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											chartTitle_left="{oit_left}" chartTitle_right="{oit_right}">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a04_chart_oip" chartName="OIP(起飞滑油压力)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											isAvg5="true" avg5Field1="ROLL5" avg5Field2="ROLL5"
+											valField1="VALUE" point1Name="OIP左"
+											valField2="VALUE" point2Name="OIP右"
+											allList1="{allA04Compu_oip_1}" allList2="{allA04Compu_oip_2}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											chartTitle_left="{oip_left}" chartTitle_right="{oip_right}">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a04_chart_div_oip" chartName="DIV OIP(起飞滑油压力差分)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											valField1="DIV_OIP_1" point1Name="OIP左(DIV)"
+											valField2="DIV_OIP_2" point2Name="OIP右(DIV)"
+											allList1="{allA04List}" allList2="{allA04List}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											chartTitle_left="{oip_left}" chartTitle_right="{oip_right}">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a04_chart_oit" chartName="OIT(起飞滑油温度)" height="100%" width="100%"
+											xField="UTCDATE"  colorAttribute="ALARMNUM" 
+											isAvg5="true" avg5Field1="ROLL5" avg5Field2="ROLL5"
+											valField1="VALUE" point1Name="OIT左"
+											valField2="VALUE" point2Name="OIT右"
+											allList1="{allA04Compu_oit_1}" allList2="{allA04Compu_oit_2}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											chartTitle_left="{oit_left}" chartTitle_right="{oit_right}">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a04_chart_div_oit" chartName="DIV OIT(起飞滑油温度差分)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM"
+											valField1="DIV_OIT_1" point1Name="OIT左(DIV)"
+											valField2="DIV_OIT_2" point2Name="OIT右(DIV)"
+											allList1="{allA04List}" allList2="{allA04List}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											chartTitle_left="{oit_left}" chartTitle_right="{oit_right}">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="oil1_rategachart2" chartName="滑油消耗率(空中)" height="100%" width="100%"
+											xField="UTCDATE" isAvg5="true" 
+											valField1="CAL_AIR_ENG1" point1Name="ENG1 空中加地面消耗率" avg5Field1="AIR_ENG1_ROLL5"
+											pointTypeField1="AIR_ENG1_POINTTYPE"
+											valField2="CAL_AIR_ENG2" point2Name="ENG2 空中加地面消耗率" avg5Field2="AIR_ENG2_ROLL5"
+											pointTypeField2="AIR_ENG2_POINTTYPE"
+											allList1="{allA27List1}" allList2="{allA27List2}"
+											chartTitle_left="{middle_left}" chartTitle_right="{middle_right}" unitStr="Qt/H">
+			</component:ReportTrendDualChart>
+			<component:ReportTrendDualChart id="oil1_ratechart" chartName="滑油消耗率(前后报文)" height="100%" width="100%"
+											xField="UTCDATE" isAvg5="true" 
+											valField1="DETA_OIQ1_FWDRATE" point1Name="ENG1滑油消耗率" avg5Field1="OIQ1_RATE_ROLL5"
+											pointTypeField1="OIQ1_RATE_POINTTYPE"
+											valField2="DETA_OIQ2_FWDRATE" point2Name="ENG2滑油消耗率" avg5Field2="OIQ2_RATE_ROLL5"
+											pointTypeField2="OIQ2_RATE_POINTTYPE" allList1="{allList}"  allList2="{allList}"
+											chartTitle_left="{around_left}" chartTitle_right="{around_right}"  unitStr="Qt/H">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Module>
+

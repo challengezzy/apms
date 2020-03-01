@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   layout="vertical" width="800" height="400"
+					   title="航班信息过滤条件"
+					   allowClose="false" allowDrag="true" allowResize="true"
+					   creationComplete="creationCompleteHandler(event)"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.util.SmartXMessage;
+			
+			public var filterType:String = "DEP"; //DEP,ARR,进港或出港条件类型
+			
+			public var aptName:String = "SHA"; //机场名称
+			
+			[Bindable]
+			private var aptCode:String = "SHA"; //机场代码 
+			
+			private var condStr:String = " 1=1 ";
+			
+			/** 是否设置过查询条件 */
+			public var isSetted:Boolean = false;
+			
+			public var okFunc:Function = function():void{ };
+			
+			public function set airportCode(_aptcode:String):void{ 
+				aptCode = _aptcode;
+			}
+			
+			public function get airportCode():String{
+				return aptCode;
+			}
+			
+			public function get conditionStr():String{
+				return condStr;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(filterType == "DEP"){
+					//维护种类
+					cbMaintypePF.selected = true;
+					cbMaintypeAFPF.selected = true;
+					
+					cbAcState40.selected= false;
+					cbAcState50.selected= false;
+					cbAcState60.selected= false;
+					cbAcState70.selected= false;
+					cbAcState80.selected= false;
+
+					
+				}else{ //到港航班条件
+					cbMaintypeAF.selected = true;
+					
+					cbAcState06.selected= false;
+					cbAcState10.selected= false;
+					cbAcState20.selected= false;
+					cbAcState30.selected= false;
+					cbAcState70.selected= false;
+				}
+				
+			}
+			
+			public function getConditionStr():Boolean{
+				condStr = " 1=1 ";
+				//向前时间段限制
+				if(cbPreXHour.selected){
+					if(txtPreXHour.text == null || txtPreXHour.text == ""){
+						SmartXMessage.show("小时限制数值不能为空！");
+						return false;
+					}
+					var preXH:Number = new Number(txtPreXHour.text);
+					
+					if(filterType == "DEP"){
+						condStr += " and ctd >=  sysdate-"+ preXH +"/24 ";
+					}else{
+						condStr += " and cta >=  sysdate-"+ preXH +"/24 ";
+					}
+				}else{
+					condStr += " and flt_date>=trunc(sysdate)";
+				}
+				
+				//向后时间段限制
+				if(cbNextXHour.selected){
+					if(txtNextXHour.text == null || txtNextXHour.text == ""){
+						SmartXMessage.show("小时限制数值不能为空！");
+						return false;
+					}
+					var nextXH:Number = new Number(txtNextXHour.text);
+					
+					if(filterType == "DEP"){
+						condStr += " and ctd <=  sysdate+ "+ nextXH +"/24 ";
+					}else{
+						condStr += " and cta <=  sysdate+"+ nextXH +"/24 ";
+					}
+				}else{
+					//航班日期
+					if(rbFltDate1.selected){
+						condStr += " and flt_date<=trunc(sysdate) ";
+					}else if(rbFltDate2.selected){
+						condStr += " and flt_date <=trunc(sysdate+1) ";
+					}else if(rbFltDate3.selected){
+						condStr += " and flt_date <=trunc(sysdate+2) ";
+					}else{
+						//默认当天
+						condStr += " and flt_date=trunc(sysdate) ";
+					}
+				}
+				
+				var coStr:String = "'X'";
+				if(cbCoseq0.selected){
+					coStr += ",'0'";
+				}
+				if(cbCoseq1.selected){
+					coStr += ",'1'";
+				}
+				if(cbCoseq2.selected){
+					coStr += ",'2'";
+				}
+				if(cbCoseq3.selected){
+					coStr += ",'3'";
+				}
+				if(cbCoseq4.selected){
+					coStr += ",'4'";
+				}
+				if(cbCoseq5.selected){
+					coStr += ",'5'";
+				}
+				if(cbCoseq6.selected){
+					coStr += ",'6'";
+				}
+				if(cbCoseq8.selected){
+					coStr += ",'8'";
+				}
+				if(cbCoseq9.selected){
+					coStr += ",'9'";
+				}
+				if(cbCoseqA.selected){
+					coStr += ",'A'";
+				}
+				if(cbCoseqB.selected){
+					coStr += ",'B'";
+				}
+				if(cbCoseqC.selected){
+					coStr += ",'C'";
+				}
+				if(cbCoseqD.selected){
+					coStr += ",'D'";
+				}
+				if(cbCoseqE.selected){
+					coStr += ",'E'";
+				}
+				if(cbCoseqF.selected){
+					coStr += ",'F'";
+				}
+				if(cbCoseqG.selected){
+					coStr += ",'G'";
+				}
+				
+				if(coStr == "'X'"){
+					SmartXMessage.show("必须选择至少一个子公司!");
+					return false;
+				}
+				condStr += " and co_seq in ("+coStr+")";
+				
+				
+				
+				//飞机状态
+				var acStatStr:String = "-1";
+				if(cbAcState00.selected){
+					acStatStr += ",0";
+				}
+				if(cbAcState06.selected){
+					acStatStr += ",6";
+				}
+				if(cbAcState10.selected){
+					acStatStr += ",10";
+				}
+				if(cbAcState20.selected){
+					acStatStr += ",20";
+				}
+				if(cbAcState30.selected){
+					acStatStr += ",30";
+				}
+				if(cbAcState40.selected){
+					acStatStr += ",40";
+				}
+				if(cbAcState50.selected){
+					acStatStr += ",50";
+				}
+				if(cbAcState60.selected){
+					acStatStr += ",60";
+				}
+				if(cbAcState70.selected){
+					acStatStr += ",70";
+				}
+				if(cbAcState80.selected){
+					acStatStr += ",80";
+				}
+				
+				if(acStatStr == "-1"){
+					SmartXMessage.show("必须选择至少一个飞机状态!");
+					return false;
+				}
+				condStr += " and ac_state in ("+ acStatStr +")";
+				
+				var maintypeStr:String = "'X'";
+				if(cbMaintypeAF.selected){
+					maintypeStr += ",'AF'";
+				}
+				if(cbMaintypePF.selected){
+					maintypeStr += ",'PF'";
+				}
+				if(cbMaintypeTR.selected){
+					maintypeStr += ",'TR'";
+				}
+				if(cbMaintypeAFPF.selected){
+					maintypeStr += ",'AF+PF'";
+				}
+				if(maintypeStr == "'X'"){
+					SmartXMessage.show("必须选择至少一个维护种类!");
+					return false;
+				}
+				
+				if(filterType == 'DEP'){
+					condStr += " and flttype_dep in ("+ maintypeStr +")";
+				}else{
+					condStr += " and flttype_arr in ("+ maintypeStr +")";
+				}
+				
+				//kevin
+				var planeTypeStr:String;
+				if(cbPlaneA319.selected){
+					planeTypeStr += ",'A319'";
+				}
+				if(cbPlaneA320.selected){
+					planeTypeStr += ",'A320'";
+				}
+				if(cbPlaneA330.selected){
+					planeTypeStr += ",'A330'";
+				}
+				if(cbPlaneA340.selected){
+					planeTypeStr += ",'A340'";
+				}
+				//condStr += " and airframetype in ("+ planeTypeStr +")";
+				
+				//kevin
+				var fightSourceStr:String;
+				if(cbSourceAuto.selected){
+					fightSourceStr += ",'0'";
+				}
+				if(cbSourceManu.selected){
+					fightSourceStr += ",'1'";
+				}
+				if(cbSourcePack.selected){
+					fightSourceStr += ",'2'";
+				}
+				condStr += " and datasource in ("+ fightSourceStr +")";
+
+				
+				if(cbCancel0.selected && cbCancel1.selected){
+					//两个条件均选，不过滤
+				}else{
+					if(cbCancel0.selected){
+						condStr += " and cancel_flag = '0'";
+					}else{
+						condStr += " and cancel_flag != '0'";
+					}
+					
+				}
+				
+				if(cbDelay0.selected && cbDelay1.selected){
+					//两个条件均选，不过滤
+				}else{
+					if(cbDelay0.selected){
+						condStr += " and isdelay = 0";
+					}else{
+						condStr += " and isdelay = 1";
+					}
+					
+				}
+				
+				
+				//飞机号
+				if(txtAcid.text != null && txtAcid.text != ""){
+					condStr += " and acnum like '%"+txtAcid.text+"%' ";
+				}
+				
+				//航班号
+				if(txtFltno.text != null && txtFltno.text != ""){
+					condStr += " and flt_id like '%"+txtFltno.text+"%' ";
+				}
+				
+				return true;
+			}
+			
+			protected function cbAcStateAll_changeHandler(event:Event):void
+			{
+				cbAcState00.selected = cbAcStateAll.selected;
+				cbAcState06.selected = cbAcStateAll.selected;
+				cbAcState10.selected = cbAcStateAll.selected;
+				cbAcState20.selected = cbAcStateAll.selected;
+				cbAcState30.selected = cbAcStateAll.selected;
+				cbAcState40.selected = cbAcStateAll.selected;
+				cbAcState50.selected = cbAcStateAll.selected;
+				cbAcState60.selected = cbAcStateAll.selected;
+				cbAcState70.selected = cbAcStateAll.selected;
+				cbAcState80.selected = cbAcStateAll.selected;
+				
+			}
+			
+			protected function cbCoSeqAll_changeHandler(event:Event):void
+			{
+				cbCoseq0.selected = cbCoSeqAll.selected; 
+				cbCoseq1.selected = cbCoSeqAll.selected; 
+				cbCoseq2.selected = cbCoSeqAll.selected; 
+				cbCoseq3.selected = cbCoSeqAll.selected; 
+				cbCoseq4.selected = cbCoSeqAll.selected; 
+				cbCoseq5.selected = cbCoSeqAll.selected; 
+				cbCoseq6.selected = cbCoSeqAll.selected; 
+				cbCoseq8.selected = cbCoSeqAll.selected; 
+				cbCoseq9.selected = cbCoSeqAll.selected; 
+				cbCoseqA.selected = cbCoSeqAll.selected; 
+				cbCoseqB.selected = cbCoSeqAll.selected; 
+				cbCoseqC.selected = cbCoSeqAll.selected; 
+				cbCoseqD.selected = cbCoSeqAll.selected; 
+				cbCoseqE.selected = cbCoSeqAll.selected; 
+				cbCoseqF.selected = cbCoSeqAll.selected; 
+				cbCoseqG.selected = cbCoSeqAll.selected; 
+				
+			}
+			
+			protected function cbWfStateAll_changeHandler(event:Event):void
+			{
+				cbWfState00.selected = cbWfStateAll.selected;
+				cbWfState10.selected = cbWfStateAll.selected;
+				cbWfState20.selected = cbWfStateAll.selected;
+				cbWfState30.selected = cbWfStateAll.selected;
+				cbWfState40.selected = cbWfStateAll.selected;
+				
+			}
+			
+			protected function cbMaintypeAll_changeHandler(event:Event):void
+			{
+				cbMaintypePF.selected = cbMaintypeAll.selected;
+				cbMaintypeAF.selected = cbMaintypeAll.selected;
+				cbMaintypeTR.selected = cbMaintypeAll.selected;
+				cbMaintypeAFPF.selected = cbMaintypeAll.selected;
+			}
+			
+			//kevin
+			protected function cbPlaneType_changeHandler(event:Event):void
+			{
+				cbPlaneA319.selected = cbPlaneType.selected;
+				cbPlaneA320.selected = cbPlaneType.selected;
+				cbPlaneA330.selected = cbPlaneType.selected;
+				cbPlaneA340.selected = cbPlaneType.selected;
+			}
+			//kevin
+			protected function cbFlightSource_changeHandler(event:Event):void
+			{
+				cbSourceAuto.selected = cbFlightSource.selected;
+				cbSourceManu.selected = cbFlightSource.selected;
+				cbSourcePack.selected = cbFlightSource.selected;
+			}
+			
+			private function checkCondtionValid():Boolean{
+				
+				if(txtApt.text == null || txtApt.text == ""){
+					SmartXMessage.show("机场条件不能为空!");
+					return false;
+				}
+				aptCode = txtApt.text.toUpperCase(); //转换为大写
+				aptName = aptCode;
+				
+				if(getConditionStr()){
+					return true;
+				}else{
+					return false;
+				}
+			}
+			
+			public function onEnterKeyDownHandler(evet:KeyboardEvent):void{
+				if(evet.keyCode == Keyboard.ENTER){
+					onOk_clickHandler();
+				}
+				
+			}
+			
+			protected function onOk_clickHandler():void
+			{
+				//检验选择条件的合法性
+				if( !checkCondtionValid()){
+					return;
+				}
+				
+				isSetted = true;
+				
+				PopUpManager.removePopUp(this);
+				
+				if(okFunc != null){
+					okFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RadioButtonGroup id="rbGroupFltDate" />
+	</fx:Declarations>
+	<mx:VBox id="queryBox" width="100%" height="100%" verticalAlign="middle" borderStyle="solid" paddingBottom="5" paddingLeft="10" paddingRight="5">
+		<mx:HBox verticalAlign="middle" >
+			<mx:Label text="航班日期" width="80"/>
+			<mx:RadioButton id="rbFltDate1" label="当天" group="{rbGroupFltDate}" />
+			<mx:RadioButton id="rbFltDate2" label="两天" selected="true" group="{rbGroupFltDate}" />
+			<mx:RadioButton id="rbFltDate3" label="三天" group="{rbGroupFltDate}"/>
+			<s:Spacer width="30" />
+			<mx:CheckBox id="cbPreXHour" label="前X小时航班:" selected="true"/>
+			<mx:TextInput id="txtPreXHour" width="40" restrict="0-9" maxChars="2" text="4" />
+			<s:Spacer width="10" />
+			<mx:CheckBox id="cbNextXHour" label="后X小时航班:" selected="true"/>
+			<mx:TextInput id="txtNextXHour" width="40" restrict="0-9" maxChars="2" text="8" />
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbCoSeqAll" label="公司代码" width="80" selected="true" change="cbCoSeqAll_changeHandler(event)"/>
+			<mx:CheckBox id="cbCoseq0" label="本部" selected="true" />
+			<mx:CheckBox id="cbCoseq1" label="内蒙" selected="true"/>  
+			<mx:CheckBox id="cbCoseq2" label="天津" selected="true"/>  
+			<mx:CheckBox id="cbCoseq4" label="西南" selected="true"/>  
+			<mx:CheckBox id="cbCoseq5" label="浙江" selected="true"/>  
+			<mx:CheckBox id="cbCoseq6" label="重庆" selected="true"/>  
+			<mx:CheckBox id="cbCoseq8" label="山东" selected="true"/>  
+			<mx:CheckBox id="cbCoseq3" label="货运公司" selected="false" visible="true"/> 
+			
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<s:Spacer width="80" />
+			<mx:CheckBox id="cbCoseqC" label="湖北" selected="true"/>  
+			<mx:CheckBox id="cbCoseqD" label="上海" selected="true"/>  
+			<mx:CheckBox id="cbCoseqE" label="北京航" selected="true"/>
+			<mx:CheckBox id="cbCoseqF" label="大连航" selected="true"/>
+			<mx:CheckBox id="cbCoseqG" label="内蒙航" selected="true"/>
+			<mx:CheckBox id="cbCoseqB" label="澳航" selected="true"/>  
+			<mx:CheckBox id="cbCoseq9" label="训练" selected="false"/>  
+			<mx:CheckBox id="cbCoseqA" label="代理公务机" selected="true" visible="true"/>
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbAcStateAll" label="飞机状态" width="80" selected="true" change="cbAcStateAll_changeHandler(event)"/>
+			<mx:CheckBox id="cbAcState00" label="计划" selected="true"/>
+			<mx:CheckBox id="cbAcState06" label="预计" selected="true"/>
+			<mx:CheckBox id="cbAcState10" label="放行" selected="true"/>
+			<mx:CheckBox id="cbAcState20" label="关舱" selected="true"/>
+			<mx:CheckBox id="cbAcState30" label="推出" selected="true"/>
+			<mx:CheckBox id="cbAcState40" label="起飞" selected="true"/>
+			<mx:CheckBox id="cbAcState50" label="空中" selected="true"/>
+			<mx:CheckBox id="cbAcState60" label="落地" selected="true"/>
+			<mx:CheckBox id="cbAcState70" label="靠桥" selected="true"/>
+			<mx:CheckBox id="cbAcState80" label="开舱" selected="false"/>
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbWfStateAll" label="工作状态" width="80" selected="true" change="cbWfStateAll_changeHandler(event)"/>
+			<mx:CheckBox id="cbWfState00" label="未安排" selected="true" />  
+			<mx:CheckBox id="cbWfState10" label="已安排" selected="true"/>
+			<mx:CheckBox id="cbWfState20" label="人员到岗" />
+			<mx:CheckBox id="cbWfState30" label="工作开始" />
+			<mx:CheckBox id="cbWfState40" label="工作完成" />
+		</mx:HBox>
+		
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbMaintypeAll" label="维护种类" width="80" selected="true" change="cbMaintypeAll_changeHandler(event)"/>
+			<mx:CheckBox id="cbMaintypePF" label="PF" selected="false" />  
+			<mx:CheckBox id="cbMaintypeAF" label="AF" selected="false"/>
+			<mx:CheckBox id="cbMaintypeTR" label="TR" selected="true"/>
+			<mx:CheckBox id="cbMaintypeAFPF" label="AF+PF" selected="false" />
+		</mx:HBox>
+		<!--kevin-->
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbPlaneType" label="机体类型" width="80" selected="true" change="cbPlaneType_changeHandler(event)"/>
+			<mx:CheckBox id="cbPlaneA319" label="A319" selected="true" />  
+			<mx:CheckBox id="cbPlaneA320" label="A320" selected="true"/>
+			<mx:CheckBox id="cbPlaneA330" label="A330" selected="true"/>
+			<mx:CheckBox id="cbPlaneA340" label="A340" selected="true"/>
+		</mx:HBox>
+		
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbFlightSource" label="航班来源" width="80" selected="true" change="cbFlightSource_changeHandler(event)"/>
+			<mx:CheckBox id="cbSourceAuto" label="OMIS" selected="true"/>
+			<mx:CheckBox id="cbSourceManu" label="人工录入" selected="true" />  
+			<mx:CheckBox id="cbSourcePack" label="批量生成" selected="true"/>
+		</mx:HBox>
+		<!--kevin-->
+		<mx:HBox verticalAlign="middle" >
+			<mx:Label text="取消状态" width="80"/>
+			<mx:CheckBox id="cbCancel1" label="取消" selected="false" />
+			<mx:CheckBox id="cbCancel0" label="正常" selected="true" />
+			
+			<s:Spacer width="30" />
+			<mx:Label text="延误状态" width="60"/>
+			<mx:CheckBox id="cbDelay1" label="延误" selected="true" />
+			<mx:CheckBox id="cbDelay0" label="正常" selected="true" /> 
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<mx:Label text="确认状态" width="80"/>
+			<mx:CheckBox id="cbConfirm0" label="未确认" selected="true" />  
+			<mx:CheckBox id="cbConfirm1" label="已确认" selected="true" />
+			
+			<s:Spacer width="30" />
+			<mx:Label text="机场" width="50" fontWeight="bold" color="red"/>
+			<mx:TextInput id="txtApt" width="70" text="{aptCode}" keyDown="onEnterKeyDownHandler(event)" />
+			
+			<s:Spacer width="10" />
+			<mx:Label text="飞机号*" width="50"/>
+			<mx:TextInput id="txtAcid" width="70" keyDown="onEnterKeyDownHandler(event)" />
+			<s:Spacer width="10" />
+			<mx:Label text="航班号*" width="50"/>
+			<mx:TextInput id="txtFltno" width="70" keyDown="onEnterKeyDownHandler(event)" />
+		</mx:HBox>
+	</mx:VBox>
+	<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+		<mx:Button label="确定" click="onOk_clickHandler()" />
+	</mx:HBox>
+</containers:SuperPanel>

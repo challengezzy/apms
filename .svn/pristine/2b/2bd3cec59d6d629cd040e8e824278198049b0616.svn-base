@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   width="100%" height="100%" initialize="init()">
+	<fx:Style>
+		.header{text-align:center}
+	</fx:Style>
+	<fx:Metadata>
+		//定义事件
+		[Event(name="ItemClick",type="mx.rpc.events.ResultEvent")]//单击事件
+		[Event(name="DateChange",type="mx.rpc.events.ResultEvent")]//年月改变时的事件
+		[Event(name="DoubleClick",type="mx.rpc.events.ResultEvent")]//双击事件
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.GridItem;
+			import mx.containers.GridRow;
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ArrayUtil;
+			
+//			import org.hamcrest.mxml.collection.InArray;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			private var oldItem:GridItem;
+			private var lbls:ArrayCollection;
+			private var yy:int;
+			private var mm:int;
+			private var firstDay:int;
+			private var editDailySchedulePanel:EditDailySchedulePanel;
+			[Bindable]
+			public var endpoint:String ="http://localhost:8080/apms/messagebroker/amf";
+			//初始化
+			private function init():void{
+				lbls=new ArrayCollection();
+				initLbls();
+				var d:Date=new Date();
+				yy=d.getFullYear();
+				mm=d.getMonth()+1;//外国时间中月是0-11
+				var dateStr:String=yy+"-"+mm;
+				srvFlight.selectDailySchedule(dateStr);
+//				changeDate();
+			}
+			public function initLbls():void{
+				
+				for(var i:int=1;i<dg1.getChildren().length;i++){
+					var gr:GridRow=dg1.getChildAt(i) as GridRow;
+					for(var j:int=0;j<gr.getChildren().length;j++){
+						var gi:GridItem=gr.getChildAt(j) as GridItem;
+						gi.addEventListener(MouseEvent.CLICK,clickitem);
+						gi.doubleClickEnabled=true;
+						gi.addEventListener(MouseEvent.DOUBLE_CLICK,md_doubleClickHandler);
+						var lbl:Label=gi.getChildAt(0) as Label;
+						lbls.addItem(lbl);
+					}
+				}
+			}
+			//计算天数
+			private function getDays(y:int,m:int):int{
+				if(m==1||m==3||m==5||m==7||m==8||m==10||m==12) return 31;
+				if(m==4||m==6||m==9||m==11) return 30;
+				if(y%4==0 && y%100!=0) return 29;
+				if(y%400==0) return 29;
+				return 28;
+			}
+			//更改年月
+			public function setDate(y:int,m:int):void{
+				yy=y;
+				mm=m;
+				var dateStr1:String=yy+"-"+mm;
+				srvFlight.selectDailySchedule(dateStr1);
+//				changeDate();
+			}
+			//设置日期的信息
+			public function setDayInfo(d:int,text:String):void{
+				(lbls[firstDay+d-1] as Label).htmlText+=text;
+			}
+			//更新日期,查询该日期对应的日程计划
+			private function changeDate(obj:Object=null):void{
+//				lbls.removeAll();
+//				initLbls();
+				var d:Date=new Date(yy,mm-1);
+				var cd:Date=new Date();
+				firstDay=d.getDay();
+				var m:int=firstDay+getDays(yy,mm);
+				lblYear.text=yy+"年"+mm+"月";
+				for(var i:int=0;i<firstDay;i++){
+					(lbls[i] as Label).text="";
+					((lbls[i] as Label).parent as GridItem).enabled=false;
+					(lbls[i] as Label).enabled=false;
+					((lbls[i] as Label).parent as GridItem).setStyle("backgroundColor","#F8F4F4"); 
+					((lbls[i] as Label).parent as GridItem).doubleClickEnabled=false;
+				}  
+				for(var j:int=firstDay;j<m;j++){
+					var commentsStr:String="";
+					if(obj!=null){
+						if(obj.length>0){
+							var tempStr:String=yy+"-"+mm+"-"+(j-firstDay+1);
+							for(var f:int=0;f<obj.length;f++){
+								if(obj[f].dataMap.sch_datestr==tempStr){
+									if(obj[f].dataMap.comments!=null){
+										commentsStr="\r\n"+obj[f].dataMap.comments;
+									}
+								}
+							}
+						}
+					}
+				
+					(lbls[j] as Label).htmlText=""+(j-firstDay+1)+commentsStr;
+					(lbls[j] as Label).data=""+(j-firstDay+1);
+					(lbls[j] as Label).enabled=true;
+					((lbls[j] as Label).parent as GridItem).enabled=true;
+					((lbls[j] as Label).parent as GridItem).doubleClickEnabled=true;
+					if(j-firstDay+1==cd.getDate()&&mm==cd.getMonth()+1 && yy==cd.getFullYear()){
+						((lbls[j] as Label).parent as GridItem).setStyle("backgroundColor","#889988");
+						((lbls[j] as Label).parent as GridItem).data="haha";     
+					} 
+					else{
+						((lbls[j]as Label).parent as GridItem).setStyle("backgroundColor","#F8F4F4");
+						((lbls[j]as Label).parent as GridItem).data="";
+					}    
+				}
+				for(var k:int=m;k<lbls.length;k++){
+					(lbls[k] as Label).text="";
+					((lbls[k] as Label).parent as GridItem).enabled=false;
+					(lbls[k] as Label).enabled=false;
+					((lbls[k] as Label).parent as GridItem).setStyle("backgroundColor","#F8F4F4");
+					((lbls[k] as Label).parent as GridItem).doubleClickEnabled=false;
+				}
+				var o:Object=new Object();
+				o.year=yy;
+				o.month=mm+1;
+				o.data=dg1;
+				dispatchEvent(new ResultEvent("DateChange",false,true,o));//激发事件
+			}
+			private function mout(e:MouseEvent):void{
+				var gi:GridItem= e.currentTarget as GridItem;
+				if((gi.getChildAt(0) as Label).enabled)
+				{
+					if(gi.data==""){
+						gi.setStyle("backgroundColor","#F8F4F4");
+					}else{
+						if(gi.data.toString()=="haha"){
+							gi.setStyle("backgroundColor","#889988");//backgroundColor="#54D3EE"
+						}
+						else{
+							gi.setStyle("backgroundColor","#54D3EE");//backgroundColor="#54D3EE"
+						}
+					}
+				}
+			}
+			private function mv(e:MouseEvent):void{
+				var gi:GridItem= e.currentTarget as GridItem;
+				if((gi.getChildAt(0) as Label).enabled){
+					if(gi.data==""||gi.data=="haha"){
+						
+						if(gi.data.toString()=="haha"){
+							gi.setStyle("backgroundColor","#54D3EE");//backgroundColor="#54D3EE"
+						}
+						else{
+							gi.setStyle("backgroundColor","#54D3EE");//backgroundColor="#54D3EE"
+						}
+						
+					}
+				}   
+			} 
+			private function clickitem(e:MouseEvent):void{
+				var gi:GridItem= e.currentTarget as GridItem;
+				if(oldItem!=null){
+					if(oldItem.data!="haha"){
+						oldItem.data="";
+						oldItem.setStyle("backgroundColor","#F8F4F4");  
+					}
+				}
+				if(gi.data!="haha"){
+					gi.data="hehe";
+				}
+				gi.setStyle("backgroundColor","#54D3EE");
+				oldItem=gi;
+				
+				var d:int=int((gi.getChildAt(0) as Label).data);
+				var dd:Date=new Date(yy,mm,d);
+				var o:Object=new Object;
+				o.data=gi;//封装对象
+				o.date=yy+"-"+mm+"-"+d;//封装日期
+				dispatchEvent(new ResultEvent("ItemClick",false,true,o));
+			} 
+			
+			protected function md_doubleClickHandler(event:MouseEvent):void
+			{
+				var gi:GridItem= event.currentTarget as GridItem;
+				var d:int=int((gi.getChildAt(0) as Label).data);
+				var o:Object=new Object;
+				o.data=gi;//封装对象
+				o.date=yy+"-"+mm+"-"+d;//封装日期
+				dispatchEvent(new ResultEvent("DoubleClick",false,true,o));
+			}
+			
+			private function nextMonth(n:int):void{
+				mm+=n;
+				if(mm==13){
+					yy++;
+					mm=1;
+				}
+				if(mm==0)
+				{
+					yy--;
+					mm=12;
+				}
+				var tempDateStr:String=yy+"-"+mm;
+				srvFlight.selectDailySchedule(tempDateStr);
+			} 
+			
+			private function nextYear(n:int):void{
+				yy+=n;
+				var dateStr2:String=yy+"-"+mm;
+				srvFlight.selectDailySchedule(dateStr2);
+//				changeDate();
+			}
+			private function currentDate():void{
+				var d:Date=new Date();
+				yy=d.getFullYear();
+				mm=d.getMonth()+1;
+				var dateStr3:String=yy+"-"+mm;
+				srvFlight.selectDailySchedule(dateStr3);
+//				changeDate();
+			}
+			//	分页查询相关		begin
+			private function resultErrorForNextMonth(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("添加或修改操作失败！",SmartXMessage.MESSAGE_ERROR);
+			}	
+			
+			private function resultOkForNextMonth(event:ResultEvent):void 
+			{
+				var obj:Object=event.result;
+				if(obj.length>0){
+					changeDate(obj);
+				}else{
+					changeDate();
+				}
+				
+				OperatingTipUtil.endOperat();
+				
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="selectDailySchedule" result="resultOkForNextMonth(event)" 
+					   fault="resultErrorForNextMonth(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<mx:Canvas backgroundColor="#CEE2E8" width="100%" left="0" right="0" top="0" height="28" borderStyle="solid" borderThickness="1">
+		<mx:HBox width="100%">
+			<mx:HBox paddingLeft="11" width="100%">
+				<mx:Button  click="nextYear(-1);" label="上一年" />
+				<mx:Button  click="nextMonth(-1);"  label="上一月" />
+			</mx:HBox>
+			<mx:HBox horizontalAlign="center" width="100%">
+				<mx:Label id="lblYear" text="2015年3月 "  fontSize="14"/>
+				<mx:Button  click="currentDate()"  label="现在"/>
+			</mx:HBox>
+			<mx:HBox  horizontalAlign="right" width="100%" paddingRight="11">
+				<mx:Button  click="nextMonth(1);" label="下一月" />
+				<mx:Button  click="nextYear(1);" label="下一年" />
+			</mx:HBox>
+			
+		</mx:HBox>
+	</mx:Canvas>
+	<mx:Grid id="dg1" verticalGap="2" width="100%" height="100%" horizontalGap="2" top="30" bottom="3" left="3" right="3">
+		<mx:GridRow width="100%" height="20"  fontWeight="bold" color="#CB0538">
+			<mx:GridItem width="100%" height="100%"  borderStyle="solid" borderColor="#0125FD" borderThickness="0">
+				<mx:Label text="日"  width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="一" width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="二" width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="三" width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="四" width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="五" width="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD">
+				<mx:Label text="六" width="100%" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%" borderStyle="none" borderThickness="1">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label id="l1" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l2" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l3" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l4" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l5" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label id="l6" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l7"  text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label id="l8"  text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem  id="l9" width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem  id="l10" width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem  id="l11" width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l12" text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l13"  text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label  id="l14"  text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="100%">
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)" >
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="100%" textAlign="center"/>
+			</mx:GridItem>
+			<mx:GridItem width="100%" height="100%" borderStyle="solid" borderThickness="0" borderColor="#0125FD" mouseMove="mv(event)" mouseOut="mout(event)">
+				<mx:Label text="Label" width="100%" height="30" textAlign="center"/>
+			</mx:GridItem>
+		</mx:GridRow>  
+	</mx:Grid>
+</mx:Module>

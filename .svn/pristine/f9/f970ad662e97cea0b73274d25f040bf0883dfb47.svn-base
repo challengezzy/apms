@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="creationComplete()"
+				initialize="init()"
+				showCloseButton="true"
+				title="apu样本数据新增"
+				width="400" height="380" verticalGap="2"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var curMsgNo:String;
+			[Bindable]
+			public var pdiOld:String;
+			
+			[Bindable]
+			public var utcDate:String;
+			
+			[Bindable]
+			public var alterHour:String;
+			[Bindable]
+			public var alterCirculation:String;
+			[Bindable]
+			public var allhour:String;
+			[Bindable]
+			public var allCirculation:String;
+			[Bindable]
+			public var acnum:String;
+			[Bindable]
+			public var apu:String;
+			
+			public var chartName:String;
+			public var curObj:Object;
+			public var insertedFunc:Function;
+			
+			[Bindable]
+			public var datatype:String;
+			[Bindable]
+			public var comments:String;
+			[Bindable]
+			public var buttonLabel:String;
+		
+			
+			[Bindable]
+			private var apuDataType:ArrayCollection = new ArrayCollection();
+//			[
+//				{value:"1",desc:"正常"},
+//				{value:"2",desc:"性能衰退"},
+//				{value:"3",desc:"滑油冷却器"},
+//				{value:"4",desc:"散热器"}]
+		
+			private var apuChartDate:ArrayCollection = new ArrayCollection(
+				[
+					{chartName:"EGTA_COR(排气温度修正)",valField:"EGTA_MAX_COR"},
+					{chartName:"PT_COR(引气压力修正)",valField:"PT_MAX_COR"},
+					{chartName:"IGV(IGV角度)",valField:"IGV_MAX"},
+					{chartName:"APU自启动时间",valField:"STA_V1"},
+					
+					{chartName:"OTA(滑油温度)",valField:"OTA_MAX"},
+					{chartName:"(OT)OTA-LCIT温度",valField:"OT_MAX"},
+					{chartName:"LCIT_MAX(压气机进口温度)",valField:"LCIT_MAX"},
+					
+//					{chartName:"PT_COR(引气压力修正)",valField:"PT_MAX_COR"},
+//					{chartName:"IGV(IGV角度)",valField:"IGV_MAX"},
+					{chartName:"P2A_COR(压气机进口压力修正)",valField:"p2A_MAX_COR"},
+					{chartName:"WB_COR(引气流量kg/sec修正)",valField:"WB_MAX_COR"},
+					{chartName:"APR_COR(引气出口与进口的增压比修正)",valField:"APR_MAX"},
+
+					{chartName:"EGTP_COR(APU自启动EGT峰值修正)",valField:"EGTP_V1_COR"},
+					{chartName:"NPA_COR(APU自启动EGT峰值的转速%修正)",valField:"NPA_V1_COR"},
+//					{chartName:"APU自启动时间",valField:"STA_V1"},
+					{chartName:"EGTP(APU自启动EGT峰值)",valField:"EGTP_V1"},
+					{chartName:"NPA(APU自启动EGT峰值的转速%)",valField:"NPA_V1"},
+//					{chartName:"LCIT_MAX(压气机进口温度)",valField:"LCIT_MAX"},
+					{chartName:"ALT(气压海拔)",valField:"ALT"},
+					
+					
+					{chartName:"TAT(外界温度)",valField:"TAT"},
+//					{chartName:"ALT(气压海拔)",valField:"ALT"},
+//					{chartName:"LCIT_MAX(压气机进口温度)",valField:"LCIT_MAX"},
+					{chartName:"GLA_MAX(发电机负载%)",valField:"GLA_MAX"},
+					{chartName:"EGTA(排气温度)",valField:"EGTA_MAX"},
+//					{chartName:"EGTA_COR(排气温度修正)",valField:"EGTA_MAX_COR"},
+					{chartName:"PT_MAX(压气机进口温度)",valField:"PT_MAX"},
+//					{chartName:"PT_COR(引气压力修正)",valField:"PT_MAX_COR"},
+					{chartName:"P2A_MAX(压气机进口压力)",valField:"p2A_MAX"},
+//					{chartName:"P2A_COR(压气机进口压力修正)",valField:"p2A_MAX_COR"},
+					{chartName:"WB_MAX(引气流量kg/sec)",valField:"WB_MAX"},
+//					{chartName:"WB_COR(引气流量修正)",valField:"WB_MAX_COR"}
+				]			
+			);
+
+			
+			[Bindable]
+			public var exixt:Boolean;
+			private var formService:RemoteObject;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+
+			private var destination:String = ApmsUIConst.NEURALNETSERVICE;
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+
+
+			private function init():void{
+				formService = new RemoteObject(GlobalConst.SERVICE_FORM);
+				formService.endpoint = endpoint_Global;
+				formService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,SimpleHashVoArrayByDSHandler);					
+				formService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,function(event:FaultEvent):void{
+					SmartXMessage.show("获取样本数据分类失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				});
+				var realQuerySql:String = "select d.value, d.valuecn from b_dictionary d where d.classname = 'L_APU_TRAINDATA' and d.attributename = 'DATATYPE'";
+				formService.getSimpleHashVoArrayByDS(apmsDs,realQuerySql);
+			}
+			
+			private function SimpleHashVoArrayByDSHandler(event:ResultEvent):void{
+				var dateTypeArray:Array = event.result as Array;
+				for(var i:int = 0;i<dateTypeArray.length;i++){
+					var dateTypeHashVo:SimpleHashVO = dateTypeArray[i];
+					var dateTypeMap:Object = dateTypeHashVo.dataMap;
+					apuDataType.addItemAt({value:dateTypeMap["value"],desc:dateTypeMap["valuecn"]},i);  
+				}
+				if(datatype!= null){
+					for each(var obj:Object in apuDataType){
+						if(datatype == obj.value){
+							dataTypeCmb.selectedItem  = obj;
+						}
+					}
+				}
+				trace("............");
+			}
+			private function creationComplete():void
+			{	
+				firstText.text = pdiOld;
+				date.text = utcDate;
+				AlterHour.text = alterHour;
+				AlterCirculation.text = alterCirculation;
+				Allhour.text = allhour;
+				AllCirculation.text = allCirculation;
+				Acnum.text = acnum;
+				Apu.text = apu;
+				
+				for each(var obj:Object in apuChartDate){
+					if(chartName == obj.chartName){
+						firstLable.text =obj.valField + ":";
+						firstText.text = curObj[obj.valField];
+					}
+				}
+				
+				if(comments!=null){
+					explain.text = comments;
+				}
+				if(buttonLabel!=null){
+					cardSaveButton.label = buttonLabel; 
+				}
+				if(cardSaveButton.label == "添加"){
+				
+					cardSaveButton.addEventListener(MouseEvent.CLICK, insertTrainData);
+				}else{
+					cardSaveButton.addEventListener(MouseEvent.CLICK, updateTrainData);
+				}
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				//远程服务添加监听
+				formService.insertApuTraindata.addEventListener(ResultEvent.RESULT,insertApuTraindataHandler);
+				formService.insertApuTraindata.addEventListener(FaultEvent.FAULT,insertApuTraindataErrorHandler);	
+				formService.updateApuTraindata.addEventListener(ResultEvent.RESULT,updateApuTraindataHandler);
+				formService.updateApuTraindata.addEventListener(FaultEvent.FAULT,updateApuTraindataErrorHandler);
+				
+			}
+			
+			
+			private function insertApuTraindataHandler(event:ResultEvent):void 
+			{
+				var res:Object = event.result;
+
+				if(res == true){
+					SmartXMessage.show("该点已存在样本数据 请勿重复添加！");
+					return;
+				}
+				
+				if( dataTypeCmb.selectedItem.value != "0")
+				curObj["ISEXIST"] = "1";
+				
+				curObj["DATATYPE"] = dataTypeCmb.selectedItem.value; 
+				curObj["COMMENTS"] = explain.text; 
+				
+				SmartXMessage.show("添加成功！");
+				PopUpManager.removePopUp(this);	
+				insertedFunc();
+			}
+			
+			private function updateApuTraindataHandler(event:ResultEvent):void 
+			{
+				var res:Object = event.result;
+				
+				curObj["ISEXIST"] = "1";
+				curObj["DATATYPE"] = dataTypeCmb.selectedItem.value; 
+				curObj["COMMENTS"] = explain.text; 
+				
+				SmartXMessage.show("更新成功！");
+				PopUpManager.removePopUp(this);
+				
+			}
+			
+			private function insertApuTraindataErrorHandler(event:FaultEvent):void
+			{
+				SmartXMessage.show("插入样本数据失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function updateApuTraindataErrorHandler(event:FaultEvent):void
+			{
+				SmartXMessage.show("更新失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			
+			protected function insertTrainData(event:MouseEvent):void
+			{
+				formService.insertApuTraindata(curMsgNo,dataTypeCmb.selectedItem.value,explain.text,user);			
+			}
+			
+			protected function updateTrainData(event:MouseEvent):void
+			{
+				formService.updateApuTraindata(curMsgNo,dataTypeCmb.selectedItem.value,explain.text,user);			
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label id="firstLable" text="PDI旧:" width = "60"  textAlign="right"/>
+					 
+			<mx:Text id="firstText" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="日期:" width = "60" textAlign="right"/>
+			<mx:Text id="date" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="修改小时:" width = "60" textAlign="right" />
+			<mx:Text id="AlterHour" width = "100"/>
+			<mx:Label text="修改循环:" width = "60" textAlign="right" />
+			<mx:Text id="AlterCirculation" /> 
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="总小时:" width = "60" textAlign="right" />
+			<mx:Text id="Allhour"  width = "100" />
+			<mx:Label text="总循环:" width = "60" textAlign="right" />
+			<mx:Text id="AllCirculation" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="机号:" width = "60" textAlign="right"/>
+			<mx:Text id="Acnum"  width = "100" />
+			<mx:Label text="APU:" width = "60" textAlign="right" />
+			<mx:Text id="Apu" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="数据类型:" textAlign="left"/>
+			<mx:ComboBox id="dataTypeCmb" dataProvider="{apuDataType}" labelField="desc" />
+		</mx:HBox>
+		<mx:VBox horizontalAlign="left" verticalAlign="top" width="100%" paddingLeft="10" paddingBottom="1">
+			<mx:Label text="说明:" width = "60" textAlign="right" />
+			<mx:TextArea width="350" height="100" id="explain" ></mx:TextArea>
+		</mx:VBox>
+		<mx:HBox width="100%" id="cardButtonBox"  horizontalAlign="center" verticalAlign="middle">
+			<mx:Button id="cardSaveButton" label="添加" toolTip="保存至样本库" icon="{AssetsFileLib.saveIcon}"/>
+			<mx:Button id="cardCancelButton" label="关闭" toolTip="关闭窗口" click="PopUpManager.removePopUp(this)" icon="{AssetsFileLib.closeIcon}"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</mx:TitleWindow>
+
+

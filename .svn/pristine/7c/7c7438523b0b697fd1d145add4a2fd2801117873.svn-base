@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+		 paddingTop="40" horizontalAlign="center"
+		 width="100%" height="100%" fontSize="24" creationComplete="Init()">
+	<mx:Script>
+		<![CDATA[
+		 
+			import mx.collections.ArrayCollection;
+			
+			import myreport.ReportDesigner;
+			import myreport.ReportEngine;
+			import myreport.ReportViewer;
+			
+			
+			private function Init():void
+			{
+				
+			}
+			
+			/**
+			 * @param cmd: 0编辑, 1预览, 2直接打印
+			 */
+			private function HandleReport(mode:int):void
+			{
+				var url:String = "testXml/SubReportRowStyle2.xml";
+				var table:* = null;
+				var params:* = GetParameterData();
+				
+				switch(mode)
+				{
+					case 0://编辑
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportDesigner.Instance.Show(url, table, params);
+						break;
+					case 1://预览
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportViewer.Instance.Show(url, table, params);
+						break;
+					case 2://直接打印
+						myreport.ReportEngine.LoadAndPrintAsync(url, table, params);
+						break;
+				}
+				
+			}
+			private function GetParameterData():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				dict["主标题"] = "接机信息表";
+				dict["日期"] = new Date(2011, 10, 15);
+				dict["航班日期"] = "2014-09-03";
+				dict["航班号"] = "CA343";
+				dict["机号"] = "B2344";
+				dict["机型"] = "N434-456";
+				dict["经停航站"] = "上海/北京";
+				dict["维护"] = "fdsfs";
+				dict["计划到达/起飞"] = "2014-09-03";
+				dict["机位"] = "CA343";
+				dict["预达"] = "B2344";
+				dict["预起"] = "N434-456";
+				dict["接机人"] = "XXX,XXX,XXX,XXX";
+				dict["子报表1表格"] = GetSubReportTableData1();
+				dict["子报表1参数"] = GetSubReportParameterData1();
+				dict["子报表2表格"] = GetSubReportTableData2();
+				dict["子报表2参数"] = GetSubReportParameterData2();
+				dict["子报表3表格"] = GetSubReportTableData3();
+				dict["子报表3参数"] = GetSubReportParameterData3();
+				dict["子报表4表格"] = GetSubReportTableData4();
+				dict["子报表4参数"] = GetSubReportParameterData4();
+				
+				return dict;
+			}
+		 
+			/** 准备子报表1表格数据 */ 
+			private function GetSubReportTableData1():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+//				for(var i=0;i<10;i++)
+//				{
+//					list.addItem(
+//						{
+//							单价:"8888",
+//							单位:"中文",
+//							数量:"8888",
+//							金额:"8888"
+//						});
+//				}
+				list.addItem(
+					{
+						DD单号: "12321", 故障报告: "商品信息XXX 规格XXX 型号XXX", 措施: "cdscds", "M项": "M"
+					});
+				list.addItem(
+					{
+						DD单号: "12321", 故障报告: "商品信息XXX 规格XXX 型号XXX", 措施: "cdscds", "M项": "M"
+					});
+				
+				return list;
+			}
+			/** 准备子报表1参数数据 */ 
+			private function GetSubReportParameterData1():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "DD单信息";
+				
+				return dict;
+			}
+			/** 准备子报表2表格数据 */ 
+			private function GetSubReportTableData2():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				
+				list.addItem(
+					{
+						提示类型:"提示",提示信息:"fdsfsdfdsfdssssssfdssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",反馈结果:"dfsafsad"
+					});
+				list.addItem(
+					{
+						提示类型:"提示",提示信息:"fdsfsdfds",反馈结果:"dfsafsad"
+					});
+				list.addItem(
+					{
+						提示类型:"提示",提示信息:"fdsfsdfds",反馈结果:"dfsafsad"
+					});
+				
+				return list;
+			}
+			/** 准备子报表3表格数据 */ 
+			private function GetSubReportTableData3():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				
+				list.addItem(
+					{
+						类型:"提醒内容",故障源:"fdsfsdfds",故障内容:"dfsafsad"
+					});
+				list.addItem(
+					{
+						类型:"提示",故障源:"fdsfsdfds",故障内容:"dfsafsad"
+					});
+				
+				
+				
+				return list;
+			}
+			/** 准备子报表4表格数据 */ 
+			private function GetSubReportTableData4():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				
+				list.addItem(
+					{
+						提醒内容:"提醒内容dfsafsad"
+					});
+				list.addItem(
+					{
+						提醒内容:"提醒内容dfsafsad"
+					});
+				list.addItem(
+					{
+						提醒内容:"提醒内容dfsafsad"
+					});
+				
+				return list;
+			}
+			/** 准备子报表2参数数据 */ 
+			private function GetSubReportParameterData2():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "提醒单信息";
+				
+				return dict;
+			}
+			/** 准备子报表3参数数据 */ 
+			private function GetSubReportParameterData3():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "CFD信息";
+				
+				return dict;
+			}
+			/** 准备子报表4参数数据 */ 
+			private function GetSubReportParameterData4():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "机位提醒信息";
+				
+				return dict;
+			}
+			
+		]]>
+	</mx:Script>
+
+	<mx:Label text="演示子报表行功能，在1个报表里设计显示多个表格数据" width="100%" textAlign="center"/>
+	<mx:Label text="效果与“报表嵌套2”示例相似" width="100%" textAlign="center"/>
+	<mx:Button label="打印预览" click="HandleReport(1)"/>
+	<mx:Button label="直接打印" click="HandleReport(2)"/>
+	<mx:Button label="编辑报表" click="HandleReport(0)"/>
+</mx:VBox>

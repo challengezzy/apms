@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="100%" height="600" verticalGap="1" xmlns:core="smartx.flex.components.core.*"
+					   title="A07CFM报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;	
+			import flash.text.engine.TabAlignment;	
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import com.apms.flex.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			//绑定表格用的数据    
+			[Bindable]  
+			private var arr:ArrayCollection;
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a07cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a07cData:Object;//译后报文内容
+			[Bindable]
+			public var  dataGridWith:Number;
+			private function creationComplete():void
+			{
+				dataGridWith=(dg.width-50)/11;	
+				a07cData = a07cvo.dataMap;	
+				telegraphContent=a07cData.tel_content;	
+				arr= new ArrayCollection([  
+					{s:"S1",n1:a07cData.n1_s1, n2:a07cData.n2_s1 , vn:a07cData.vn_s1,vc:a07cData.vc_s1,vh:a07cData.vh_s1,vl:a07cData.vl_s1,pha:a07cData.pha_s1,pht:a07cData.pht_s1,oit:a07cData.oit_s1,oip:a07cData.oip_s1},  
+					{s:"S2",n1:a07cData.n1_s2, n2:a07cData.n2_s2 , vn:a07cData.vn_s2,vc:a07cData.vc_s2,vh:a07cData.vh_s2,vl:a07cData.vl_s2,pha:a07cData.pha_s2,pht:a07cData.pht_s2,oit:a07cData.oit_s2,oip:a07cData.oip_s2},  
+					{s:"S3",n1:a07cData.n1_s3, n2:a07cData.n2_s3 , vn:a07cData.vn_s3,vc:a07cData.vc_s3,vh:a07cData.vh_s3,vl:a07cData.vl_s3,pha:a07cData.pha_s3,pht:a07cData.pht_s3,oit:a07cData.oit_s3,oip:a07cData.oip_s3},  
+					{s:"S4",n1:a07cData.n1_s4, n2:a07cData.n2_s4 , vn:a07cData.vn_s4,vc:a07cData.vc_s4,vh:a07cData.vh_s4,vl:a07cData.vl_s4,pha:a07cData.pha_s4,pht:a07cData.pht_s4,oit:a07cData.oit_s4,oip:a07cData.oip_s4},  
+					{s:"S5",n1:a07cData.n1_s5, n2:a07cData.n2_s5 , vn:a07cData.vn_s5,vc:a07cData.vc_s5,vh:a07cData.vh_s5,vl:a07cData.vl_s5,pha:a07cData.pha_s5,pht:a07cData.pht_s5,oit:a07cData.oit_s5,oip:a07cData.oip_s5},  
+					{s:"S6",n1:a07cData.n1_s6, n2:a07cData.n2_s6 , vn:a07cData.vn_s6,vc:a07cData.vc_s6,vh:a07cData.vh_s6,vl:a07cData.vl_s6,pha:a07cData.pha_s6,pht:a07cData.pht_s6,oit:a07cData.oit_s6,oip:a07cData.oip_s6},  
+					{s:"S7",n1:a07cData.n1_s7, n2:a07cData.n2_s7 , vn:a07cData.vn_s7,vc:a07cData.vc_s7,vh:a07cData.vh_s7,vl:a07cData.vl_s7,pha:a07cData.pha_s7,pht:a07cData.pht_s7,oit:a07cData.oit_s7,oip:a07cData.oip_s7},  
+					{s:"S8",n1:a07cData.n1_s8, n2:a07cData.n2_s8 , vn:a07cData.vn_s8,vc:a07cData.vc_s8,vh:a07cData.vh_s8,vl:a07cData.vl_s8,pha:a07cData.pha_s8,pht:a07cData.pht_s8,oit:a07cData.oit_s8,oip:a07cData.oip_s8},  
+					{s:"S9",n1:a07cData.n1_s9, n2:a07cData.n2_s9 , vn:a07cData.vn_s9,vc:a07cData.vc_s9,vh:a07cData.vh_s9,vl:a07cData.vl_s9,pha:a07cData.pha_s9,pht:a07cData.pht_s9,oit:a07cData.oit_s9,oip:a07cData.oip_s9},  
+					{s:"S0",n1:a07cData.n1_s0, n2:a07cData.n2_s0 , vn:a07cData.vn_s0,vc:a07cData.vc_s0,vh:a07cData.vh_s0,vl:a07cData.vl_s0,pha:a07cData.pha_s0,pht:a07cData.pht_s0,oit:a07cData.oit_s0,oip:a07cData.oip_s0},  
+				]); 
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A07 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+	<mx:HDividedBox id="contentBox" width="900" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3"  label="报文信息">
+		<mx:VBox width="30%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="70%" height="100%" verticalGap="1">
+			<mx:HBox width="100%">
+				<mx:Label text="译后报文 ENGINE GAS PATH ADV REPORT (07)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="ENGINE CRUISE REPORT(07)" fontWeight="bold" />
+			</mx:HBox>
+			<report:ReportHeaderPanel headHashVo="{a07cvo}" height="190"/>
+			<mx:HBox>
+				<report:TwoValuesReportPanel   name1ToVisible="false" leftVal="EC" rightVal="EE" boxWidth="30"/>
+				<report:TwoValuesReportPanel  englishName="ESN" name1ToVisible="false" leftVal="{a07cData.esn_1}" rightVal="{a07cData.esn_2}"/>
+				<report:TwoValuesReportPanel  englishName="EHRS" name1ToVisible="false" leftVal="{a07cData.ehrs_1}" rightVal="{a07cData.ehrs_2}"/>
+				<report:TwoValuesReportPanel  englishName="ERT" name1ToVisible="false" leftVal="{a07cData.ert_1}" rightVal="{a07cData.ert_2}"/>
+				<report:TwoValuesReportPanel  englishName="ECYC" name1ToVisible="false" leftVal="{a07cData.ecyc_1}" rightVal="{a07cData.ecyc_2}"/>
+				<report:TwoValuesReportPanel  englishName="AP" name1ToVisible="false" leftVal="{a07cData.ap_1}" rightVal="{a07cData.ap_2}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a07cData.ecw1_1}" rightVal="{a07cData.ecw2_2}"/>
+
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="LIMIT EXCEEDANCE SUMMARY" fontWeight="bold" />
+			</mx:HBox>
+			
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" valToVisible="false" rightVal="N1" boxWidth="30"/>
+				<report:TwoValuesReportPanel  englishName="E" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.e}"/>
+				<report:TwoValuesReportPanel  englishName="MAX" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.max}"/>
+				<report:TwoValuesReportPanel  englishName="LIM" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.lim}"/>
+				<report:TwoValuesReportPanel  englishName="REF" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.ref}"/>
+				<report:TwoValuesReportPanel  englishName="TOL" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.tol}"/>
+				<report:TwoValuesReportPanel  englishName="TTP" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.ttp}"/>
+				<report:TwoValuesReportPanel  englishName="EVM" name1ToVisible="false" valToVisible="false" rightVal="{a07cData.evm}"/>
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="PRE EVENT, Y07.1 SEC INTERVALS" fontWeight="bold" />
+			</mx:HBox>
+			
+			<s:DataGrid id="dg" width="100%" height="100%"  dataProvider="{arr}"  sortableColumns="false">
+				<s:columns>
+					<s:ArrayList> 
+						<s:GridColumn dataField="s" headerText="" width="{dataGridWith}"/>
+						<s:GridColumn dataField="n1" headerText="N1" width="{dataGridWith}"/>
+						<s:GridColumn dataField="n2" headerText="N2" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vn" headerText="VN" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vc" headerText="VC" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vh" headerText="VH" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vl" headerText="VL" width="{dataGridWith}"/>
+						<s:GridColumn dataField="pha" headerText="PHA" width="{dataGridWith}"/>
+						<s:GridColumn dataField="pht" headerText="PHT" width="{dataGridWith}"/>
+						<s:GridColumn dataField="oit" headerText="OIT" width="{dataGridWith}"/>
+						<s:GridColumn dataField="oip" headerText="OIP" width="{dataGridWith}"/>
+					</s:ArrayList> 
+				</s:columns>
+			</s:DataGrid>
+			
+				
+		</mx:VBox>
+	</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a07cData.acmodel}" rptno="A07"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

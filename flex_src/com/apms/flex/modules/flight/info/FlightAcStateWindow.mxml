@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="800" height="500" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="飞机状态查询反馈" allowDrag="true" allowClose="true" 
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightACStateAdd" result="result4flightACStateAdd(event)" 
+					   fault="fault4flightACStateAdd(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var flightObj:Object;
+			public var selectedReporterIndex:int=0;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			[Bindable]
+			private var flightArr:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var querySql:String = "";
+
+			private var fltpk_a:String = "";
+			private var fltpk_d:String = "";
+			private var flightno_a:String = "";
+			private var flightno_d:String = "";
+			
+			private var flightid:String = "";
+			private var flightno:String = "";
+			private var state:String = "";
+			private var statename:String = "";
+			
+			[Bindable]
+			public var reporterArr:ArrayCollection;
+			
+			[Bindable]
+			private var stateArr:ArrayCollection = new ArrayCollection([
+				{value:"10",desc:"放行"},{value:"20",desc:"关舱"},
+				{value:"30",desc:"推出"},{value:"40",desc:"起飞"},{value:"50",desc:"空中"},
+				{value:"60",desc:"落地"},{value:"70",desc:"靠桥"},{value:"80",desc:"开舱"}]);
+			
+			private function creationComplete():void
+			{
+				listPanel.refresh();
+				dateState.text = DateUtil.dateToString(new Date(),1);
+				txtReporter.selectedIndex=selectedReporterIndex;
+				cmbFlightno.selectedIndex=flightArr.length-1;
+			}
+			
+			public function setFlightValue(value:Object):void{
+				
+				flightArr = new ArrayCollection();
+				this.flightObj = value;
+				
+				fltpk_a = flightObj["flt_pk_a"];
+				fltpk_d = flightObj["flt_pk_d"];
+				flightno_a = flightObj["flightno_a"];
+				flightno_d = flightObj["flightno_d"];
+				
+				var flightIdCondStr:String = "0";
+				if(fltpk_a != null && fltpk_a != ""){
+					var fltaObj:Object = new Object();
+					fltaObj["value"] = fltpk_a;
+					fltaObj["desc"] = flightno_a;
+					
+					flightArr.addItem( fltaObj );
+					flightIdCondStr += ","+fltpk_a;
+				}
+				
+				if(fltpk_d != null && fltpk_d != ""){
+					var fltdObj:Object = new Object();
+					fltdObj["value"] = fltpk_d;
+					fltdObj["desc"] = flightno_d;
+					
+					flightArr.addItem( fltdObj );
+					flightIdCondStr += ","+fltpk_d;
+				}
+				
+				querySql = "select t.flightid, t.flightno, t.state"
+				querySql += " ,(select d.valuecn from b_dictionary d where d.classname='FLIGHTSCHEDULE' AND d.attributename='ACSTATE' AND D.VALUE= t.state ) STATE_NAME";
+				querySql += " ,reporter, comments, to_char(t.updatetime, 'YYYY-MM-DD HH24:MI:SS')";
+				querySql += " updatetime, t.updateuser from f_ac_state t where ";
+				
+				querySql += " flightid = any ("+ flightIdCondStr + ") order by t.flightno,updatetime desc";
+				if (listPanel!=null){
+					listPanel.refresh();
+					clearCardValue();
+				}
+				
+			}
+			
+			private function clearCardValue():void{
+				
+				cmbFlightno.selectedIndex=flightArr.length-1;
+				cmbFlightState.selectedIndex = 1;
+				txtComments.text = "";
+				txtReporter.selectedIndex=selectedReporterIndex;
+				
+				dateState.text = DateUtil.dateToString(new Date(),1);
+			}
+			
+			protected function onAddStateHandler(event:MouseEvent):void
+			{
+				var fltObj:Object = cmbFlightno.selectedItem;
+				if(fltObj == null){
+					SmartXMessage.show("航班号不能为空!");
+					return;
+				}
+				if(cmbFlightState.selectedItem == null){
+					SmartXMessage.show("状态不能为空!");
+					return;
+				}
+				
+				if(txtReporter.text == null || txtReporter.text == ""){
+					SmartXMessage.show("报告人不能为空!");
+					return;
+				}
+				
+				if(dateState.text == null || dateState.text == ""){
+					SmartXMessage.show("状态时间不能为空!");
+					return;
+				}
+				
+				flightid = fltObj.value;
+				flightno = fltObj.desc;
+				state = cmbFlightState.selectedItem.value;
+				statename = cmbFlightState.selectedItem.desc;
+				
+				srvFlight.flightACStateAdd(flightid, flightno, state, dateState.nowTime, txtReporter.text, txtComments.text,user);
+				OperatingTipUtil.startOperat("正在新增飞机状态!");
+			}
+			
+			private function fault4flightACStateAdd(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("新增航班["+flightno+"]状态["+statename+"]失败！",SmartXMessage.MESSAGE_ERROR);
+			}	
+			
+			private function result4flightACStateAdd(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("新增航班["+flightno+"]状态["+statename+"]成功！");
+				listPanel.refresh();
+				clearCardValue();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingTop="15">
+		<mx:VBox label="飞机状态表" width="100%" height="100%" id="flightStatePanel" >
+			<mx:HBox width="100%" height="30" paddingLeft="15" >
+				<s:Spacer width="10" />
+				<mx:Label text="航班号" width="60" color="red"/>
+				<mx:ComboBox id="cmbFlightno" dataProvider="{flightArr}" labelField="desc" color="red" width="140" />
+				<s:Spacer width="10" />
+				<mx:Label text="状态" width="60" />
+				<mx:ComboBox id="cmbFlightState" dataProvider="{stateArr}" selectedIndex="1" labelField="desc" color="red" width="140" />
+				<s:Spacer width="10" />
+				<mx:Label text="状态时间" width="60" />
+				<component:DateTimeChooser id="dateState" editable="true" formatterType="1"/>
+				
+			</mx:HBox>
+			<mx:HBox width="100%" height="30" paddingLeft="15" >
+				<s:Spacer width="10" />
+				<mx:Label text="报告人" width="60" />
+				<mx:ComboBox id="txtReporter" dataProvider="{reporterArr}" labelField="value" color="red" width="140" />
+				<s:Spacer width="10" />
+				<mx:Label text="备注" width="60" />
+				<mx:TextInput id="txtComments" editable="true" width="140" text="" />
+				<s:Spacer width="20" />
+				
+				<mx:Button icon="{AssetsFileLib.insertIcon}" label="状态添加" click="onAddStateHandler(event)" />
+			</mx:HBox>
+			<component:AdvDataGridPanel id="listPanel" paddingTop="3" width="100%" height="100%"  
+										showPageBox="false"
+										sql="{querySql}" dataSource="{ApmsUIConst.DATASOURCE_APMS}">
+				<component:columns>			
+					<mx:DataGridColumn dataField="flightno" headerText="航班号" width="90"/>
+					<mx:DataGridColumn dataField="state_name" headerText="状态" width="90"/>
+					<mx:DataGridColumn dataField="updatetime" headerText="状态时间" width="160"/>
+					<mx:DataGridColumn dataField="reporter" headerText="报告人" width="100"/>
+					<mx:DataGridColumn dataField="comments" headerText="备注" width="150"/>
+					<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="60"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+			<s:Spacer height="5" />
+			<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+				<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+			</mx:HBox>			
+		</mx:VBox>
+	</mx:VBox>
+	
+	
+</containers:SuperPanel>

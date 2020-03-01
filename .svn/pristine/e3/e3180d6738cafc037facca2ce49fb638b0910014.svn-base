@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="1000" height="550"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="航班重要变动信息" 
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*"
+					   xmlns:component="com.apms.flex.component.*" xmlns:datagrid="com.cool.components.datagrid.*" 
+					   >
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightChangeBoardCast" result="result4flightChangeBoardCast(event)" 
+					   fault="fault4flightChangeBoardCast(event)">
+			</mx:method>
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.flight.vo.FlightConstVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var color_orange:uint = 0xFF9900;//橙色
+			private var color_green:uint = 0x99CC33;//淡绿色
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			private var qryStr:String = "";
+			
+			[Bindable]
+			private var qrysql:String = "";
+			
+			public var aptCode:String = "";
+			public var reporter:String = "";
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				txtReporter.text=reporter;
+				queryColumns.push("flightno");
+				queryColumns.push("changetype_name");
+				
+				changeListDg.dataListGrid.addEventListener(ListEvent.CHANGE,onChgListItemClickHander);
+				
+				changeListDg.refresh();
+				
+				changeListDg.removeQueryPanel();
+			}
+			
+			public function refreshData():void{
+				qryStr =  " select id, flightid, flightno, acnum, acmodel, dep_apt, arr_apt, ctd, cta, flightdate, flightdate_short";
+				qryStr += " , changetype_name, changetype, changetime, changetime_str, needboardcast, isboardcast";
+				qryStr += " , needboardcast_name, isboardcast_name, changecontent, recipient,boardcasttime_str";
+				qryStr += " ,dep_apt_name, arr_apt_name ";
+				qryStr += " , comments, updatetime, updateuser  ";
+				qryStr += " from v_flight_importantchange t where 1=1 "; //未报时确认
+				qryStr += " and ( dep_apt='"+aptCode+"' or arr_apt='"+aptCode+"' )";
+				
+				qrysql = qryStr;
+				if(changeListDg != null){
+					changeListDg.refresh();
+				}
+				
+				
+			}
+			
+			private function onChgListItemClickHander(event:ListEvent):void{
+				var chgObj:Object = changeListDg.getSelectedRowValue();
+				txtContent.text = chgObj["changecontent"];
+				txtRecipient.text = chgObj["recipient"];
+				
+				var bdTime:String = chgObj["boardcasttime_str"];
+				
+				if(bdTime != null && bdTime != ""){
+					dateBd.text = bdTime;
+				}else{
+					dateBd.text = DateUtil.dateToString(new Date(),1);;
+				}
+				
+			}
+			
+			protected function onChangeBoardcastClickHandler(event:MouseEvent):void
+			{
+				if(txtRecipient.text == null || txtRecipient.text == "" ){
+					SmartXMessage.show("请填写通报接收人!");
+					return ;
+				}
+				
+				if(txtReporter.text == null || txtReporter.text == "" ){
+					SmartXMessage.show("请填写通报人!");
+					return ;
+				}
+				
+				if(changeListDg.getSelectedRowValue() != null){
+					var row:Object = changeListDg.getSelectedRowValue();
+					var changelogId:String = row["id"];
+					var flightid:String = row["flightid"];
+					var flightno:String = row["flightno"];
+					var changetype_name:String = row["changetype_name"];
+					var changecontent:String = row["changecontent"];
+					
+					srvFlight.flightChangeBoardCast(changelogId,txtRecipient.text, txtReporter.text, dateBd.nowTime
+							,flightid,flightno, changetype_name,changecontent);
+					
+					OperatingTipUtil.startOperat("正在更新通报状态");
+				}else{
+					SmartXMessage.show("请选择一条变动记录");
+				}
+				
+			}
+			
+			
+			protected function onChangeConfirmClickHandler(event:MouseEvent):void
+			{
+				var dgArr:ArrayCollection = changeListDg.dataListGrid.dataProvider as ArrayCollection;
+				var i:int=0;
+				var confirmArr:ArrayCollection = new ArrayCollection();
+				for( i=0; i<dgArr.length; i=i+1 )
+				{
+					var row:Object = dgArr.getItemAt(i);
+					if( row.isChecked == true && row["isboardcast_name"] == "否" )
+					{
+						var confirmObj:Object = new Object;
+						
+						confirmObj["ID"]= row["id"];
+						confirmObj["RECIPIENT"]= "batch confirm";
+						confirmObj["BDTIME"] = DateUtil.dateToString(new Date(),1);
+						confirmArr.addItem(confirmObj);
+					}
+				}
+				
+				if(confirmArr.length > 0){
+					var changelogId:String = row["id"];
+				
+					srvFlight.flightChangeBatchConfirm(reporter, confirmArr);
+					OperatingTipUtil.startOperat("确认处理中...");
+				}else{
+					SmartXMessage.show("所选变动信息均已确认，无需再确认！");
+				}
+				
+				
+			}
+			
+			private function fault4flightChangeBoardCast(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班变动通报失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4flightChangeBoardCast(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班变动通报成功！");
+				changeListDg.refresh();
+			}
+			
+			private function rowColorChangelog(item:Object, rowIndex:int,dataIndex:int, color:uint):uint{
+				
+				var needbd:String = item["needboardcast_name"];
+				var isbd:String = item["isboardcast_name"];
+				
+				if( isbd == "否" && needbd == "是" ){
+					var depapt:String = item["dep_apt"];
+					var arrapt:String = item["arr_apt"];
+					var chgtype:String = item["changetype"];
+					
+					//进港changetype=any(200,10,20,40,50,300,400);
+					if(depapt == aptCode){
+						if(chgtype=="200" || chgtype=="10" || chgtype=="20" || chgtype=="40" 
+							|| chgtype=="50" || chgtype=="300" || chgtype=="400"){
+							return color_orange;
+						}else{
+							return color_green;
+						}
+					}
+					
+					//离港changetype=any(200,10,25,30,45,55,300,450);
+					if(arrapt == aptCode){
+						if(chgtype=="200" || chgtype=="10" || chgtype=="25" || chgtype=="30" 
+							|| chgtype=="45" || chgtype=="55" || chgtype=="300" || chgtype=="450" ){
+							return color_orange
+						}else{
+							return color_green;
+						}
+					}
+					
+				}else if(isbd == "否" && needbd == "否"){
+					return 0x99CC33; //绿
+				}
+				
+				return color;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" horizontalAlign="center" verticalAlign="middle" height="100%" paddingTop="10" paddingBottom="5" paddingLeft="5" paddingRight="5">
+			<component:AdvDataGridPanel id="changeListDg" width="100%" height="100%" sql="{qrysql}" searchCondVisible="true" 
+										rowColorFunction="{rowColorChangelog}"
+										dataSource="{ApmsUIConst.DATASOURCE_APMS}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<!--
+					<datagrid:CheckBoxColumn id="columnIsChecked"
+											 itemRenderer="com.cool.components.datagrid.CheckBoxItemRenderer" 
+											 headerRenderer="com.cool.components.datagrid.CheckBoxHeaderRenderer" 
+											 editable="true" editorDataField="selected"
+											 width="35" dataField="isChecked" rendererIsEditor="true">
+						
+					</datagrid:CheckBoxColumn>
+					-->
+					<mx:DataGridColumn dataField="flightdate_short" headerText="航班日期" width="80"/>
+					<mx:DataGridColumn dataField="flightno" headerText="航班号" width="70"/>
+					<mx:DataGridColumn dataField="changetype_name" headerText="变动类型" width="80"/>
+					<mx:DataGridColumn dataField="changecontent" headerText="变动内容" width="200"/>
+					<mx:DataGridColumn dataField="changetime_str" headerText="变动时间" width="100"/>
+					<mx:DataGridColumn dataField="acnum" headerText="机号" width="60"/>
+					<mx:DataGridColumn dataField="acmodel" headerText="机型" width="60"/>
+					<mx:DataGridColumn dataField="recipient" headerText="接收人" width="70"/>
+					<mx:DataGridColumn dataField="dep_apt_name" headerText="离港" width="70"/>
+					<mx:DataGridColumn dataField="arr_apt_name" headerText="到港" width="70"/>
+					<!--
+					<mx:DataGridColumn dataField="needboardcast_name" headerText="需要报时" width="60"/>
+					<mx:DataGridColumn dataField="isboardcast_name" headerText="已报时" width="60"/>
+					-->
+				</component:columns>
+			</component:AdvDataGridPanel>
+			<mx:HRule width="100%" />
+			<mx:HBox width="100%">
+				<mx:Label text="变动内容" />
+				<mx:TextArea id="txtContent" width="90%" height="50" paddingTop="5" paddingLeft="10" editable="false">
+				</mx:TextArea>
+			</mx:HBox>
+			<mx:HBox width="100%" height="35" verticalAlign="middle">
+				<mx:Label text="通报时间"  color="red"/>
+				<component:DateTimeChooser id="dateBd" editable="true" formatterType="1"/>
+				<mx:Label text="通报人" width="50" color="red" />
+				<mx:TextInput id="txtReporter" editable="true"  width="120" fontWeight="bold" color="red"/>
+				<s:Spacer width="10" />
+				<s:Spacer width="10" />
+				<mx:Label text="通报接收人" width="70" color="red"/>
+				<mx:TextInput id="txtRecipient" editable="true" width="120" fontWeight="bold" color="red"/>
+				<s:Spacer width="20" />
+				<mx:Button label="报时并确认" click="onChangeBoardcastClickHandler(event)" />
+			</mx:HBox>
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

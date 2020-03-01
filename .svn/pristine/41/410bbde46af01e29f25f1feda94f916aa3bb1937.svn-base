@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="720" height="480"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="机位提醒信息"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" 
+					   xmlns:component="com.apms.flex.component.*" xmlns:datagrid="com.cool.components.datagrid.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.flight.vo.FlightConstVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.hurlant.eval.ast.NullableType;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var color_orange:uint = 0xFF9900;//橙色
+			private var color_green:uint = 0x99CC33;//淡绿色
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var qrysql:String = "";
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				queryColumns.push("tipinfo");
+				
+				changeListDg.dataListGrid.addEventListener(ListEvent.CHANGE,onChgListItemClickHander);
+				
+				changeListDg.refresh();
+			}
+			
+			public function setQueryValue(aptid:String, positionCode:String):void{
+				qrysql =  " select id,ap_positionid,type,type_name,tipinfo,airportid";
+				qrysql += " ,terminalno,isbridge,isbridge_name,linkcode,code";
+				qrysql += " from v_acstop_tip where airportid="+aptid+" and code='" +positionCode+ "'"; 
+				
+				if(changeListDg != null){
+					changeListDg.refresh();
+					txtTip.text = null;
+				}
+				
+			}
+			
+			private function onChgListItemClickHander(event:ListEvent):void{
+				var chgObj:Object = changeListDg.getSelectedRowValue();
+				txtTip.text = chgObj["tipinfo"];
+			}
+			
+			private function rowColorChangelog(item:Object, rowIndex:int,dataIndex:int, color:uint):uint{
+				
+				var type:String = item["type"];
+				if( type == "1" ){
+					return color_orange;
+				}
+				return color;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" horizontalAlign="center" verticalAlign="middle" height="100%" paddingTop="10" paddingBottom="5" paddingLeft="5" paddingRight="5">
+			<component:AdvDataGridPanel id="changeListDg" width="100%" height="100%" sql="{qrysql}" searchCondVisible="true" 
+										rowColorFunction="{rowColorChangelog}"
+										dataSource="{ApmsUIConst.DATASOURCE_APMS}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn dataField="type_name" headerText="类型" width="80"/>
+					<mx:DataGridColumn dataField="tipinfo" headerText="提示信息" width="300"/>
+					<mx:DataGridColumn dataField="terminalno" headerText="航站楼" width="70"/>
+					<mx:DataGridColumn dataField="isbridge_name" headerText="靠桥" width="60"/>
+					<mx:DataGridColumn dataField="code" headerText="机位" width="70"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+			<mx:HRule width="100%" />
+			<mx:HBox width="100%">
+				<mx:Label text="提示信息" />
+				<mx:TextArea id="txtTip" width="80%" height="70" paddingTop="5" paddingLeft="10" editable="false">
+				</mx:TextArea>
+			</mx:HBox>
+		</mx:VBox>
+		<s:Spacer height="5" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button  icon="{AssetsFileLib.closeIcon}"  label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			protected function initializeHandler(event:FlexEvent):void{
+				flightWorkReportListPanel.simpleQueryPanel.height=0;
+				endTime = DateUtil.moveHour(new Date(),0);
+				beginTime = DateUtil.moveHour(new Date(),7);
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql ="";
+				querySql +=" select org.name,";
+				querySql +=" (select sum(1) from f_flight_schedule f,b_user u where u.orgid_line = org.id and f.ETD >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss') and f.ETD <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER";
+				querySql +=" and f.dep_apt=any('PVG','SHA'))  flightReleaseSum,";
+				querySql +=" (select sum(1) from f_flight_schedule f,b_user u where u.orgid_line = org.id and f.ETD >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss') and f.ETD <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER";
+				querySql +=" and f.flttype_dep='PF' and f.dep_apt=any('PVG','SHA'))  PFNum,";
+				querySql +=" (select sum(1) from f_flight_schedule f,b_user u where u.orgid_line = org.id and f.ETD >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss') and f.ETD <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER";
+				querySql +=" and f.flttype_dep='TR' and f.dep_apt=any('PVG','SHA') )  TRNum,";
+				querySql +=" (select sum(1) from f_flight_schedule f,b_user u where u.orgid_line = org.id and f.ETD >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss') and f.ETD <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER";
+				querySql +=" and f.flttype_dep='AF+PF'  and f.dep_apt=any('PVG','SHA'))  AFPFNum,";
+				querySql +=" (select sum(1) from f_flight_schedule f,b_user u where u.orgid_line = org.id and f.ETD >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss') and f.ETD <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER";
+				querySql +=" and f.flttype_dep='AF' and f.dep_apt=any('PVG','SHA'))  AFNum";
+				querySql +=" from   b_organization org";
+				querySql +=" where org.orglevel=3";
+				flightWorkReportListPanel.sql = querySql;
+				flightWorkReportListPanel.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightWorkReportListPanel.dataListGrid as DataGrid,"车间工作量统计");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航班时间" />
+			<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="1"/>
+			<mx:Label text="->" />
+			<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="1"/>
+			<s:Spacer width="20"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightWorkReportListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="车间" dataField="name"  width="300"/>
+				<mx:DataGridColumn headerText="放行总量" dataField="flightreleasesum" width="200"/>
+				<mx:DataGridColumn headerText="PF数" dataField="pfnum" width="200"/>
+				<mx:DataGridColumn headerText="TR数" dataField="trnum" width="200"/>
+				<mx:DataGridColumn headerText="PF+AF数" dataField="afpfnum" width="200"/>
+				<mx:DataGridColumn headerText="AF数" dataField="afnum"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

@@ -1,0 +1,9 @@
+1,java代码， jar包形式
+2,flex代码， swf文件形式
+3,数据库模型修改 , sql文件
+4，视图，存储过程
+5，元原模板  sql脚本
+6，元数据  导出的md文件
+7，数据字典  sql脚本
+8, 菜单  导出的md文件
+9, 配置文件修改说明，如SmartXConfig, remoting-config修改等

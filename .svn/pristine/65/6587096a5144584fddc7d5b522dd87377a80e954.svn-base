@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="creationComplete()"
+				showCloseButton="true"
+				title="工卡资料列表"
+				width="900" height="500" verticalGap="2"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			public var selObjCur:Object;
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			private function creationComplete():void
+			{	
+				
+				fileListDg.simpleQueryPanel.height=0;
+				
+				querySql =" select j.id, jobcardid, name, materialdesc, seqnum, " +
+					"(select valueen from b_dictionary t where j.type = t.value" +
+					" and t.classname='JOBCARD_MATERIAL'" +
+					" and t.attributename='TYPE' ) type, author," +
+					" updateuser, to_char(updatetime,'YY-MM-DD HH24:MI:SS') " +
+					" updatetime, iswritefile, " +
+					" filename from u_jobcard_material j" +
+					" where jobcardid="+selObj["ID"]+
+					" order by j.updatetime desc ";
+				
+				fileListDg.refresh();
+				
+				fileListDg.dataListGrid.addEventListener(ListEvent.CHANGE,listPanelItemClickHander);
+			}
+			
+			private function listPanelItemClickHander(event:ListEvent):void{
+				selObjCur = fileListDg.getSelectedRowValue();
+			
+				detail.text = selObjCur["materialdesc"];
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		<mx:HBox   width="100%" height="70%"  verticalAlign="top">
+			
+			<component:AdvDataGridPanel id="fileListDg" width="100%"  height="100%" sql="{querySql}" dataSource="{apmsDs}">
+				<component:columns>			
+					<mx:DataGridColumn dataField="name" headerText="资料名称" width="200" />
+					<mx:DataGridColumn dataField="type" headerText="资料类型" width="80" />
+					<mx:DataGridColumn dataField="filename" headerText="文件名称" width="200" />
+					<mx:DataGridColumn dataField="author" headerText="作者" width="65" />
+					<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="70"/>
+					<mx:DataGridColumn dataField="updatetime" headerText="更新时间" width="150" />
+					
+					<mx:DataGridColumn dataField="xx" headerText="" width="30">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:LinkButton toolTip="下载"
+											   click="downLoad(event);"
+											   icon="{AssetsFileLib.downIcon}"
+											   width="100%"
+											   height="100%">
+									<fx:Script>
+										<![CDATA[ 
+											import com.apms.flex.assets.AssetsFileLib;
+											import flash.net.URLRequest;
+											import flash.net.navigateToURL;
+											
+											import mx.controls.Alert;
+											import mx.events.CloseEvent;
+											import mx.managers.PopUpManager;
+											import mx.rpc.events.FaultEvent;
+											import mx.rpc.events.ResultEvent;
+											import mx.rpc.remoting.mxml.RemoteObject;
+											
+											import smartx.flex.components.basic.ClientEnviorment;
+											import smartx.flex.components.core.BillListPanel;
+											import smartx.flex.components.styletemplate.ifc.ListButtonListener;
+											import smartx.flex.components.util.OperatingTipUtil;
+											import smartx.flex.components.util.SmartXMessage;
+											import com.apms.flex.vo.ApmsUIConst;
+											
+											private var destination:String = ApmsUIConst.FIEL_SEPFILESERVICE;
+											
+											private var formService:RemoteObject=new RemoteObject;
+											private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+											
+											
+											private function downLoad(event:MouseEvent):void{
+												
+												formService = new RemoteObject(destination);
+												formService.endpoint = endpoint;
+												
+												formService.trainingMaterialFileDownload.addEventListener(ResultEvent.RESULT,attachFileDownloadHandler);
+												formService.trainingMaterialFileDownload.addEventListener(FaultEvent.FAULT,faultHandler);
+												formService.trainingMaterialFileDownload(data.id,data.filename);
+												
+											}
+											
+											private function faultHandler(event:FaultEvent):void{
+												OperatingTipUtil.endOperat();
+												SmartXMessage.show("文件下载失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+											}
+											
+											private function attachFileDownloadHandler(event:ResultEvent):void{
+												var url:String = event.result as String;
+												navigateToURL(new URLRequest(encodeURI(url)), "_blank");
+												OperatingTipUtil.endOperat();
+											}
+											
+										]]>  
+									</fx:Script>
+								</mx:LinkButton>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:HBox>
+		<mx:HBox   width="100%" height="30%">
+			<mx:Label text="资料说明:" width="5%"/>
+			<mx:TextArea id ="detail"  width="95%"  height="100%"  >
+				
+			</mx:TextArea>
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

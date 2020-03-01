@@ -1,0 +1,14 @@
+<root>
+  <apu>
+    <item value="0" desc="正常"/>
+  </apu>
+  
+  <engine>
+    <item value="0" desc="正常"/>
+  </engine>
+  
+  <aircondition>
+  	<item value="0" desc="正常"/>
+  </aircondition>
+  
+</root>

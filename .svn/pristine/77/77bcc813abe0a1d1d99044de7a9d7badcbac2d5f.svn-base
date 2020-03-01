@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<init-param key="PROJECT_NAME" value="APMS2.0" descr="项目名称" />
+	<init-param key="log4jfile" value="Log4j.properties" descr="日志属性文件" />
+	<init-param key="APPMODULE" value="smartx.framework.metadata.bs.NovaAppModuleConfig" descr="模块名称" />
+	<init-param key="LogService" value="smartx.system.log.bs.LogWriter" descr="系统日志服务" />
+	<init-param key="JOB_SERVICE" value="true" descr="是否启用自动JOB服务" />
+	<init-param key="DS_RCONN_TIMES" value="5" descr="数据库连接重试次数【-1代表无限次】" />
+	<init-param key="DS_RCONN_DELAY" value="6000" descr="数据库连接重试延迟【单位ms】" />
+	<init-param key="DS_REPAIR_TIMES" value="600" descr="数据库连接池的尝试次数，达到此次数就重建连接池【-1不控制】" />
+	<init-param key="DS_PRINTSQL" value="true" descr="是否打印所有执行的SQL信息" />
+	<init-param key="CEP_SERVICE" value="false" descr="是否启用CEP服务" />
+	<init-param key="CEP_JDBC_LISTENPORT" value="8450" descr="CEP JDBC服务的监听端口" />
+	<!-- init-param key="CEP_JDBC_SESSIONIDLETIMEOUT" value="-1" descr="会话超时，默认无限"/ -->
+	<init-param key="CEP_PERSISTENT_PROVIDERS" value="" descr="需要持久化的CEP容器，逗号分隔" />
+	<init-param key="CEP_ENGINECONFIGURATION_FACTORY" value="smartx.bam.initdsfactory.DataSourceInitFactory" descr="CEP引擎配置生成工厂" />
+	<init-param key="DATATASK_SERVICE" value="false" descr="是否启用数据预处理服务" />
+	<init-param key="DELETE_TEMPFILE" value="false" descr="清理临时文件" />
+	<init-param key="IS_ALARM_EMAIL" value="true" descr="邮件发送告警消息开关" />
+	<init-param key="IS_ALARM_SMS" value="true" descr="短信发送告警消息开关" />
+	
+	<default-user name="sa" pwd="sa" adminpwd="sa" />
+	<datasources> 
+		
+		<datasource name="datasource_apms">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:apms_jx/apms_jx@www.flywelltech.com:1521:ORCL</url>	
+			<!--
+			<url>jdbc:oracle:thin:apms170422/apms170422@121.197.15.177:1521:ORCL</url>	
+			<url>jdbc:oracle:thin:apms150314/apms150314@173.19.80.130:1521:ORCL</url>
+			-->
+			
+			
+			<initsize>1</initsize>
+			<poolsize>10</poolsize>
+
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		
+	
+		<datasource name="datasource_default">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:apms_jx/apms_jx@www.flywelltech.com:1521:ORCL</url>
+			<!--
+			<url>jdbc:oracle:thin:apms170422/apms170422@121.197.15.177:1521:ORCL</url>
+			 <url>jdbc:oracle:thin:apms150314/apms150314@173.19.80.130:1521:ORCL</url>	
+			-->
+			<initsize>1</initsize>
+			<poolsize>2</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		
+		<datasource name="datasource_in">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:apms_in/apms_in@www.flywelltech.com:1521:ORCL</url>	
+			<initsize>1</initsize>
+			<poolsize>10</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<!-- 
+		<datasource name="datasource_omis">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:apms150314/apms150314@173.19.80.130:1521:ORCL</url>	
+			<initsize>2</initsize>
+			<poolsize>10</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<datasource name="datasource_apmsold">
+			<driver>com.microsoft.jdbc.sqlserver.SQLServerDriver</driver>
+			<url>jdbc:microsoft:sqlserver://121.197.15.177:1433;user=mccams;password=mccams;DatabaseName=mccamsdb</url>
+			<validationQuery>select count(1) from sysusers</validationQuery>
+			<initsize>1</initsize>
+			<poolsize>5</poolsize>
+		</datasource>
+		<datasource name="datasource_foc">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			 <url>jdbc:oracle:thin:jiwu/jiwu@168.168.1.3:1521:ORA7</url>
+			<initsize>1</initsize>
+			<poolsize>10</poolsize>
+
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		
+		<datasource name="datasource_omis">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:query/QWER1234@192.114.214.117:1521:ora8</url>
+			<initsize>2</initsize>
+			<poolsize>10</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<datasource name="datasource_apmsold">
+			<driver>com.microsoft.jdbc.sqlserver.SQLServerDriver</driver>
+			<url>jdbc:microsoft:sqlserver://121.197.15.177:1433;user=mccams;password=mccams;DatabaseName=mccamsdb</url>
+			<url>jdbc:microsoft:sqlserver://10.210.202.1:1433;user=sa;password=hahaer;DatabaseName=MCCAMSDB</url>
+			<validationQuery>select count(1) from sysusers</validationQuery>
+			<initsize>1</initsize>
+			<poolsize>5</poolsize>
+		</datasource>
+		
+		<datasource name="datasource_default">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:APMS140510/APMS140510@121.197.15.177:1521:ORCL</url>	
+			<initsize>2</initsize>
+			<poolsize>36</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<datasource name="datasource_usermgmt">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:APMS140510/APMS140510@121.197.15.177:1521:ORCL</url>
+			<initsize>1</initsize>
+			<poolsize>5</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<datasource name="datasource_apms">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:APMS140510/APMS140510@121.197.15.177:1521:ORCL</url>
+			<initsize>2</initsize>
+			<poolsize>60</poolsize>
+
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		<datasource name="datasource_apmsold">
+			<driver>com.microsoft.jdbc.sqlserver.SQLServerDriver</driver>
+			<url>jdbc:microsoft:sqlserver://10.210.202.1:1433;user=sa;password=hahaer;DatabaseName=MCCAMSDB</url>
+			<validationQuery>select count(1) from sysusers</validationQuery>
+			<initsize>2</initsize>
+			<poolsize>10</poolsize>
+		</datasource>
+		 
+		<datasource name="datasource_omis">
+			<driver>oracle.jdbc.driver.OracleDriver</driver>
+			<url>jdbc:oracle:thin:query/QWER1234@192.114.214.117:1521:ora8</url>
+			<initsize>2</initsize>
+			<poolsize>10</poolsize>
+			<validationQuery>select 1 from dual</validationQuery> 
+		</datasource>
+		 -->
+		
+	</datasources>
+	<!-- 二次开发项目Boot启动类!平台会自动调用其默认构造方法 -->
+	<secondprojectboot>
+		<bootclassname>smartx.publics.form.bs.service.InitMetaDataService</bootclassname>  
+    	<bootclassname>smartx.publics.datatask.CommTaskManager</bootclassname>
+    	<bootclassname>smartx.bam.bs.BamService</bootclassname>
+    	<bootclassname>com.apms.bs.ApmsFormService</bootclassname>
+    	<bootclassname>com.apms.bs.ApmsInitService</bootclassname>
+	</secondprojectboot>
+	
+	<!-- 自定义flex监听器等 -->
+	<additionalLibs>
+		<swfList>
+			<file path="smartx/bam/flex/modules/CustomLibrary.swf" />
+			<file path="com/apms/flex/modules/ApmsCustomLibrary.swf" />
+		</swfList>
+	</additionalLibs>
+	<log4j>
+		<logpath>d:/novalog/</logpath>
+		<level>DEBUG</level>
+		<outputtype>3</outputtype>
+		<clspath>smartx</clspath>
+		
+		<rootlevel>debug</rootlevel>
+		<!--  日志输出方式，1-控制台输入 2-文件输出 3-控制台+文件输出  -->
+		<classlevels>
+			<loglevel clspath="smartx" level="debug" desc="平台代码日志" />
+			<loglevel clspath="com.apms" level="debug" />
+			<loglevel clspath="com.vsms" level="debug" />
+		</classlevels>
+	</log4j>
+	<init-metadata-files initialize="false">
+		<file name="smartx-patch" datasource="datasource_default" desc="SamrtX平台初始化数据" />
+		<file name="bam-patch" datasource="datasource_default" desc="bam平台初始化数据" />
+	</init-metadata-files>
+</root>

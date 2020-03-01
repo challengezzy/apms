@@ -1,0 +1,25 @@
+<root>
+  <name mtname="APMS系统参数配置">配置APMS系统中用到的参数信息</name>
+  <email host="smtp.126.com" user="apms_system@126.com" password="apms_system123" sender="apms_system@126.com"/>
+  <oxygen>
+    <decompress_threshold_lower desc="泄压门限下限">-120</decompress_threshold_lower>
+    <decompress_threshold_upper desc="泄压门限上限">120</decompress_threshold_upper>
+    <oxyPressLower desc="氧气瓶压力下限">1600</oxyPressLower>
+  </oxygen>
+  <math_regression>
+    <numberOfPoints desc="回归计算点个数">20</numberOfPoints>
+    <numberOfStdToAlarm desc="超过N个STD值时，进行告警">2</numberOfStdToAlarm>
+    <alpha desc="样本T检查，置信区间">0.05</alpha>
+    <diffValuePercent desc="数据差值允许范围(百分比)">50</diffValuePercent>
+  </math_regression>
+  <sms>
+      <sender>1065752581140911</sender>
+  </sms>
+  <oil>
+  	 <deta_oiladd_limit desc="前后报文滑油量差值判断点">1.5</deta_oiladd_limit>
+  	 <ehrsDetaDefault desc="默认的滑油前后报文发动机小时时间差">0.75</ehrsDetaDefault>
+  </oil>
+  <apu>
+  	<oid_change_temp desc="判断APU滑油更换的滑油温度差值">24</oid_change_temp>
+  </apu>
+</root>

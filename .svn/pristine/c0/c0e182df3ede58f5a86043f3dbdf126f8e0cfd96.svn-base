@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="800" height="400" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="工作梯信息" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			[Bindable]
+			public var faultVersion:ArrayCollection;//各版本的故障提醒信息
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var ap_positionid:String;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var dataGridWith:int=800/6;
+			private function creationComplete():void
+			{
+				faultVersionDg.simpleQueryPanel.height=0;
+				querySql="select ad.name, ad.code, ad.positiondesc, case when ad.UPSTATE=0 then '正常' when ad.UPSTATE=1 then '异常' else '' end upstate, ad.COMMENTS"+
+  						" ,l.platform_height,l.platform_area" +
+						" from B_AIRPORT_DEVICE ad, b_airport_position ap,b_workladder l"+
+ 						" where l.id=ad.id and ad.positionid=ap.id and ad.positionid ="+ap_positionid+" order by ad.id";
+				faultVersionDg.refresh();
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10">
+		<component:AdvDataGridPanel id="faultVersionDg" width="100%" height="100%" sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>			
+				<mx:DataGridColumn dataField="name" headerText="名称" width="{dataGridWith}"/>
+				<mx:DataGridColumn dataField="code" headerText="编码" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="platform_height" headerText="高度M" width="{dataGridWith}"/>
+				<mx:DataGridColumn dataField="platform_area" headerText="面积M^2" width="{dataGridWith}"/>
+				<mx:DataGridColumn dataField="upstate" headerText="可用状态" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="positiondesc" headerText="位置描述" width="{dataGridWith*2}"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+	<s:Spacer height="5" />
+	<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28" paddingBottom="5">
+		<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+	</mx:HBox>
+</containers:SuperPanel>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationComplete()"
+		 verticalGap="0"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			public var headHashVo:SimpleHashVO;
+			
+			
+			[Bindable]
+			public  var englishName:String="  ";
+			[Bindable]
+			public var chineseName1:String="  ";
+			[Bindable]
+			public var leftVal:String="  ";
+			
+			[Bindable]
+			public  var boxWidth:int=60;
+			
+			[Bindable]
+			public  var chineseName2:String="  ";
+			[Bindable]
+			public  var name2ToVisible:Boolean=false;
+			[Bindable]
+			public  var englishNameToVisible:Boolean=true;
+			[Bindable]
+			public  var name1ToVisible:Boolean=true;
+			[Bindable]
+			public  var valToVisible:Boolean=true;
+			
+			private function creationComplete():void
+			{
+				if(englishNameLabel.visible==false){
+					vBoxenglishName.height=0;
+				}
+				if(nameLabel1.visible==false){
+					vBoxName1.height=0;
+				}
+				if(nameLabel2.visible==false){
+					vBoxName2.height=0;
+				}
+				if(valLabel.visible==false){
+					vBoxVal1.height=0;
+				}
+				
+				if("UPDATE"==englishName.toString())
+				{
+					var dtUtc:Date;
+					if(leftVal!=null){
+						dtUtc = leftVal as Date;
+						leftVal = DateUtil.dateToString(dtUtc,1);
+					}
+					
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox verticalGap="0" >
+		<mx:VBox id="vBoxenglishName" width="{boxWidth}" height="18" >
+		    <mx:Label id="englishNameLabel" text="{englishName}" color="red" width="{boxWidth}"  visible="{englishNameToVisible}"/>
+		</mx:VBox>
+		<mx:VBox id="vBoxName1" width="{boxWidth}" height="18" >
+			<mx:Label id="nameLabel1" text="{chineseName1}" color="blue" width="{boxWidth}"   visible="{name1ToVisible}"/>
+		</mx:VBox>
+		<mx:VBox id="vBoxName2" width="{boxWidth}" height="18" >					
+			<mx:Label id="nameLabel2" text="{chineseName2}" color="blue" width="{boxWidth}"  visible="{name2ToVisible}"/>
+		</mx:VBox>
+	 </mx:VBox>
+	 <mx:VBox id="vBoxVal1" width="{boxWidth}" height="18" >					
+	    <mx:Label id="valLabel" text="{leftVal}" width="{boxWidth}" visible="{valToVisible}"/>
+	 </mx:VBox>		
+</mx:VBox>
+

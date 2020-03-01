@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)"
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			import com.hurlant.eval.ast.Void;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var endDate:Date= new Date();
+			[Bindable]
+			private var startDate:Date ;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var maintainArr:ArrayCollection;
+			[Bindable]
+			public var lineArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				startDate=DateUtil.moveDay(endDate,-3);
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				maintainArr=new ArrayCollection([{val:""},{val:"PF"},{val:"TR"},{val:"AF"},{val:"AF+PF"}]);
+				lineArr=new ArrayCollection([{val:""},{val:"航线虹桥维修车间"},{val:"航线浦东维修车间"},{val:"宽体机维修车间"}]);
+				sectionArr=new ArrayCollection([{val:""},{val:"向量班组"},{val:"朝阳班组"},{val:"大海班组"},{val:"天宇班组"},{val:"啮合班组"},{val:"深蓝班组"},{val:"启航班组"},{val:"Raying班组"},{val:"天空之城 "},{val:"翼家班组"},{val:"耕耘班组"},{val:"腾龙班组"},{val:"翔光班组"},{val:"护航班组"}]);
+				flightWorkReportListPanel.simpleQueryPanel.height=0;
+				dep_aptOrArr_apt.selectedIndex=1;
+
+			}
+			
+			protected function onQuery(event:MouseEvent):void
+			{
+				var begin:String =  "TO_DATE('" + start_date.text + "', 'YYYY-MM-DD')";
+				var end:String =  "TO_DATE('" + end_date.text + "', 'YYYY-MM-DD')";
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql ="";
+				querySql +=" select f.flt_date,f.flt_date_str,f.flightno_union,f.acnum,f.acmodel,f.baseorg,f.ac_stop,f.stda,f.t_eta,F.APT_UNION,f.t_etd,";
+				querySql +=" securityunit,f.maintaintype,f.release_user,f.maintain_user,f.duty_user,f.guardian_user,f.handover_user,";
+				querySql +=" case when trunc(F.on_time)=F.FLT_DATE THEN to_char(F.on_time,'hh24:mi:ss')";
+				querySql +=" when trunc(F.on_time)>F.FLT_DATE then to_char(F.on_time,'hh24:mi:ss')||'+'||(trunc(F.on_time)-F.FLT_DATE)";
+				querySql +=" when trunc(F.on_time)<F.FLT_DATE then to_char(F.on_time,'hh24:mi:ss')||(trunc(F.on_time)-F.FLT_DATE)";
+				querySql +="  end on_time,";
+				querySql +=" case when trunc(F.in_time)=F.FLT_DATE THEN to_char(F.in_time,'hh24:mi:ss')";
+				querySql +=" when trunc(F.in_time)>F.FLT_DATE then to_char(F.in_time,'hh24:mi:ss')||'+'||(trunc(F.in_time)-F.FLT_DATE)";
+				querySql +=" when trunc(F.in_time)<F.FLT_DATE then to_char(F.in_time,'hh24:mi:ss')||(trunc(F.in_time)-F.FLT_DATE)";
+				querySql +=" end in_time,";
+				querySql +=" case when trunc(F.out_time)=F.FLT_DATE THEN to_char(F.out_time,'hh24:mi:ss')";
+				querySql +=" when trunc(F.out_time)>F.FLT_DATE then to_char(F.out_time,'hh24:mi:ss')||'+'||(trunc(F.out_time)-F.FLT_DATE)";
+				querySql +=" when trunc(F.out_time)<F.FLT_DATE then to_char(F.out_time,'hh24:mi:ss')||(trunc(F.out_time)-F.FLT_DATE)";
+				querySql +=" end out_time,";
+				querySql +=" case when trunc(F.off_time)=F.FLT_DATE THEN to_char(F.off_time,'hh24:mi:ss')";
+				querySql +=" when trunc(F.off_time)>F.FLT_DATE then to_char(F.off_time,'hh24:mi:ss')||'+'||(trunc(F.off_time)-F.FLT_DATE)";
+				querySql +=" when trunc(F.off_time)<F.FLT_DATE then to_char(F.off_time,'hh24:mi:ss')||(trunc(F.off_time)-F.FLT_DATE)";
+				querySql +=" end off_time,intimehours";
+				
+				querySql +=" FROM V_FLIGHTWORKREPORT F";
+				querySql +=" WHERE 1=1 and F.FLT_DATE<="+end+" AND F.FLT_DATE>="+begin;
+				if(dep_aptOrArr_apt.textInput.text!=""){//航站过滤
+					querySql +=" AND F.APT = '"+dep_aptOrArr_apt.textInput.text+"'";
+				}
+				if(worker.text!=""){//工作人员过滤
+					querySql +=" AND (F.RELEASE_USER='"+worker.text+"' or F.DUTY_USER='"+worker.text+"' or F.GUARDIAN_USER='"+worker.text+"' or F.HANDOVER_USER='"+worker.text+"' or F.HANDOVER_USER='"+worker.text+"')";
+				}
+				if(maintaintype.textInput.text!=""){//维护类型
+					querySql +=" AND F.MAINTAINTYPE='"+maintaintype.textInput.text+"'";
+				}
+				if(orgline.textInput.text!=""){
+					querySql +=" and f.securityunit='"+orgline.textInput.text+"'";
+				}
+				if(orgsection.textInput.text!=""){
+					querySql +=" AND (SELECT ORG.ID FROM B_ORGANIZATION ORG WHERE ORG.NAME = '"+orgsection.textInput.text+"') in (select u.orgid_section　from b_user u where u.name in (F.RELEASE_USER, F.MAINTAIN_USER, F.DUTY_USER,F.GUARDIAN_USER, F.HANDOVER_USER))";
+				}
+				querySql +=" order by  f.CTD";
+				flightWorkReportListPanel.sql = querySql;
+				flightWorkReportListPanel.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightWorkReportListPanel.dataListGrid as DataGrid,"工作分配记录");
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="保障单位:"/>  
+			<s:ComboBox id="orgline" dataProvider="{lineArr}" labelField="val" width="120"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="班组:"/>  
+			<s:ComboBox id="orgsection" dataProvider="{sectionArr}" labelField="val" width="90"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="维护类型:"/>  
+			<s:ComboBox id="maintaintype" dataProvider="{maintainArr}" labelField="val" width="80"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="工作人员:"/>  
+			<s:TextInput id="worker"/>
+			<s:Spacer width="100%"/>
+			<mx:Button label="查询" width="100" click="onQuery(event)" />
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="开始航班日期:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="2"/>
+			<s:Spacer width="9"/>
+			<mx:Label text="结束航班日期:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="2"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightWorkReportListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="5000" 
+									searchCondVisible="false" 
+									sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str"  width="85" />
+				<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="110" />
+				<mx:DataGridColumn headerText="机号" dataField="acnum" width="60" />
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="70" />
+				<mx:DataGridColumn headerText="所属基地" dataField="baseorg" width="100" />
+				<mx:DataGridColumn headerText="维护" dataField="maintaintype" width="35" />
+				<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="40" />
+				<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="100" />
+				<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="100" />
+				<mx:DataGridColumn headerText="预达" dataField="t_eta" width="70" />
+				<mx:DataGridColumn headerText="预起" dataField="t_etd" width="70" />
+				<mx:DataGridColumn headerText="保障单位" dataField="securityunit" width="100" />
+				<mx:DataGridColumn headerText="停靠时长" dataField="intimehours" width="70" />
+				<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="80"/>
+				<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="80" />
+				<mx:DataGridColumn headerText="放行人" dataField="release_user" width="80"/>
+				<mx:DataGridColumn headerText="接机人" dataField="guardian_user" width="80"/>
+				<mx:DataGridColumn headerText="出港人" dataField="handover_user" width="80"/>
+				<mx:DataGridColumn headerText="落地时间" dataField="on_time" width="90"/>
+				<mx:DataGridColumn headerText="靠桥时间" dataField="in_time" width="90"/>
+				<mx:DataGridColumn headerText="推出时间" dataField="out_time" width="90"/>
+				<mx:DataGridColumn headerText="起飞时间" dataField="off_time" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

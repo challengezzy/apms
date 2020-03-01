@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="990" height="550"  xmlns:core="smartx.flex.components.core.*"
+			   title="R13报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var r13vo:SimpleHashVO;
+			
+			[Bindable]
+			public var r13Data:Object;//译后报文内容
+					
+			[Bindable]
+			private var asn:String;
+			[Bindable]
+			private var ahrs:String;
+			[Bindable]
+			private var acyc:String;
+			[Bindable]
+			private var ecid:String;
+			[Bindable]
+			private var acw1:String;
+			[Bindable]
+			private var esn_n1:String;
+			[Bindable]
+			private var esn_n2:String;
+			[Bindable]
+			private var esn_n3:String;
+			[Bindable]
+			private var egta_n1:String;
+			[Bindable]
+			private var egta_n2:String;
+			[Bindable]
+			private var egta_n3:String;
+			[Bindable]
+			private var gla_n1:String;
+			[Bindable]
+			private var gla_n2:String;
+			[Bindable]
+			private var gla_n3:String;
+			[Bindable]
+			private var wb_n1:String;
+			[Bindable]
+			private var wb_n2:String;
+			[Bindable]
+			private var wb_n3:String;
+			[Bindable]
+			private var pt_n1:String;
+			[Bindable]
+			private var pt_n2:String;
+			[Bindable]
+			private var pt_n3:String;
+			[Bindable]
+			private var p2a_n1:String;
+			[Bindable]
+			private var p2a_n2:String;
+			[Bindable]
+			private var p2a_n3:String;
+			[Bindable]
+			private var lcot_n1:String;
+			[Bindable]
+			private var lcot_n2:String;
+			[Bindable]
+			private var lcot_n3:String;
+			[Bindable]
+			private var lcit_n1:String;
+			[Bindable]
+			private var lcit_n2:String;
+			[Bindable]
+			private var lcit_n3:String;
+			[Bindable]
+			private var igv_n1:String;
+			[Bindable]
+			private var igv_n2:String;
+			[Bindable]
+			private var igv_n3:String;
+			[Bindable]
+			private var scv_n1:String;
+			[Bindable]
+			private var scv_n2:String;
+			[Bindable]
+			private var scv_n3:String;
+			[Bindable]
+			private var lot_n1:String;
+			[Bindable]
+			private var lot_n2:String;
+			[Bindable]
+			private var lot_n3:String;
+			[Bindable]
+			private var hot_n1:String;
+			[Bindable]
+			private var hot_n2:String;
+			[Bindable]
+			private var hot_n3:String;
+			[Bindable]
+			private var sat_v1:String;
+			[Bindable]
+			private var egtp_v1:String;
+			[Bindable]
+			private var npa_v1:String;
+			[Bindable]
+			private var lot_v1:String;
+			[Bindable]
+			private var lcit_v1:String;
+			
+			private function creationComplete():void
+			{
+			
+				r13Data = r13vo.dataMap;
+				
+				asn = r13Data['asn'];
+				ahrs = r13Data['ahrs'];
+				acyc = r13Data['acyc'];
+				ecid = r13Data['ecid'];
+				acw1 = r13Data['acw1'];
+				
+				esn_n1 = r13Data['esn_n1'];
+				egta_n1 = r13Data['egta_n1'];
+				gla_n1 = r13Data['gla_s1'];
+				wb_n1 = r13Data['wb_s1'];
+				pt_n1 = r13Data['pt_s1'];
+				p2a_n1 = r13Data['p2a_s1'];
+				lcot_n1 = r13Data['lcdt_s1'];
+				lcit_n1 = r13Data['lcit_s1'];
+				igv_n1 = r13Data['igv_n1'];
+				scv_n1 = r13Data['scv_n1'];
+				lot_n1 = r13Data['ota_s1'];
+				hot_n1 = r13Data['hot_n1'];
+				
+				esn_n2 = r13Data['esn_n2'];
+				egta_n2 = r13Data['egta_n2'];
+				gla_n2 = r13Data['gla_s2'];
+				wb_n2 = r13Data['wb_s2'];
+				pt_n2 = r13Data['pt_s2'];
+				p2a_n2 = r13Data['p2a_s2'];
+				lcot_n2 = r13Data['lcdt_s2'];
+				lcit_n2 = r13Data['lcit_s2'];
+				igv_n2 = r13Data['igv_n2'];
+				scv_n2 = r13Data['scv_n2'];
+				lot_n2 = r13Data['ota_s2'];
+				hot_n2 = r13Data['hot_n2'];
+				
+				esn_n3 = r13Data['esn_n3'];
+				egta_n3 = r13Data['egta_n3'];
+				gla_n3 = r13Data['gla_s3'];
+				wb_n3 = r13Data['wb_s3'];
+				pt_n3 = r13Data['pt_s3'];
+				p2a_n3 = r13Data['p2a_s3'];
+				lcot_n3 = r13Data['lcdt_s3'];
+				lcit_n3 = r13Data['lcit_s3'];
+				igv_n3 = r13Data['igv_n3'];
+				scv_n3 = r13Data['scv_n3'];
+				lot_n3 = r13Data['ota_s3'];
+				hot_n3 = r13Data['hot_n3'];
+				
+				sat_v1 = r13Data['sta_v1'];
+				egtp_v1 = r13Data['egtp_v1'];
+				npa_v1 = r13Data['npa_v1'];
+				lot_v1 = r13Data['ota_v1'];
+				lcit_v1 = r13Data['lcit_v1'];
+							
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A13 启动大发报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" verticalGap="1">
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   APU MES/IDLE REPORT13" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<report:ReportHeaderPanel_A330_A340 headHashVo="{r13vo}" width="100%" height="200"/>
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ASN" color="red" width="60"/><mx:Label text="AHRS" color="red" width="60"/>
+					<mx:Label text="ACYC" color="red" width="60"/><mx:Label text="ECID" color="red" width="60"/>
+					<mx:Label text="ACW1" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="APU序号" color="blue" width="60"/><mx:Label text="APU小时" color="blue" width="60"/>
+					<mx:Label text="APU循环" color="blue" width="60"/><mx:Label text="ECID" color="blue" width="60"/>
+					<mx:Label text="控制字1" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="E1" width="30"/><mx:Label text="{asn}" width="60"/><mx:Label text="{ahrs}" width="60"/>
+					<mx:Label text="{acyc}" width="60"/><mx:Label text="{ecid}" width="60"/>
+					<mx:Label text="{acw1}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EGTA" color="red" width="50"/>
+					<mx:Label text="GLA" color="red" width="50"/><mx:Label text="WB" color="red" width="55"/>
+					<mx:Label text="PT" color="red" width="55"/><mx:Label text="P2A" color="red" width="55"/>
+					<mx:Label text="LCOT" color="red" width="70"/><mx:Label text="LCIT" color="red" width="70"/>
+					<mx:Label text="IGV" color="red" width="65"/><mx:Label text="SCV" color="red" width="30"/>
+					<mx:Label text="LOT" color="red" width="40"/><mx:Label text="HOT" color="red" width="40"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="发动机" color="blue" width="60"/><mx:Label text="APU" color="blue" width="50"/>
+					<mx:Label text="发电机" color="blue" width="50"/><mx:Label text="引气" color="blue" width="55"/>
+					<mx:Label text="引气" color="blue" width="55"/><mx:Label text="进口" color="blue" width="55"/>
+					<mx:Label text="负载压气机" color="blue" width="70"/><mx:Label text="负载压气机" color="blue" width="70"/>
+					<mx:Label text="导向器" color="blue" width="65"/><mx:Label text="SCV" color="blue" width="30"/>
+					<mx:Label text="LOT" color="blue" width="40"/><mx:Label text="HOT" color="blue" width="40"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60" horizontalCenter="0"/><mx:Label text="小时" color="blue" width="50"/>
+					<mx:Label text="负载" color="blue" width="50"/><mx:Label text="流量" color="blue" width="55"/>
+					<mx:Label text="压力" color="blue" width="55"/><mx:Label text="压力" color="blue" width="55"/>
+					<mx:Label text="出口温度" color="blue" width="70"/><mx:Label text="进口温度" color="blue" width="70"/>
+					<mx:Label text="开口角度" color="blue" width="65"/><mx:Label text="" color="blue" width="30"/>
+					<mx:Label text="" color="blue" width="40"/><mx:Label text="" color="blue" width="40"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N1" width="30"/><mx:Label text="{esn_n1}" width="60"/><mx:Label text="{egta_n1}" width="50"/>
+					<mx:Label text="{gla_n1}" width="50"/><mx:Label text="{wb_n1}" width="55"/>
+					<mx:Label text="{pt_n1}" width="55"/><mx:Label text="{p2a_n1}" width="55"/>
+					<mx:Label text="{lcot_n1}" width="70"/><mx:Label text="{lcit_n1}" width="70"/>
+					<mx:Label text="{igv_n1}" width="65"/><mx:Label text="{scv_n1}" width="30"/>
+					<mx:Label text="{lot_n1}" width="40"/><mx:Label text="{hot_n1}" width="40"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N2" width="30"/><mx:Label text="{esn_n2}" width="60"/><mx:Label text="{egta_n2}" width="50"/>
+					<mx:Label text="{gla_n2}" width="50"/><mx:Label text="{wb_n2}" width="55"/>
+					<mx:Label text="{pt_n2}" width="55"/><mx:Label text="{p2a_n2}" width="55"/>
+					<mx:Label text="{lcot_n2}" width="70"/><mx:Label text="{lcit_n2}" width="70"/>
+					<mx:Label text="{igv_n2}" width="65"/><mx:Label text="{scv_n2}" width="30"/>
+					<mx:Label text="{lot_n2}" width="40"/><mx:Label text="{hot_n2}" width="40"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N3" width="30"/><mx:Label text="{esn_n3}" width="60"/><mx:Label text="{egta_n3}" width="50"/>
+					<mx:Label text="{gla_n3}" width="50"/><mx:Label text="{wb_n3}" width="55"/>
+					<mx:Label text="{pt_n3}" width="55"/><mx:Label text="{p2a_n3}" width="55"/>
+					<mx:Label text="{lcot_n3}" width="70"/><mx:Label text="{lcit_n3}" width="70"/>
+					<mx:Label text="{igv_n3}" width="65"/><mx:Label text="{scv_n3}" width="30"/>
+					<mx:Label text="{lot_n3}" width="40"/><mx:Label text="{hot_n3}" width="40"/>
+				</mx:HBox>				
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="STA" color="red" width="60"/><mx:Label text="EGTP" color="red" width="75"/>
+					<mx:Label text="NPA" color="red" width="110"/><mx:Label text="LOT" color="red" width="50"/>
+					<mx:Label text="LCIT" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="启动时间" color="blue" width="60"/><mx:Label text="APU启动时" color="blue" width="75"/>
+					<mx:Label text="APU启动时EGT峰" color="blue" width="110"/><mx:Label text="LOT" color="blue" width="50"/>
+					<mx:Label text="启动时负载压" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="" color="blue" width="60"/><mx:Label text="EGT峰值" color="blue" width="75"/>
+					<mx:Label text="值出现时的转速" color="blue" width="110"/><mx:Label text="LOT" color="blue" width="50"/>
+					<mx:Label text="气机进口温度" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V1" width="30"/><mx:Label text="{sat_v1}" width="60"/><mx:Label text="{egtp_v1}" width="75"/>
+					<mx:Label text="{npa_v1}" width="110"/><mx:Label text="{lot_v1}" width="50"/>
+					<mx:Label text="{lcit_v1}" width="80"/>
+				</mx:HBox>
+				
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

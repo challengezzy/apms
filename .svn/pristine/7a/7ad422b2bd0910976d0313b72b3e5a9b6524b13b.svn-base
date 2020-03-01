@@ -1,0 +1,9 @@
+-- Create sequence 
+create sequence S_A_CFD_SMD
+minvalue 1
+maxvalue 999999999999999999999999999
+start with 2001
+increment by 1
+cache 20
+cycle
+order;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<ApuControlWord desc="Each 'X' represents 4 Bits in hexadecimal code of a defined ARINC 429 word">
+		<ACWX code="ACW1">
+			<bitscode bitIdx="" arincbit="" lable="" desc=""/>
+		</ACWX>
+		<ACWX code="ACW2">
+		</ACWX>
+		<ACWX code="ACW3">
+		</ACWX>
+		<ACWX code="ACW4">
+		</ACWX>
+	</ApuControlWord>
+	
+</root>

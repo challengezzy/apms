@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   initialize="superpanel1_initializeHandler(event)"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="940" height="650"  xmlns:core="smartx.flex.components.core.*"
+					   title="发动机拆装" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemComboBox;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			import smartx.flex.components.vo.TempletItemVO;
+			//服务地址
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var smarxService:RemoteObject;//远程访问对象
+			private var apmsService:RemoteObject;//APMS远程服务
+			
+			
+			public var curEngObj:Object;
+			
+			[Bindable]
+			private var acno:String;
+			
+			[Bindable]
+			private var engloc:String;
+			
+			[Bindable]
+			private var engPN:String;
+			
+			[Bindable]
+			private var engSN:String;
+			
+			[Bindable]
+			private var engTSN:String;
+			
+			[Bindable]
+			private var engCSN:String;
+			
+			[Bindable]
+			private var engCHKSTATE:String;
+			
+			[Bindable]
+			private var engCHKTSN:String;
+			
+			[Bindable]
+			private var engCHKCSN:String;
+			
+			[Bindable]
+			private var engCHKTIME:String;
+			
+			[Bindable]
+			private var infodate:String;
+			
+			[Bindable]
+			private var engmodelid:String;
+			
+			[Bindable]
+			public var templetCode:String ="";
+			[Bindable]
+			public var debugMode:Boolean = false;
+			
+			[Bindable]
+			public var destination:String = GlobalConst.SERVICE_FORM;
+			
+			[Bindable]
+			public var initQueryCondition:String;
+			
+			[Bindable]
+			private var newengloc:String;
+			
+			[Bindable]
+			private var newengPN:String;
+			
+			[Bindable]
+			private var newengSN:String;
+			
+			[Bindable]
+			private var newengTSN:String;
+			
+			[Bindable]
+			private var newengCSN:String;
+			
+			[Bindable]
+			private var newengCHKSTATE:String;
+			
+			[Bindable]
+			private var newengCHKTSN:String;
+			
+			[Bindable]
+			private var newengCHKCSN:String;
+			
+			[Bindable]
+			private var newengCHKTIME:String;
+			
+			[Bindable]
+			private var newinfodate:String;
+			
+			[Bindable]
+			private var RemoveReson:String;
+			
+			private var Engobj:Object;
+			
+			protected function superpanel1_initializeHandler(event:FlexEvent):void
+			{
+				smarxService = new RemoteObject(GlobalConst.SERVICE_FORM);//平台服务
+				apmsService = new RemoteObject(ApmsUIConst.APMS_SERVICE);//APMS
+				
+				smarxService.endpoint = endpoint;
+				apmsService.endpoint = endpoint;
+				apmsService.engChange.addEventListener(ResultEvent.RESULT,changeOkHandler);
+				apmsService.engChange.addEventListener(FaultEvent.FAULT,changeFaultHandler);
+				
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,getEventHashVoHandler);
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				//apmsService//
+			}
+			
+			private var itemRefPanel:ItemRefPanel;
+			private var itemRefPanelSN:ItemRefPanel;
+			private function creationComplete():void{
+				var templetItemVO:TempletItemVO = new TempletItemVO();
+				var modelName:String;
+				var modelId:String;
+				var modelCode:String ;
+				
+				
+				templetItemVO.itemtype="参照";
+				templetItemVO.itemname="对照名称";
+				templetItemVO.itemkey="ENGMODEL";
+				templetItemVO.refdesc="select id id#,company company#,model from b_engine_model t where modellevel>0 order by model;ds=datasource_apms";
+				itemRefPanel = new ItemRefPanel(templetItemVO,GlobalConst.SERVICE_FORM,endpoint,false,false);
+				itemRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,engModelChanged);
+				if(engModelBox.getChildren().length > 0)
+					engModelBox.removeChildAt(0);
+				
+				engModelBox.addChild(itemRefPanel);
+				//加载的时候就加载控件
+				addEngSnRefPanel(null);
+				
+				acno = curEngObj["AIRCRAFTID"];
+				infodate = curEngObj["INFODATE"];
+				engloc=curEngObj["ENGWING_LOC"];
+				engPN=curEngObj["ENGMODELID"];
+				engSN=curEngObj["ENGSN"];
+				engTSN=curEngObj["TSN_HRS"];//总时间
+				engCSN=curEngObj["CSN"];//总循环
+				engCHKSTATE=curEngObj["CHKSTATE"];
+				
+				engCHKTSN=curEngObj["CHKFH_HRS"];
+				engCHKCSN=curEngObj["CYCLE_ONREPAIRED"];//修后总循环
+				
+				engCHKTIME=curEngObj["UPDAY"];
+			}
+			private var lastradiobut:Object = null;
+			protected function radiobutton1_clickHandler(event:MouseEvent):void
+			{
+			             // TODO Auto-generated method stub
+				var _obj:Object=SWAP_REASON;
+	              if(lastradiobut==event.currentTarget)
+	             {
+					  SWAP_REASON.selection = null;
+		         }
+			         lastradiobut = event.currentTarget;
+				
+		         if(SWAP_REASON.selection==null){
+					lastradiobut = null;
+				     //if(_obj.hasOwnProperty("failure"))
+					//	delete _obj.failure;
+					 //if(_obj.hasOwnProperty("echelon"))
+					//	delete _obj.echelon;
+				}else{
+					if(SWAP_REASON.selection.label=="故障"){
+					//_obj.failure=txtipt_xmZgh.text;
+					//	if(_obj.hasOwnProperty("echelon"))
+							
+					//		delete _obj.echelon;
+						RemoveReson="0";
+					}
+					else if(SWAP_REASON.selection.label=="梯次"){
+						//_obj.echelon=txtipt_xmZgh.text;
+						//if(_obj.hasOwnProperty("failure"))
+						//	delete _obj.failure;
+						RemoveReson="1";
+					}
+			     }
+	   		}
+
+			private function engModelChanged(event:UIComponentEvent):void{
+				if(itemRefPanel.returnVO != null){
+					//获取参照的返回值
+					engmodelid = itemRefPanel.returnVO.id;
+					//SmartXMessage.show("");
+					addEngSnRefPanel(engmodelid);
+					
+				}
+			}
+			private function engSNChanged(event:UIComponentEvent):void{
+				var ENGSNID:String;
+				var ENGSNAIRCRAFTID:String;
+				var ENGSN:String ;
+				var engtsn:String;
+				if(itemRefPanelSN.returnVO != null){
+				//获取参照的返回值
+					ENGSN = itemRefPanelSN.returnVO.name;
+					ENGSNID= itemRefPanelSN.returnVO.id;
+					ENGSNAIRCRAFTID = itemRefPanelSN.returnVO.code;
+					var sql:String = "SELECT * from  v_b_engine_info_query t,b_engine_model t1 WHERE t.engmodelid=t1.id and t.engsn='"+ENGSN+"'";
+					apmsService.getSimpleHashVoArrayByDS(ApmsUIConst.DATASOURCE_APMS,sql);
+					
+
+				//SmartXMessage.show("");
+				}
+			}
+			private function addEngSnRefPanel(modelId:String):void{
+				var ENGSNID:String;
+				var ENGSNAIRCRAFTID:String;
+				var ENGSN:String ;
+				
+				var templetItemVOSN:TempletItemVO = new TempletItemVO();
+				templetItemVOSN.itemtype="参照";
+				templetItemVOSN.itemname="对照名称";
+				
+				templetItemVOSN.itemkey="ENGSN";
+				
+				
+				if(modelId==null){
+					templetItemVOSN.refdesc="select ID ID#,AIRCRAFTID AIRCRAFTID# ,ENGSN,INFODATE INFODATE#,TSN TSN#,CSN CSN#,UPDAY UPDAY#,TIME_ONREPAIRED TIME_ONREPAIRED#,CYCLE_ONREPAIRED CYCLE_ONREPAIRED#,CHKSTATE CHKSTATE# from b_engine_info where engloc='0';ds=datasource_apms";
+				}
+				else{
+				templetItemVOSN.refdesc="select ID ID#,AIRCRAFTID AIRCRAFTID# ,ENGSN,INFODATE INFODATE#,TSN TSN#,CSN CSN#,UPDAY UPDAY#,TIME_ONREPAIRED TIME_ONREPAIRED#,CYCLE_ONREPAIRED CYCLE_ONREPAIRED#,CHKSTATE CHKSTATE# from b_engine_info WHERE ENGMODELID="+modelId+" and  engloc='0';ds=datasource_apms";
+				}
+				
+				
+				itemRefPanelSN = new ItemRefPanel(templetItemVOSN,GlobalConst.SERVICE_FORM,endpoint,false,false);
+				//itemRefPanelSN.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+				itemRefPanelSN.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,engSNChanged);
+					//if(itemRefPanelSN.returnVO != null){
+						//获取参照的返回值
+					//	ENGSN = itemRefPanelSN.returnVO.name;
+					//	ENGSNID= itemRefPanelSN.returnVO.id;
+					//	ENGSNAIRCRAFTID = itemRefPanelSN.returnVO.code;
+						//SmartXMessage.show("");
+					//}
+				//});
+				
+				if(engsnBox.getChildren().length > 0)
+					engsnBox.removeChildAt(0);
+				
+				engsnBox.addChild(itemRefPanelSN);
+			}
+			
+			//远程服务调用成功
+			private function getEventHashVoHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				var EngArr:Array = event.result as Array; //对返回数据进行转换
+				//var Engvo:SimpleHashVO = EngArr[0];
+				Engobj = EngArr[0]["dataMap"];
+				//var nes:String =Engobj["engsn"];
+				//调试一下看看
+				newengloc=Engobj["engwing_loc"];
+				
+				newengPN=Engobj["model"];
+				
+				newengSN=Engobj["engsn"];
+				
+				newengTSN=Engobj["tsn_hrs"];
+				
+				newengCSN=Engobj["csn"];
+				
+				newengCHKSTATE=Engobj["chkstate"];
+				if (newengCHKSTATE=="1") {
+					newengCHKSTATE="已送修";
+				}
+				else{
+					newengCHKSTATE="未送修";
+				}
+				newengCHKTSN=Engobj["chkfh_hrs"];
+				
+				newengCHKCSN=Engobj["cycle_onrepaired"];
+				
+				newengCHKTIME=Engobj["infodate"];
+				
+			}
+			
+			
+			private function changeOkHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("发动机拆换成功！");
+			}
+			
+			//远程服务调用失败
+			private function faultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据获取失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function changeFaultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("发动机拆换失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private var showMsg:SmartXMessage;
+			private function button1_clickHandler(event:Event):void{
+				
+				//showMsg = SmartXMessage.show("确认更换该发动机？",SmartXMessage.MESSAGE_CONFIRM,null,listPanel,confirmHandler);
+				if(newengloc=="1"){
+					SmartXMessage.show("您选择的发动机已经装在飞机上了，请另外选择一台！",SmartXMessage.MESSAGE_ERROR);
+					return;
+				}
+				if (RemoveReson==null||RemoveReson==""){
+					SmartXMessage.show("请选择拆换的原因！");
+					return;
+				}
+				if (RemoveReson=="0"&&(FAULT_DESC.text==""||FAULT_DESC.text==null)){
+					SmartXMessage.show("请输入故障说明！",SmartXMessage.MESSAGE_ERROR);
+					return;
+				}
+				
+				if(DateUtil.stringToDateDay(swapTime.text).getTime() != DateUtil.stringToDateDay(infodate).getTime() ){
+					SmartXMessage.show("拆换日期与有效数据日期不一致！",SmartXMessage.MESSAGE_ERROR);
+					return;
+				} 
+				
+				//if (newengSN==null||newengSN==""){
+				//	SmartXMessage.show("请选择新的发动机序号！",SmartXMessage.MESSAGE_ERROR);
+				//	return;
+				//}
+				//OperatingTipUtil.startOperat("正在下载附件......",listPanel);
+				//生成对象传送过去
+				//var EngRemoveObj:Object = new  Object();
+				//newxx["xx"] = "nihao";
+				var engRemove1:Object =new Object();
+				engRemove1.oldengsn=engSN;
+				engRemove1.newengsn=newengSN;
+				engRemove1.Removereson=RemoveReson;
+				engRemove1.FAULT_DESC=FAULT_DESC.text;
+				engRemove1.COMMENTS=COMMENTS.text;
+				engRemove1.Removedate=swapTime.text;
+				//EngRemoveObj["oldengsn"]=engSN;
+				//EngRemoveObj["newengsn"]=newengSN;
+				//EngRemoveObj["Removereson"]=RemoveReson;
+				//EngRemoveObj["FAULT_DESC"]=FAULT_DESC.text;
+				//EngRemoveObj["COMMENTS"]=COMMENTS.text;
+				
+				apmsService.engChange(engRemove1);
+				
+		
+
+				//生成对象传送过去
+				//var newxx:Object = new  Object();
+				//newxx["xx"] = "nihao";
+				//apmsService.engineChange("12345",newxx);
+			}
+			
+			private function confirmHandler(event:CloseEvent):void{
+				var newwinloc:int;
+				PopUpManager.removePopUp(showMsg);
+				//newwinloc=1;
+				if(event.detail == Alert.YES){
+					if(newengloc=="1"){
+						SmartXMessage.show("您选择的发动机已经装在飞机上了，请另外选择一台！",SmartXMessage.MESSAGE_ERROR);
+						return;
+					}
+					if (RemoveReson==null||RemoveReson==""){
+						SmartXMessage.show("请选择拆换的原因！");
+						return;
+					}
+					if (RemoveReson=="1"&&(FAULT_DESC.text==""||FAULT_DESC.text==null)){
+						SmartXMessage.show("请输入故障说明！",SmartXMessage.MESSAGE_ERROR);
+						return;
+					}
+	
+					if(swapTime.text.substring(0,9)!=infodate.substr(0,9)){
+						SmartXMessage.show("拆换日期与有效数据日期不一致！",SmartXMessage.MESSAGE_ERROR);
+						return;
+					} 
+					//if (newengSN==null||newengSN==""){
+					//	SmartXMessage.show("请选择新的发动机序号！",SmartXMessage.MESSAGE_ERROR);
+					//	return;
+					//}
+					//OperatingTipUtil.startOperat("正在下载附件......",listPanel);
+						//生成对象传送过去
+						//var EngRemoveObj:Object = new  Object();
+						//newxx["xx"] = "nihao";
+						var engRemove1:Object =new Object();
+						engRemove1.oldengsn=engSN;
+						engRemove1.newengsn=newengSN;
+						engRemove1.Removereson=RemoveReson;
+						engRemove1.FAULT_DESC=FAULT_DESC.text;
+						engRemove1.COMMENTS=COMMENTS.text;
+						engRemove1.Removedate=swapTime.text;
+						//EngRemoveObj["oldengsn"]=engSN;
+						//EngRemoveObj["newengsn"]=newengSN;
+						//EngRemoveObj["Removereson"]=RemoveReson;
+						//EngRemoveObj["FAULT_DESC"]=FAULT_DESC.text;
+						//EngRemoveObj["COMMENTS"]=COMMENTS.text;
+						
+						apmsService.engChange(engRemove1);
+					
+				}
+			}
+			
+			protected function module1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+	<s:RadioButtonGroup id="SWAP_REASON"/>
+	</fx:Declarations>	
+	<mx:VBox id="contentBox" height="30" width="100%"  >
+		<mx:HBox borderStyle="solid" verticalAlign="middle" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="拆装日期" />
+				<component:DateTimeChooser id="swapTime" nowTime="{new Date()}" />
+			</mx:HBox>
+			
+			<mx:HBox>
+				<mx:Label text="有效数据日期"/>
+				<mx:Label text="{infodate.substr(0,10)}" width="240"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="拆换原因：" width="65"/>
+				<s:RadioButton id="failure" label="故障" groupName="SWAP_REASON" click="radiobutton1_clickHandler(event)"/>
+				<s:RadioButton id="echelon" label="梯次" groupName="SWAP_REASON" click="radiobutton1_clickHandler(event)" />
+			</mx:HBox>
+			
+			<mx:Button label="拆换" click="button1_clickHandler(event)"/>
+		
+		</mx:HBox>
+	</mx:VBox>
+	<mx:HBox borderStyle="solid" id="listPanel" verticalAlign="middle" width="100%" height="60" paddingLeft="10">
+		<mx:Label text="故障说明:" height="25" width="80" /><mx:TextArea width="50%" height="100%" id="FAULT_DESC" ></mx:TextArea>
+		<mx:Label text="备注:" height="25" width="80"  /><mx:TextArea width="50%" height="100%" id="COMMENTS" ></mx:TextArea>
+	</mx:HBox>
+
+	<mx:VBox height="30" width="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" width="100%" height="30" paddingLeft="10">
+			
+			<mx:HBox  id="combengpn" height="25">
+				<mx:Label text="更换发动机型号"/>
+				<mx:HBox id="engModelBox"/>
+				<mx:Label text="更换发动机序号"/>
+				<mx:HBox id="engsnBox"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:VBox>
+	
+	
+	<mx:HBox borderStyle="solid" verticalAlign="middle" width="100%" height="466" paddingLeft="10">
+		<mx:Panel id="myPanel1" layout="absolute" width="80%" height="100%" title="需要更改发动机信息" >
+			<mx:VBox height="100%" width="100%">
+			
+			<mx:HBox  id="enginfo" height="30" width="100%">
+				<mx:Label text="机号" height="25"  /><mx:Label text="{acno}" width="120"/><mx:Label text="在翼位置"/>
+				<mx:Label text="{engloc}" width="120"/>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="件号" height="25"  /><mx:Label text="{engPN}" width="120"/><mx:Label text="序号"/>
+				<mx:Label text="{engSN}" width="120"/>	
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="TSN" height="25"  /><mx:Label text="{engTSN}" width="120"/><mx:Label text="CSN"/><mx:Label text="{engCSN}" width="120"/>
+			</mx:HBox>
+			
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检标志"/><mx:Label text="{engCHKSTATE}" width="100%"/>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检后使用时间"/><mx:Label text="{engCHKTSN}" width="100%"/>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检后使用循环"/><mx:Label text="{engCHKCSN}" width="100%"/>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="发动机数据时间"/><mx:Label text="{infodate.substr(0,10)}" width="100%"/>
+			</mx:HBox>
+		</mx:VBox>
+			</mx:Panel>
+		<mx:Panel id="myPanel" layout="absolute" width="80%" height="100%" title="新发动机信息">
+		<mx:VBox height="100%" width="100%">
+			
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="机号" height="25" width="80" /><mx:TextInput text="{acno}" width="120" id="acnonew" ></mx:TextInput><mx:Label text="在翼位置" width="80"/><mx:TextInput text="{engloc}" width="120" id="winglocnew"></mx:TextInput>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="件号" height="25" width="80" /><mx:TextInput text="{newengPN}" width="120" id="engpnnew"></mx:TextInput><mx:Label text="序号" width="80"/><mx:TextInput text="{newengSN}" width="120" id="engsnnew">	</mx:TextInput>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="TSN" height="30" width="80" /><mx:TextInput text="{newengTSN}" width="120" id="tsnnew"></mx:TextInput><mx:Label text="CSN" width="80"/><mx:TextInput text="{newengCSN}" width="120" id="csnnew"></mx:TextInput>
+			</mx:HBox>
+			
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检标志" width="80"/><mx:TextInput text="{newengCHKSTATE}" width="100%" id="chkstatenew"></mx:TextInput>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检后使用时间"/><mx:TextInput text="{newengCHKTSN}" width="100%" id="chktsnnew"></mx:TextInput>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="送检后使用循环"/><mx:TextInput text="{newengCHKCSN}" width="100%" id="chkcsnnew"></mx:TextInput>
+			</mx:HBox>
+			<mx:HBox height="30" width="100%">
+				<mx:Label text="发动机数据时间"/><mx:TextInput text="{newengCHKTIME}" width="100%" id="chkinfodate"></mx:TextInput>
+			</mx:HBox>
+		</mx:VBox>
+			</mx:Panel>
+	</mx:HBox>
+		
+
+</containers:SuperPanel>

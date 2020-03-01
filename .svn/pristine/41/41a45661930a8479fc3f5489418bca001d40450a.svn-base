@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="100%" height="100%" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A26报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*"
+			   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a26vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a26Data:Object;//译后报文内容
+			
+				
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ap_2:String;
+			
+			[Bindable]
+			private var epr_n1:String;
+			[Bindable]
+			private var eprc_n1:String;
+			[Bindable]
+			private var egt_n1:String;
+			[Bindable]
+			private var n1_n1:String;
+			[Bindable]
+			private var n2_n1:String;
+			[Bindable]
+			private var ff_n1:String;
+			[Bindable]
+			private var p125_n1:String;
+			[Bindable]
+			private var epr_n2:String;
+			[Bindable]
+			private var eprc_n2:String;
+			[Bindable]
+			private var egt_n2:String;
+			[Bindable]
+			private var n1_n2:String;
+			[Bindable]
+			private var n2_n2:String;
+			[Bindable]
+			private var ff_n2:String;
+			[Bindable]
+			private var p125_n2:String;
+			
+			[Bindable]
+			private var p25_s1:String;
+			[Bindable]
+			private var t25_s1:String;
+			[Bindable]
+			private var p3_s1:String;
+			[Bindable]
+			private var t3_s1:String;
+			[Bindable]
+			private var p49_s1:String;
+			[Bindable]
+			private var sva_s1:String;
+			[Bindable]
+			private var p25_s2:String;
+			[Bindable]
+			private var t25_s2:String;
+			[Bindable]
+			private var p3_s2:String;
+			[Bindable]
+			private var t3_s2:String;
+			[Bindable]
+			private var p49_s2:String;
+			[Bindable]
+			private var sva_s2:String;
+			
+			[Bindable]
+			private var baf_t1:String;
+			[Bindable]
+			private var acc_t1:String;
+			[Bindable]
+			private var lp_t1:String;
+			[Bindable]
+			private var gle_t1:String;
+			[Bindable]
+			private var pd_t1:String;
+			[Bindable]
+			private var tn_t1:String;
+			[Bindable]
+			private var p2_t1:String;
+			[Bindable]
+			private var t2_t1:String;
+			[Bindable]
+			private var baf_t2:String;
+			[Bindable]
+			private var acc_t2:String;
+			[Bindable]
+			private var lp_t2:String;
+			[Bindable]
+			private var gle_t2:String;
+			[Bindable]
+			private var pd_t2:String;
+			[Bindable]
+			private var tn_t2:String;
+			[Bindable]
+			private var p2_t2:String;
+			[Bindable]
+			private var t2_t2:String;
+								
+			[Bindable]
+			private var ecw1_v1:String;
+			[Bindable]
+			private var ecw2_v1:String;
+			[Bindable]
+			private var evm_v1:String;
+			[Bindable]
+			private var oip_v1:String;
+			[Bindable]
+			private var oit_v1:String;
+			[Bindable]
+			private var oiq_v1:String;
+			[Bindable]
+			private var ecw1_v2:String;
+			[Bindable]
+			private var ecw2_v2:String;
+			[Bindable]
+			private var evm_v2:String;
+			[Bindable]
+			private var oip_v2:String;
+			[Bindable]
+			private var oit_v2:String;
+			[Bindable]
+			private var oiq_v2:String;
+			
+			[Bindable]
+			private var vb1_v3:String;
+			[Bindable]
+			private var vb2_v3:String;
+			[Bindable]
+			private var pha_v3:String;
+			[Bindable]
+			private var oik_480_v3:String;
+			[Bindable]
+			private var oik_0_v3:String;
+			[Bindable]
+			private var vb1_v4:String;
+			[Bindable]
+			private var vb2_v4:String;
+			[Bindable]
+			private var pha_v4:String;
+			[Bindable]
+			private var oik_480_v4:String;
+			[Bindable]
+			private var oik_0_v4:String;
+			
+			[Bindable]
+			private var oipl_v5:String;
+			[Bindable]
+			private var oitl_v5:String;
+			[Bindable]
+			private var oiql_v5:String;
+			[Bindable]
+			private var oiqckl_v5:String;
+			
+			[Bindable]
+			private var reason:String;
+			
+			
+			
+			private function creationComplete():void
+			{
+				a26Data = a26vo.dataMap;
+				
+				
+				esn_1 = a26Data['esn_1']
+				ehrs_1 = a26Data['ehrs_1'];
+				ecyc_1 = a26Data['ecyc_1'];
+				ap_1 = a26Data['ap_1'];			
+				esn_2 = a26Data['esn_2']
+				ehrs_2 = a26Data['ehrs_2'];
+				ecyc_2 = a26Data['ecyc_2'];
+				ap_2 = a26Data['ap_2'];
+					
+				epr_n1 = a26Data['epr_n1'];
+				eprc_n1 = a26Data['eprc_n1'];
+				egt_n1 = a26Data['egt_n1'];
+				n1_n1 = a26Data['n1_n1'];
+				n2_n1 = a26Data['n2_n1'];
+				ff_n1 = a26Data['ff_n1'];
+				p125_n1 = a26Data['p125_n1'];
+				epr_n2 = a26Data['epr_n2'];
+				eprc_n2 = a26Data['eprc_n2'];
+				egt_n2 = a26Data['egt_n2'];
+				n1_n2 = a26Data['n1_n2'];
+				n2_n2 = a26Data['n2_n2'];
+				ff_n2 = a26Data['ff_n2'];
+				p125_n2 = a26Data['p125_n2'];
+				
+				p25_s1 = a26Data['p25_s1'];
+				t25_s1 = a26Data['t25_s1'];
+				p3_s1 = a26Data['p3_s1'];
+				p49_s1 = a26Data['p49_s1'];
+				sva_s1 = a26Data['sva_s1'];
+				t3_s1 = a26Data['t3_s1'];
+				p25_s2 = a26Data['p25_s2'];
+				t25_s2 = a26Data['t25_s2'];
+				p3_s2 = a26Data['p3_s2'];
+				p49_s2 = a26Data['p49_s2'];
+				sva_s2 = a26Data['sva_s2'];
+				t3_s2 = a26Data['t3_s2'];
+				
+				baf_t1 = a26Data['baf_t1'];
+				acc_t1 = a26Data['acc_t1'];
+				lp_t1 = a26Data['lp_t1'];
+				gle_t1 = a26Data['gle_t1'];
+				pd_t1 = a26Data['pd_t1'];
+				tn_t1 = a26Data['tn_t1'];
+				p2_t1 = a26Data['p2_t1'];
+				t2_t1 = a26Data['t2_t1'];
+				baf_t2 = a26Data['baf_t2'];
+				acc_t2 = a26Data['acc_t2'];
+				lp_t2 = a26Data['lp_t2'];
+				gle_t2 = a26Data['gle_t2'];
+				pd_t2 = a26Data['pd_t2'];
+				tn_t2 = a26Data['tn_t2'];
+				p2_t2 = a26Data['p2_t2'];
+				t2_t2 = a26Data['t2_t2'];
+				
+				ecw1_v1 = a26Data['ecw1_v1'];
+				ecw2_v1 = a26Data['ecw2_v1'];	
+				evm_v1 = a26Data['evm_v1'];
+				oip_v1 = a26Data['oip_v1'];
+				oit_v1 = a26Data['oit_v1'];
+				oiq_v1 = a26Data['oiq_v1'];
+				ecw1_v2 = a26Data['ecw1_v2'];
+				ecw2_v2 = a26Data['ecw2_v2'];	
+				evm_v2 = a26Data['evm_v2'];
+				oip_v2 = a26Data['oip_v2'];
+				oit_v2 = a26Data['oit_v2'];
+				oiq_v2 = a26Data['oiq_v2'];
+				
+				vb1_v3 = a26Data['vb1_v3'];
+				vb2_v3 = a26Data['vb2_v3'];	
+				pha_v3 = a26Data['pha_v3'];
+				oik_480_v3 = a26Data['oik_480_v3'];
+				oik_0_v3 = a26Data['oik_0_v3'];
+				vb1_v4 = a26Data['vib1_v4'];
+				vb2_v4 = a26Data['vib2_v4'];	
+				pha_v4 = a26Data['pha_v4'];
+				oik_480_v4 = a26Data['oik_480_v4'];
+				oik_0_v4 = a26Data['oik_0_v4'];
+				
+				oipl_v5 = a26Data['oipl_v5'];
+				oitl_v5 = a26Data['oitl_v5'];
+				oiql_v5 = a26Data['oiql_v5'];
+				oiqckl_v5 = a26Data['oiqckl_v5'];
+
+				reason = a26Data['reason'];
+
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A26 报文查看");
+			}
+
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+		<mx:HDividedBox id="contentBox" width="1100" height="600"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT26" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE OIL WARNING REPORT (26)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a26vo}" height="190"/>
+			
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/><mx:Label text="AP" color="red" width="80"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="小时" color="blue" width="60"/>
+	                <mx:Label text="循环" color="blue" width="60"/><mx:Label text="自动驾驶状态" color="blue" width="80"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ecyc_1}" width="60"/><mx:Label text="{ap_1}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ecyc_2}" width="60"/><mx:Label text="{ap_2}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="REASON" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="R1" width="30"/><mx:Label text="{reason}" width="150"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="EPR" color="red" width="60"/><mx:Label text="EPRC" color="red" width="60"/>
+					<mx:Label text="EGT" color="red" width="60"/><mx:Label text="N1" color="red" width="60"/><mx:Label text="N2" color="red" width="60"/>
+					<mx:Label text="FF" color="red" width="60"/><mx:Label text="P125" color="red" width="120"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="EPR" color="blue" width="60"/><mx:Label text="EPR指令" color="blue" width="60"/>
+					<mx:Label text="排气温度" color="blue" width="60"/><mx:Label text="N1转速" color="blue" width="60"/><mx:Label text="N2转速" color="blue" width="60"/>
+					<mx:Label text="燃油流量" color="blue" width="60"/><mx:Label text="外涵道风扇增压压力" color="blue" width="120"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N1" width="30"/><mx:Label text="{epr_n1}" width="60"/><mx:Label text="{eprc_n1}" width="60"/>
+					<mx:Label text="{egt_n1}" width="60"/><mx:Label text="{n1_n1}" width="60"/><mx:Label text="{n2_n1}" width="60"/>
+					<mx:Label text="{ff_n1}" width="60"/><mx:Label text="{p125_n1}" width="120"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N2" width="30"/><mx:Label text="{epr_n2}" width="60"/><mx:Label text="{eprc_n2}" width="60"/>
+					<mx:Label text="{egt_n2}" width="60"/><mx:Label text="{n1_n2}" width="60"/><mx:Label text="{n2_n2}" width="60"/>
+					<mx:Label text="{ff_n2}" width="60"/><mx:Label text="{p125_n2}" width="120"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="P25" color="red" width="90"/><mx:Label text="T25" color="red" width="90"/>
+					<mx:Label text="P3" color="red" width="80"/><mx:Label text="T3" color="red" width="80"/><mx:Label text="P49" color="red" width="60"/>
+					<mx:Label text="SVA" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="内涵道低压" color="blue" width="90"/><mx:Label text="内涵道低压" color="blue" width="90"/>
+					<mx:Label text="高压压气机" color="blue" width="80"/><mx:Label text="高压压气机" color="blue" width="80"/><mx:Label text="排气出口" color="blue" width="60"/>
+					<mx:Label text="可调静止叶片" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="压气机增压压力" color="blue" width="90"/><mx:Label text="压气机气体温度" color="blue" width="90"/>
+					<mx:Label text="出口增压压力" color="blue" width="80"/><mx:Label text="出口气体温度" color="blue" width="80"/><mx:Label text="气体压力" color="blue" width="60"/>
+					<mx:Label text="位置反馈" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{p25_s1}" width="90"/><mx:Label text="{t25_s1}" width="90"/>
+					<mx:Label text="{p3_s1}" width="80"/><mx:Label text="{t3_s1}" width="80"/><mx:Label text="{p49_s1}" width="60"/>
+					<mx:Label text="{sva_s1}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S2" width="30"/><mx:Label text="{p25_s2}" width="90"/><mx:Label text="{t25_s2}" width="90"/>
+					<mx:Label text="{p3_s2}" width="80"/><mx:Label text="{t3_s2}" width="80"/><mx:Label text="{p49_s2}" width="60"/>
+					<mx:Label text="{sva_s2}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="BAF" color="red" width="70"/><mx:Label text="ACC" color="red" width="80"/>
+					<mx:Label text="LP" color="red" width="80"/><mx:Label text="GLE" color="red" width="70"/><mx:Label text="PD" color="red" width="70"/>
+					<mx:Label text="TN" color="red" width="80"/><mx:Label text="P2" color="red" width="60"/><mx:Label text="T2" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="2.5级放气" color="blue" width="70"/><mx:Label text="主动间隙控制" color="blue" width="80"/>
+					<mx:Label text="低压涡轮" color="blue" width="80"/><mx:Label text="发电机负载" color="blue" width="70"/><mx:Label text="滑油预冷器" color="blue" width="70"/>
+					<mx:Label text="发动机舱温度" color="blue" width="80"/><mx:Label text="进口压力" color="blue" width="60"/><mx:Label text="进口温度" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="活门反馈" color="blue" width="70"/><mx:Label text="活门反馈" color="blue" width="80"/>
+					<mx:Label text="电磁活门位置" color="blue" width="80"/><mx:Label text=" " color="blue" width="70"/><mx:Label text="进口压力" color="blue" width="70"/>
+					<mx:Label text=" " color="blue" width="80"/><mx:Label text=" " color="blue" width="60"/><mx:Label text=" " color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T1" width="30"/><mx:Label text="{baf_t1}" width="70"/><mx:Label text="{acc_t1}" width="80"/>
+					<mx:Label text="{lp_t1}" width="80"/><mx:Label text="{gle_t1}" width="70"/><mx:Label text="{pd_t1}" width="70"/>
+					<mx:Label text="{tn_t1}" width="80"/><mx:Label text="{p2_t1}" width="60"/><mx:Label text="{t2_t1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T2" width="30"/><mx:Label text="{baf_t2}" width="70"/><mx:Label text="{acc_t2}" width="80"/>
+					<mx:Label text="{lp_t2}" width="80"/><mx:Label text="{gle_t2}" width="70"/><mx:Label text="{pd_t2}" width="70"/>
+					<mx:Label text="{tn_t2}" width="80"/><mx:Label text="{p2_t2}" width="60"/><mx:Label text="{t2_t2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ECW1" color="red" width="60"/><mx:Label text="ECW2" color="red" width="60"/>
+					<mx:Label text="EVM" color="red" width="60"/><mx:Label text="OIP" color="red" width="60"/><mx:Label text="OIT" color="red" width="60"/>
+					<mx:Label text="OIQ" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="控制字1" color="blue" width="60"/><mx:Label text="控制字2" color="blue" width="60"/>
+					<mx:Label text="震动状态" color="blue" width="60"/><mx:Label text="滑油压力" color="blue" width="60"/><mx:Label text="滑油温度" color="blue" width="60"/>
+					<mx:Label text="滑油量" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V1" width="30"/><mx:Label text="{ecw1_v1}" width="60"/><mx:Label text="{ecw2_v1}" width="60"/>
+					<mx:Label text="{evm_v1}" width="60"/><mx:Label text="{oip_v1}" width="60"/><mx:Label text="{oit_v1}" width="60"/>
+					<mx:Label text="{oiq_v1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V2" width="30"/><mx:Label text="{ecw1_v2}" width="60"/><mx:Label text="{ecw2_v2}" width="60"/>
+					<mx:Label text="{evm_v2}" width="60"/><mx:Label text="{oip_v2}" width="60"/><mx:Label text="{oit_v2}" width="60"/>
+					<mx:Label text="{oiq_v2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="VB1" color="red" width="60"/><mx:Label text="VB2" color="red" width="60"/>
+					<mx:Label text="PHA" color="red" width="70"/><mx:Label text="OIK_480" color="red" width="105"/><mx:Label text="OIK_0" color="red" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="N1抖动" color="blue" width="60"/><mx:Label text="N2抖动" color="blue" width="60"/>
+					<mx:Label text="风扇相位角" color="blue" width="70"/><mx:Label text="滑油 480秒修正量" color="blue" width="105"/><mx:Label text="滑油 当前修正量" color="blue" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V3" width="30"/><mx:Label text="{vb1_v3}" width="60"/><mx:Label text="{vb2_v3}" width="60"/>
+					<mx:Label text="{pha_v3}" width="70"/><mx:Label text="{oik_480_v3}" width="105"/><mx:Label text="{oik_0_v3}" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V4" width="30"/><mx:Label text="{vb1_v4}" width="60"/><mx:Label text="{vb2_v4}" width="60"/>
+					<mx:Label text="{pha_v4}" width="70"/><mx:Label text="{oik_480_v4}" width="105"/><mx:Label text="{oik_0_v4}" width="105"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIPL" color="red" width="90"/><mx:Label text="OITL" color="red" width="90"/>
+					<mx:Label text="OIQL" color="red" width="70"/><mx:Label text="OIQCKL" color="red" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油压力限制值" color="blue" width="90"/><mx:Label text="滑油温度限制值" color="blue" width="90"/>
+					<mx:Label text="滑油量限制值" color="blue" width="70"/><mx:Label text="修正滑油量限制值" color="blue" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V5" width="30"/><mx:Label text="{oipl_v5}" width="90"/><mx:Label text="{oitl_v5}" width="90"/>
+					<mx:Label text="{oiql_v5}" width="70"/><mx:Label text="{oiqckl_v5}" width="105"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a26Data.acmodel}" rptno="A26"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

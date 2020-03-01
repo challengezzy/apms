@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  initialize="initializeHandler(event)"
+		  creationComplete="creationCompleteHandler(event)"
+		  xmlns:core="smartx.flex.components.core.*">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			[Bindable]
+			private var endpoint:String;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				endpoint = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				modelList.dataGrid.addEventListener(ListEvent.CHANGE,modelListPanelItemClickHander);
+				modelList.dataGrid.addEventListener(CollectionEvent.COLLECTION_CHANGE,modelListPanelCollectionChangeHandler);
+				
+				structList.dataGrid.addEventListener(ListEvent.CHANGE,structListPanelItemClickHander);
+				structList.dataGrid.addEventListener(CollectionEvent.COLLECTION_CHANGE,structListPanelCollectionChangeHandler);
+				
+			}
+			
+			private function modelListPanelItemClickHander(event:ListEvent):void{
+				modelListClickHandler();
+				structList.editable = true;
+				structList.showEditBox = true;
+			}
+			
+			private function modelListPanelCollectionChangeHandler(event:CollectionEvent):void{
+				modelListClickHandler();
+				structList.editable = false;
+				structList.showEditBox = false;
+			}
+			
+			//选中一个机型
+			private function modelListClickHandler():void{
+				var mainObject:Object = modelList.getSelectedRowValue();
+				if(mainObject == null)
+					mainObject = new Object();
+				
+				var pkname:String = modelList.primaryKey;
+				var pkValue:Object = mainObject[pkname];
+				ClientEnviorment.getInstance().putVar("ENG_MODELID",pkValue);
+				
+				var forienKey:String = "ENGMODELID"; 
+				structList.showLoadingWindow = true;
+				
+				var condition:String = forienKey+"='"+pkValue+"'";
+				if(pkValue == null)
+					condition = forienKey+"=null";
+				
+				structList.initQueryCondition = condition;
+				structList.query();
+			}
+			
+			private function structListPanelItemClickHander(event:ListEvent):void{
+				structListClickHandler();
+				partList.editable = true;
+				partList.showEditBox = true;
+			}
+			
+			private function structListPanelCollectionChangeHandler(event:CollectionEvent):void{
+				structListClickHandler();
+				partList.editable = false;
+				partList.showEditBox = false;
+			}
+			
+			//选中一个机型
+			private function structListClickHandler():void{
+				var mainObject:Object = structList.getSelectedRowValue();
+				if(mainObject == null)
+					mainObject = new Object();
+				
+				var pkname:String = structList.primaryKey;
+				var pkValue:Object = mainObject[pkname];
+				ClientEnviorment.getInstance().putVar("ENG_LLP_STRUCTID",pkValue);
+				
+				var forienKey:String = "LLP_STRUCT_ID"; 
+				partList.showLoadingWindow = true;
+				
+				var condition:String = forienKey+"='"+pkValue+"'";				
+				if(pkValue == null)
+					condition = forienKey+"=null";
+				
+				partList.initQueryCondition = condition;
+				partList.query();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VDividedBox width="100%" height="100%">
+		<core:BillListPanel width="100%" height="50%" id="modelList"  endpoint="{endpoint}"
+							templetCode="T_B_ENGINE_MODEL_LLP" name="发动机模型" debugMode="{debugMode}"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+		<mx:HDividedBox height="50%" width="100%">
+			<mx:VBox width="40%" height="100%">
+				<core:BillListPanel width="100%" height="100%" id="structList" endpoint="{endpoint}"
+									destination="{smartxDest}"
+							templetCode="T_B_ENG_STRUCT_LLP" name="发动机构造" label="xx1"
+							showQuickQueryPanel="false"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}" debugMode="{debugMode}"/>
+			</mx:VBox>
+			<mx:VBox width="60%" height="100%">
+				<core:BillListPanel width="100%" height="100%" id="partList" endpoint="{endpoint}"
+									destination="{smartxDest}"
+							showQuickQueryPanel="false" label="xx2"
+							templetCode="T_B_ENG_LLP_PARTNUM" name="发动机构造部件"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}" debugMode="{debugMode}"/>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VDividedBox>
+</s:Module>

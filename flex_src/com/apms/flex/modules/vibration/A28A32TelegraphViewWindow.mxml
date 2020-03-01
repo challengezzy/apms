@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="850" height="600"  xmlns:core="smartx.flex.components.core.*"
+			   title="A28~A32报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a28a32vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a28a32Data:Object;//译后报文内容
+			
+			[Bindable]
+			private var acnum:String;
+			[Bindable]
+			private var date_utc:String;
+			[Bindable]
+			private var fly_from:String;
+			[Bindable]
+			private var fly_to:String;
+			[Bindable]
+			private var flt:String;
+			[Bindable]
+			private var ph:String;
+			[Bindable]
+			private var cnt:String;
+			[Bindable]
+			private var code:String;
+			[Bindable]
+			private var bleed_status:String;
+			[Bindable]
+			private var apu:String;
+			
+			[Bindable]
+			private var tat:String;
+			[Bindable]
+			private var alt:String;
+			[Bindable]
+			private var cas:String;
+			[Bindable]
+			private var mn:String;
+			[Bindable]
+			private var gw:String;
+			[Bindable]
+			private var cg:String;
+			[Bindable]
+			private var dmu:String;
+			
+			
+			[Bindable]
+			private var esn1:String;
+			[Bindable]
+			private var ehrs1:String;
+			[Bindable]
+			private var ecyc1:String;
+			[Bindable]
+			private var ap1:String;
+			
+			[Bindable]
+			private var esn2:String;
+			[Bindable]
+			private var ehrs2:String;
+			[Bindable]
+			private var ecyc2:String;
+			[Bindable]
+			private var ap2:String;
+			
+			[Bindable]
+			private var initCondition:String;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private function creationComplete():void
+			{
+			
+				a28a32Data = a28a32vo.dataMap;
+				
+				esn1 = a28a32Data['esn_1'];
+				ehrs1 = a28a32Data['ehrs_1'];
+				ecyc1 = a28a32Data['ecyc_1'];
+				ap1 = a28a32Data['ap_1'];
+				
+				esn2 = a28a32Data['esn_2'];
+				ehrs2 = a28a32Data['ehrs_2'];
+				ecyc2 = a28a32Data['ecyc_2'];
+				ap2 = a28a32Data['ap_2'];
+				
+				var msg_no:String = a28a32Data['msg_no'];
+				initCondition = " MSG_NO = " + msg_no;
+				
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A33报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" verticalGap="1">
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   APU MES/IDLE REPORT13" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a28a32vo}" width="100%" height="190"/>
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/><mx:Label text="AP" color="red" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="小时" color="blue" width="60"/>
+					<mx:Label text="循环" color="blue" width="60"/><mx:Label text="性能调整参数" color="blue" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn1}" width="60"/><mx:Label text="{ehrs1}" width="60"/>
+					<mx:Label text="{ecyc1}" width="60"/><mx:Label text="{ap1}" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn2}" width="60"/><mx:Label text="{ehrs2}" width="60"/>
+					<mx:Label text="{ecyc2}" width="60"/><mx:Label text="{ap2}" width="100"/>
+				</mx:HBox>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="100%" id="listPanel" 
+									templetCode="T_A_DFD_VIBRATIONRECORD" debugMode="false"
+									initQueryCondition="{initCondition}"
+									showPageBox="false" rowCountPerPage="170"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

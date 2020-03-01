@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="900" height="610" allowClose="true" layout="vertical"
+					   initialize="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this);"
+					   title="未完成维修工作单"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:bill="com.cool.components.bill.*" 
+					   xmlns:MaintenanceManage="com.apms.flex.modules.MaintenanceManage.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			[Bindable]
+			private var condStr:String = " 1=2 ";
+			
+			public function setFilter(acnum:String,fltdate:String):void{
+				condStr = " PARENTID=0 AND EFFECT=1 AND COMPLETESTATE=0 AND OPDY=TRUNC(TO_DATE('"+fltdate+"','YYYY-MM-DD'))" +
+						" and acno ='"+ acnum +"' ";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					//查询未关闭和延期的DD单
+					listPanel.query(false,false,true);
+					cardPanel.setDataValue(null);
+					taContext.text = "";
+				}
+				
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				listPanel.addEventListener(BillListPanelEvent.INITCOMPLETE,onBillListInitCompleteHandler);
+			}
+			
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListPanelItemClickHandler(event:ListEvent):void{
+				var selectedObj:Object = listPanel.getSelectedRowValue();
+				//ddInfoWindow.ddInfoData = selectedObj;
+				cardPanel.setDataValue(selectedObj);
+				taContext.text = selectedObj["CONTEXTCN"];
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%"   height="100%">
+		<mx:VBox  height="100%" width="100%">
+			<bill:BillListPanel id="listPanel" height="190" width="100%" initQueryCondition="{condStr}" showDataAfterInit="true"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" 
+								showQuickQueryPanel="false" showLoadingWindow="true" showPageBox="true"
+								endpoint="{endpoint}" templetCode="T_AMS_WORKORDERPLANE"
+								>
+			</bill:BillListPanel>
+			<mx:TextArea id="taContext" width="80%" height="70">				
+			</mx:TextArea>
+			<core:BillCardPanel id="cardPanel" width="100%" height="100%" editable="false" insertMode="false"
+								endpoint="{endpoint}" templetCode="T_AMS_WORKORDERPLANE"
+								layoutType="{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}" defaultItemUIComponentLabelWidth="80"
+								>
+			</core:BillCardPanel>
+
+		</mx:VBox>
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="top" height="26">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

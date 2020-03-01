@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="100%" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A38报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			import flash.text.engine.TabAlignment;
+			import com.apms.flex.assets.AssetsFileLib;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a38vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a38Data:Object;//译后报文内容
+					
+			
+			
+		
+			
+			private function creationComplete():void
+			{
+				a38Data = a38vo.dataMap;
+				telegraphContent=a38Data.tel_content;
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A11 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:HDividedBox id="contentBox" width="950" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+		<mx:VBox width="30%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="70%" height="100%" verticalGap="1">
+			<mx:HBox width="100%">
+				<mx:Label text="译后报文APU PREFORMANCE REPORT (38)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>				
+			<report:ReportHeaderPanel headHashVo="{a38vo}" height="190"/>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="E1"  boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="ASN" chineseName1="序号"  leftVal="{a38Data.asn_e1}" />
+				<report:TwoValuesReportPanel englishName="AHRS" chineseName1="飞行小时" leftVal="{a38Data.ahrs_e1}" />
+				<report:TwoValuesReportPanel englishName="ACYC" chineseName1="循环数" leftVal="{a38Data.acyc_e1}" />
+				<report:TwoValuesReportPanel englishName="PFAD" chineseName1="" leftVal="{a38Data.pfad_e1}" />
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="MES 1st TIME" fontWeight="bold"  />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="N1" rightVal="T1" boxWidth="30" chineseName2="" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="CT5ATP" chineseName1="修正后的" chineseName2="EGT温度" name2ToVisible="true"  leftVal="{a38Data.ct5atp_n1}" rightVal="{a38Data.ct5atp_t1}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="CPTATP" chineseName1="修正后的" chineseName2="PT压力" name2ToVisible="true" leftVal="{a38Data.cptatp_n1}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="CWFATP" chineseName1="修正后的" chineseName2="燃油流量" name2ToVisible="true" leftVal="{a38Data.cwfatp_n1}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="IGVATP" chineseName1="修正后的" chineseName2="IGV角度" name2ToVisible="true" leftVal="{a38Data.igvatp_n1}"  boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="BDTMAX" chineseName1="" chineseName2="" name2ToVisible="true" leftVal="{a38Data.bdtmax_n1}"  boxWidth="90"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="MES 2nd TIME" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="N2" rightVal="T2" chineseName2="" name2ToVisible="true" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="CT5ATP" chineseName1="修正后的" chineseName2="EGT温度" name2ToVisible="true" leftVal="{a38Data.ct5atp_n2}" rightVal="{a38Data.ct5atp_t2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="CPTATP" chineseName1="修正后的" chineseName2="PT压力" name2ToVisible="true" leftVal="{a38Data.cptatp_n2}" boxWidth="75" />
+				<report:TwoValuesReportPanel englishName="CWFATP" chineseName1="修正后的" chineseName2="燃油流量"  name2ToVisible="true" leftVal="{a38Data.cwfatp_n2}" boxWidth="75" />
+				<report:TwoValuesReportPanel englishName="IGVATP" chineseName1="修正后的" chineseName2="IGV角度" name2ToVisible="true" leftVal="{a38Data.igvatp_n2}"  boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="BDTMAX" chineseName1="" leftVal="{a38Data.bdtmax_n2}" chineseName2="" name2ToVisible="true"  boxWidth="90"/>
+			</mx:HBox>
+			
+		</mx:VBox>
+	</mx:HDividedBox>
+	<!--<component:EngPicPanel eng_model="{a38Data.acmodel}" rptno="A38"/>-->
+</containers:SuperPanel>

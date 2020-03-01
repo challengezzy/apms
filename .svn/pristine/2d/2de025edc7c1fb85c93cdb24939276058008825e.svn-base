@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.apms.flex.component.*"
+		  xmlns:item="com.cool.components.item.*"
+		  xmlns:core="smartx.flex.components.core.*"
+		   initialize="init()"
+		  width="100%" height="100%" xmlns:bill="com.cool.components.bill.*">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.*;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.ItemComponentEvent;
+			import com.hurlant.eval.ast.Type;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Text;
+			import mx.controls.TextArea;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			private var apmsService:RemoteObject ;
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			
+			[Bindable]
+			private var aptItemVo_dep:TempletItemVO = new TempletItemVO();
+			[Bindable]
+			private var aptItemVo_arr:TempletItemVO = new TempletItemVO();
+			[Bindable]
+			private var acnumItemVo:TempletItemVO = new TempletItemVO();
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			private var initStartDate:Date;
+			[Bindable]
+			private var initEndDate:Date;
+			private var arr_apt_code3:String ;//机场三字码
+			private var airnum:String;//飞机号
+			private var querySql:String = "";
+			[Bindable]
+			public var debugMode:Boolean = true;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			/**
+			 * 初始化信息
+			 * */
+			public function init():void{
+				var today:Date=new Date();
+				initStartDate=DateUtil.moveDay(today,-1);
+				initEndDate=DateUtil.moveDay(today,2);
+				
+				apmsService = new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				
+				aptItemVo_arr = new TempletItemVO();
+				aptItemVo_arr.itemtype="参照";
+				aptItemVo_arr.itemname="选择机场";
+				aptItemVo_arr.itemkey="APT";
+				aptItemVo_arr.refdesc="SELECT CODE_3 CODE3#,lower(CODE_3) 三字码,NAME 名称 FROM V_AIRPORT_REFQUERY;ds=datasource_apms";
+				
+				acnumItemVo = new TempletItemVO();
+				acnumItemVo.itemtype="参照";
+				acnumItemVo.itemname="选择飞机";
+				acnumItemVo.itemkey="APT";
+				acnumItemVo.refdesc="SELECT air.AIRCRAFTSN AIRCRAFTSN#,org.name 所属基地,air.AIRCRAFTSN 飞机号 FROM b_aircraft air,b_organization org where air.baseorgid=org.id;ds=datasource_apms";
+
+			}
+			private function arr_aptChangeHandler(event:ItemComponentEvent):void{
+				if(arr_apt.returnVO != null){
+					//获取参照的返回值
+					arr_apt_code3 = arr_apt.returnVO.id;
+				}else{
+					arr_apt_code3 = null;
+				}
+			}
+			private function acnumChangeHandler(event:ItemComponentEvent):void{
+				if(acnum.returnVO != null){
+					//获取参照的返回值
+					airnum = acnum.returnVO.id;
+				}else{
+					airnum = null;
+				}
+			}
+			private function refresh():void{
+				var startDaStr:String=startDa.text;
+				var endDaStr:String=endDa.text;
+				querySql=" trunc(FLT_DATE)>=to_date('"+startDaStr+"','YYYY-MM-DD')"+
+					" and trunc(FLT_DATE)<=to_date('"+endDaStr+"','YYYY-MM-DD')";
+				if(arr_apt_code3!=null){
+					querySql+=" and (DEP_APT='"+arr_apt_code3+"' or ARR_APT='"+arr_apt_code3+"')";
+				}
+				if(airnum!=null){
+					querySql+=" and ACNUM='"+airnum+"'";
+				}
+				if(flightno.text!=null&&flightno.text!=""){
+					querySql+=" and FLIGHTNO like '%"+flightno.text.toLocaleUpperCase()+"%'";
+				}
+				flight.initQueryCondition=querySql;
+				flight.query(false,false);
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="机场:"/>
+			<item:ItemRefField id="arr_apt" templetItemVO="{aptItemVo_arr}" destination="{smartxDest}" endpoint="{endpoint}"
+							   showLabel="false" realValueChange="arr_aptChangeHandler(event)" />
+			<mx:Label text="开始日期:"/><component:DateTimeChooser id="startDa" nowTime="{initStartDate}"   formatterType="2"/>
+			<mx:Label text="结束日期:"/><component:DateTimeChooser id="endDa" nowTime="{initEndDate}"  formatterType="2"/>
+			<mx:Label text="飞机号:"/>
+			<item:ItemRefField id="acnum" templetItemVO="{acnumItemVo}" destination="{smartxDest}" endpoint="{endpoint}"
+							   showLabel="false" realValueChange="acnumChangeHandler(event)" />
+			<mx:Label text="航班号:"/>
+			<mx:TextInput id="flightno" width="100"/>
+			<mx:Button label="刷新" click="refresh()"/>
+		</mx:HBox>
+		<core:BillListPanel width="100%" height="100%" id="flight"  endpoint="{endpoint}" rowCountPerPage="100" showQuickQueryPanel="false"
+							templetCode="T_F_FLIGHT_SCHEDULE_QRY" debugMode="{debugMode}"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+	</mx:VBox>
+</mx:Module>

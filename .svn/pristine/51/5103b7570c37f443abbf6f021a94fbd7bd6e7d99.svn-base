@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			
+			[Bindable]
+			private var allA28List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			private var freqScop:String = null;
+			private var dimension:String = null;
+			
+			[Bindable]
+			private var freq1:String;
+			[Bindable]
+			private var freq2:String;
+			[Bindable]
+			private var freq3:String;
+			[Bindable]
+			private var freq4:String;
+			[Bindable]
+			private var freq5:String;
+			[Bindable]
+			private var freq6:String;
+			[Bindable]
+			private var freq7:String;
+			[Bindable]
+			private var freq8:String;
+			
+			[Bindable]
+			private var freqName1:String;
+			[Bindable]
+			private var freqName2:String;
+			[Bindable]
+			private var freqName3:String;
+			[Bindable]
+			private var freqName4:String;
+			[Bindable]
+			private var freqName5:String;
+			[Bindable]
+			private var freqName6:String;
+			[Bindable]
+			private var freqName7:String;
+			[Bindable]
+			private var freqName8:String;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//远程服务添加监听
+				apmsService.getVibrationFreqChartData.addEventListener(ResultEvent.RESULT,getVibrationFreqChartDataHandler);
+				apmsService.getVibrationFreqChartData.addEventListener(FaultEvent.FAULT,getVibrationFreqDataErrorHandler);
+				
+				var url:String = this.loaderInfo.url;
+				var parameters:Object = StringUtil.parseUrlParameters(url);
+				freqScop = parameters.freqScop;
+				dimension = parameters.dimension;
+				
+				if(freqScop == null || dimension ==null ){
+					SmartXMessage.show("必须指定频段和数据维度！");
+				}
+				
+				initFreqConfig();
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+			}
+			
+			private function initFreqConfig():void{
+				var basicSeg:Number = 0;
+				if(freqScop == "0-4hz"){
+					basicSeg = 0;
+				}else if(freqScop == "4-8hz"){
+					basicSeg = 1;
+				}else if(freqScop == "8-12hz"){
+					basicSeg = 2;
+				}else if(freqScop == "12-16hz"){
+					basicSeg = 3;
+				}
+				
+				freq1 = "FREQ"+ (basicSeg*4+ 1 );        
+				freq2 = "FREQ"+ (basicSeg*4+ 2 );
+				freq3 = "FREQ"+ (basicSeg*4+ 3 );
+				freq4 = "FREQ"+ (basicSeg*4+ 4 );
+				freq5 = "FREQ"+ (basicSeg*4+ 5 );
+				freq6 = "FREQ"+ (basicSeg*4+ 6 );
+				freq7 = "FREQ"+ (basicSeg*4+ 7 );
+				freq8 = "FREQ"+ (basicSeg*4+ 8 );
+				
+				freqName1 = (basicSeg*4+ 0*0.5) + "~" + (basicSeg*4 + 1*0.5) + "HZ";
+				freqName2 = (basicSeg*4+ 1*0.5) + "~" + (basicSeg*4 + 2*0.5) + "HZ";
+				freqName3 = (basicSeg*4+ 2*0.5) + "~" + (basicSeg*4 + 3*0.5) + "HZ";
+				freqName4 = (basicSeg*4+ 3*0.5) + "~" + (basicSeg*4 + 4*0.5) + "HZ";
+				freqName5 = (basicSeg*4+ 4*0.5) + "~" + (basicSeg*4 + 5*0.5) + "HZ";
+				freqName6 = (basicSeg*4+ 5*0.5) + "~" + (basicSeg*4 + 6*0.5) + "HZ";
+				freqName7 = (basicSeg*4+ 6*0.5) + "~" + (basicSeg*4 + 7*0.5) + "HZ";
+				freqName8 = (basicSeg*4+ 7*0.5) + "~" + (basicSeg*4 + 8*0.5) + "HZ";
+			}
+			
+			
+			private function getVibrationFreqChartDataHandler(event:ResultEvent):void 
+			{
+				allA28List = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				allA28List = res["allA28List"];
+			}
+			
+			private function getVibrationFreqDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				apmsService.getVibrationFreqChartData(time_begin.text,time_end.text,acnum,dimension);
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"A28抖动监控");
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id ="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:VBox label="抖动监控" width="100%" height="100%">
+			<mx:HBox>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<component:ReportTrendChart id="vibration_chart1" chartName="{freqName1}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq1}" allList="{allA28List}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="vibration_chart2" chartName="{freqName2}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq2}" allList="{allA28List}">
+				</component:ReportTrendChart>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<component:ReportTrendChart id="vibration_chart3" chartName="{freqName3}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq3}" allList="{allA28List}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="vibration_chart4" chartName="{freqName4}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq4}" allList="{allA28List}">
+				</component:ReportTrendChart>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<component:ReportTrendChart id="vibration_chart5" chartName="{freqName5}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq5}" allList="{allA28List}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="vibration_chart6" chartName="{freqName6}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq6}" allList="{allA28List}">
+				</component:ReportTrendChart>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<component:ReportTrendChart id="vibration_chart7" chartName="{freqName7}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq7}" allList="{allA28List}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="vibration_chart8" chartName="{freqName8}" height="100%" width="100%" isSetInitPoint="false"
+											xField="DATE_UTC"  valField="{freq8}" allList="{allA28List}">
+				</component:ReportTrendChart>
+			</mx:HBox>
+			
+		</mx:VBox >
+	</mx:VBox>
+</mx:Module>

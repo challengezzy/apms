@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   initialize="initializeHandler(event)"
+			   creationComplete="creationCompleteHandler(event)"
+			   showCloseButton="true"
+			   title="故障信息"
+			   width="750" height="450" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*" xmlns:datagrid="com.cool.components.datagrid.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.fdimu.ApuFdimuFileUpload;
+			import com.apms.flex.modules.fdimu.FileDownloadWindow;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var destination:String = ApmsUIConst.APMS_SERVICE;
+			private var formService:RemoteObject=new RemoteObject;
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			private var flrQuerySql:String = "";
+			[Bindable]
+			private var mpfQuerySql:String = "";
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var listPanel:AdvDataGridPanel;
+			private var wid:Number;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				flrQuerySql = " select acf.fault_content,acf.fault_source,to_char(acf.reporttime,'yyyy-mm-dd hh24:mi:ss') reporttimestr" +
+					" from a_cfd_head ach,a_cfd_fault acf  " +
+					" where (ach.flightid="+selObj["flt_pk_a"]+" or ach.flightid="+selObj["flt_pk_d"]+") and ach.msg_no=acf.msg_no   order  by acf.reporttime";
+				
+				mpfQuerySql = " select acm.reportcontent,to_char(acm.reporttime,'yyyy-mm-dd hh24:mi:ss') reporttimestr" +
+					" from a_cfd_head ach,a_cfd_mpf acm  " +
+					" where (ach.flightid="+selObj["flt_pk_a"]+" or ach.flightid="+selObj["flt_pk_d"]+") and ach.msg_no=acm.msg_no and acm.reportcontent not like '%NO WARNING%' order by acm.reporttime";
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				if(tab.selectedIndex==0){
+					faultListDg.simpleQueryPanel.height=0;
+					faultListDg.refresh();
+				}else{
+					mpfListDg.simpleQueryPanel.height=0;
+					mpfListDg.refresh();
+				}
+			}
+			private function onchange():void{
+				if(tab.selectedIndex==0){
+					faultListDg.simpleQueryPanel.height=0;
+					faultListDg.refresh();
+				}else{
+					mpfListDg.simpleQueryPanel.height=0;
+					mpfListDg.refresh();
+				}
+			}
+			
+			private function onCopyFault():void
+			{				
+				var cpStr:String = DataListExportUtil.copySelectedData(faultListDg.dataListGrid,1) ;
+				System.setClipboard(cpStr);
+				
+				if( cpStr== null || cpStr == ""){
+					SmartXMessage.show("请选中要复制的数据");
+				}
+			}
+			
+			private function onCopyMpf():void
+			{				
+				var cpStr:String = DataListExportUtil.copySelectedData(mpfListDg.dataListGrid,1) ;
+				System.setClipboard(cpStr);	
+				if( cpStr== null || cpStr == ""){
+					SmartXMessage.show("请选中要复制的数据");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+		
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	<mx:TabNavigator id="tab" change="onchange()" width="100%" height="100%" >
+		<mx:VBox id="faultVB"  label="CFD故障内容" width="100%" height="100%" >
+			<mx:HBox width="100%">
+				<mx:Button label="复制" icon="{AssetsFileLib.subDatataskIcon}" click="onCopyFault()" />
+			</mx:HBox>
+			<component:AdvDataGridPanel id="faultListDg" width="100%" height="100%" sql="{flrQuerySql}" dataSource="{apmsDs}" >
+				<component:columns>
+					<datagrid:CheckBoxColumn id="columnIsChecked"
+									itemRenderer="com.cool.components.datagrid.CheckBoxItemRenderer" 
+									headerRenderer="com.cool.components.datagrid.CheckBoxHeaderRenderer" editable="true"
+									width="25" dataField="isChecked" rendererIsEditor="true"  editorDataField="selected" />
+					<mx:DataGridColumn dataField="fault_content" headerText="故障内容" width="360"/>
+					<mx:DataGridColumn dataField="fault_source" headerText="故障源"/>
+					<mx:DataGridColumn dataField="reporttimestr" headerText="报文时间"/>
+					
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+		<mx:VBox id="mpfVB" label="CFD航后故障内容" width="100%" height="100%" >
+			<mx:Button label="复制" icon="{AssetsFileLib.subDatataskIcon}" click="onCopyMpf()" />
+			<component:AdvDataGridPanel id="mpfListDg" width="100%" height="100%" sql="{mpfQuerySql}" dataSource="{apmsDs}" >
+				<component:columns>
+					<datagrid:CheckBoxColumn id="columnIsChecked2"
+							itemRenderer="com.cool.components.datagrid.CheckBoxItemRenderer" 
+							headerRenderer="com.cool.components.datagrid.CheckBoxHeaderRenderer" editable="true"
+						    width="25" dataField="isChecked" rendererIsEditor="true"  editorDataField="selected" />
+					<mx:DataGridColumn dataField="reportcontent" headerText="航后故障内容" width="500"/>
+					<mx:DataGridColumn dataField="reporttimestr" headerText="报文时间"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:TabNavigator>
+</mx:TitleWindow>

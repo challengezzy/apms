@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				flightWorkMissingReport.simpleQueryPanel.height=0;
+				queryColumns.push("flightno");
+				queryColumns.push("changetype_name");
+				beginTime = DateUtil.moveDay(new Date(),-7);
+				dep_aptOrArr_apt.selectedIndex=1;
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql ="";
+				querySql += " select flt_date_str,flightno_union,acnum,(select acm.modelcode from b_aircraft air, b_aircraft_model acm where air.aircraftsn = f.ACNUM";
+				querySql += " and air.acmodelid = acm.id) acmodel,baseorg,apt_union,maintaintype,stda,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = any(f.FLT_PK_A,f.FLT_PK_D)  and fr.reportcontent = '人员到岗')),1,'是','') renyuandaogang,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = f.FLT_PK_D and fr.reportcontent = '工作完成')),1,'是','') workfinish,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = f.FLT_PK_D and fr.reportcontent = any('飞机关门','关舱'))),1,'是','') aircraftclosedoor";
+				querySql += " from v_flightsch_join_report f where f.MAINTAINTYPE = any('PF', 'TR', 'AF+PF')";
+				querySql += " and 3!=(select  count(distinct frtem.reportcontent) from F_FLIGHTREPORT frtem where frtem.flightid = f.FLT_PK_D";
+				querySql += " and frtem.reportcontent = any('人员到岗','工作完成','飞机关门'))";
+				if(dep_aptOrArr_apt.textInput.text!=""){
+					querySql += " and f.APT ='"+dep_aptOrArr_apt.textInput.text+"'";
+				}
+				querySql += " and f.FLT_DATE >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')";
+				querySql += " and f.FLT_DATE <=to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss')";
+				if(flightno.text!=""){
+					querySql += " and f.FLIGHTNO_D like '%"+flightno.text+"%'";
+				}
+				if(acnum.text!=""){
+					querySql +=" and f.acnum like '%"+acnum.text+"%'";
+				}
+				querySql += " UNION ALL";
+				querySql += " select flt_date_str,flightno_union,acnum,(select acm.modelcode from b_aircraft air, b_aircraft_model acm where air.aircraftsn = f.ACNUM";
+				querySql += " and air.acmodelid = acm.id) acmodel,baseorg,apt_union,maintaintype,stda,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = f.FLT_PK_A and fr.reportcontent = '人员到岗')),1,'是','') renyuandaogang,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = f.FLT_PK_A and fr.reportcontent = '工作完成')),1,'是','') workfinish,";
+				querySql += " decode(sign((select count(1) from F_FLIGHTREPORT fr where fr.flightid = f.FLT_PK_A and fr.reportcontent = any('飞机关门','关舱'))),1,'是','') aircraftclosedoor";
+				querySql += " from v_flightsch_join_report f where f.MAINTAINTYPE = 'AF'";
+				querySql += " and 3!=(select  count(distinct frtem.reportcontent) from F_FLIGHTREPORT frtem where frtem.flightid = f.FLT_PK_A";
+				querySql += " and frtem.reportcontent = any('人员到岗','工作完成','飞机关门'))";
+				if(dep_aptOrArr_apt.textInput.text!=""){
+					querySql += " and f.APT ='"+dep_aptOrArr_apt.textInput.text+"'";
+				}
+				querySql += " and f.FLT_DATE >=to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')";
+				querySql += " and f.FLT_DATE <=to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss')";
+				if(flightno.text!=""){
+					querySql += " and f.FLIGHTNO_A like '%"+flightno.text+"%'";
+				}
+				if(acnum.text!=""){
+					querySql +=" and f.acnum like '%"+acnum.text+"%'";
+				}
+				flightWorkMissingReport.sql = querySql;
+				flightWorkMissingReport.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightWorkMissingReport.dataListGrid as DataGrid,"航班工作缺报记录");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="航班号:"/> 
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="飞机号:"/> 
+			<s:TextInput id="acnum"/>
+			<mx:Label text="航班日期" />
+			<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="2"/>
+			<mx:Label text="->" />
+			<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="2"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightWorkMissingReport" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}">
+			<component:columns>
+				<mx:DataGridColumn dataField="flt_date_str" headerText="航班日期" width="100"/>
+				<mx:DataGridColumn dataField="flightno_union" headerText="航班号" width="130"/>
+				<mx:DataGridColumn dataField="acnum" headerText="机号" width="80"/>
+				<mx:DataGridColumn dataField="acmodel" headerText="机型" width="110"/>
+				<mx:DataGridColumn dataField="baseorg" headerText="所属基地" width="160"/>
+				<mx:DataGridColumn dataField="apt_union" headerText="经停航站" width="150"/>
+				<mx:DataGridColumn dataField="maintaintype" headerText="维护" width="70"/>
+				<mx:DataGridColumn dataField="stda" headerText="计划到达/起飞" width="130"/>
+				<mx:DataGridColumn dataField="renyuandaogang" headerText="人员到岗" width="110"/>
+				<mx:DataGridColumn dataField="workfinish" headerText="工作完成" width="110"/>
+				<mx:DataGridColumn dataField="aircraftclosedoor" headerText="飞机关门"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

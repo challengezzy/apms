@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  xmlns:component="com.apms.flex.component.*"
+		  xmlns:core="smartx.flex.components.core.*"
+		  creationComplete="creationCompleteHandler(event)"
+		  initialize="initializeHandler(event)" xmlns:bill="com.cool.components.bill.*">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Text;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			[Bindable]
+			private var startDate:Date;
+			[Bindable]
+			private var endDate:Date;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			public var orgArr:ArrayCollection;
+			[Bindable]
+			public var typeArr:ArrayCollection;
+			[Bindable]
+			public var maintaintype:ArrayCollection;
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				var today:Date=new Date();
+				startDate=DateUtil.moveDay(today,-5);
+				endDate=today;
+				orgArr=new ArrayCollection([{val:""},{val:"航线虹桥维修车间"},{val:"航线浦东维修车间"},{val:"宽体机维修车间"},{val:"MCC"}]);
+				typeArr=new ArrayCollection([{val:""},{val:"排故经过"},{val:"技术分析"},{val:"延误分析"},{val:"运行调查"},{val:"运行困难"}
+					,{val:"航材保障"},{val:"工具保障"},{val:"技术方案"}
+					,{val:"运行回复"},{val:"排故记录"},{val:"日常通报"},{val:"工作状态"},{val:"飞机状态"},{val:"运行提示处理"},{val:"航班变动"}
+					,{val:"三方业务"},{val:"协议外委"}]);
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				maintaintype=new ArrayCollection([{val:""},{val:"PF"},{val:"TR"},{val:"AF+PF"},{val:"AF"}]);
+			}
+			protected function onArrFlightQuery():void{
+				
+				var chgFilter:String =" FLT_DATE>=TO_DATE('"+start_date.text+"','YYYY-MM-DD') AND FLT_DATE<=TO_DATE('"+end_date.text+"','YYYY-MM-DD')";
+				//部门
+				if(StringUtil.StringReplaceAll(lineord.textInput.text," ","")!=""){
+					chgFilter=chgFilter+" and ORGLINE ='"+lineord.textInput.text+"'";
+				}
+				//航班号
+				if(StringUtil.StringReplaceAll(flightno.text," ","")!=""){
+					chgFilter=chgFilter+" and FLIGHTNO ='"+flightno.text.toUpperCase()+"'";
+				}
+				//通报类型
+				if(StringUtil.StringReplaceAll(type.textInput.text," ","")!=""){
+					chgFilter=chgFilter+" and type = '"+type.textInput.text+"'";
+				}
+				//飞机号
+				if(StringUtil.StringReplaceAll(acnum.text," ","")!=""){
+					chgFilter=chgFilter+" and acnum='"+acnum.text.toUpperCase()+"'";
+				}
+				//备注
+				if(StringUtil.StringReplaceAll(comments.text," ","")!=""){
+					chgFilter=chgFilter+" and comments like '%"+comments.text+"%'";
+				}
+				//通报内容
+				if(StringUtil.StringReplaceAll(reportcontent.text," ","")!=""){
+					chgFilter=chgFilter+" and REPORTCONTENT like '%"+reportcontent.text+"%'";
+				}
+				
+				//起飞站
+				if(StringUtil.StringReplaceAll(dep_aptOrArr_apt.textInput.text," ","")!=""){
+					chgFilter=chgFilter+" and (DEP_APT='"+dep_aptOrArr_apt.textInput.text+"' or ARR_APT='"+dep_aptOrArr_apt.textInput.text+"')";
+				}
+				//起飞维护
+				if(StringUtil.StringReplaceAll(dep_maintaintype.textInput.text," ","")!=""){
+					chgFilter=chgFilter+" and Flttype_Dep='"+dep_maintaintype.textInput.text+"'";
+				}
+				//落地维护
+				if(StringUtil.StringReplaceAll(arr_maintaintype.textInput.text," ","")!=""){
+					chgFilter=chgFilter+" and Flttype_Arr='"+arr_maintaintype.textInput.text+"'";
+				}
+				reportListPanel.initQueryCondition = chgFilter;
+				reportListPanel.query(false,false);
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				reportListPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListPanelItemClickHandler(event:ListEvent):void{
+				var selectedObj:Object = reportListPanel.getSelectedRowValue();
+				txtDetailContent.text = selectedObj["REPORTCONTENT"];
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+	</fx:Declarations>
+	<mx:VBox height="100%" width="100%">
+		<mx:HBox width="100%" verticalAlign="middle" >
+			<mx:Label text="通报部门:"/>
+			<s:ComboBox id="lineord" dataProvider="{orgArr}" labelField="val" width="126"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="通报类型:"/>
+			<s:ComboBox id="type" dataProvider="{typeArr}" labelField="val" width="120"/>
+			<s:Spacer width="27"/>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="22"/>
+			<mx:Label text="航班号:"/>
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="飞机号:"/>
+			<s:TextInput id="acnum"/>
+			<mx:Label text="备注:"/>
+			<s:TextInput id="comments"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="开始航班时间:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="2"/>
+			<s:Spacer width="9"/>
+			<mx:Label text="结束航班时间:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="2"/>
+			<mx:Label text="起飞维护:"/>
+			<s:ComboBox id="dep_maintaintype" dataProvider="{maintaintype}" labelField="val" width="80"/>
+			<s:Spacer width="17"/>
+			<mx:Label text="落地维护:"/>
+			<s:ComboBox id="arr_maintaintype" dataProvider="{maintaintype}" labelField="val" width="80"/>
+			<s:Spacer width="43"/>
+			<mx:Label text="通报内容:"/>
+			<s:TextInput id="reportcontent"/>
+			<mx:Button label="查询" width="100" click="onArrFlightQuery()" />
+		</mx:HBox>
+		<mx:VDividedBox height="100%" width="100%">
+			<bill:BillListPanel id="reportListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="true" rownumWidth="30"
+								templetCode="T_F_FLIGHTREPORT_MONITOR" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+			<mx:HBox width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" height="60">
+				<mx:Label text="通报内容" fontWeight="bold" />
+				<mx:TextArea id="txtDetailContent" width="90%" height="100%" paddingTop="5" paddingLeft="10" editable="false">
+				</mx:TextArea>
+			</mx:HBox>
+		</mx:VDividedBox>
+	</mx:VBox>
+</mx:Module>

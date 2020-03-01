@@ -1,0 +1,965 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:LinearAxis id="lineAxis" baseAtZero="false" autoAdjust="true" />
+		<mx:SolidColor id="color_orange" color="0xFF9933"/>
+		<mx:SolidColor id="color_purple" color="0xC100CE"/>
+		<mx:SolidColor id="color_green" color="0x99CC33"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import smartx.flex.components.vo.MetadataTemplet;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.HitData;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var engineService:RemoteObject = new RemoteObject;
+			private var engineFormDest:String = ApmsUIConst.ENGINFORMSERVICE;
+			private var formService:RemoteObject;
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			
+			private var acnum:String ;//查询机号
+			private var acmodel:String="";
+			
+			private var egt_maxvalue_redline:String="egt_maxvalue_redline";
+			private var egt_minvalue_redline:String="egt_minvalue_redline";
+			private var n1_maxvalue_redline:String="n1_maxvalue_redline";
+			private var n1_minvalue_redline:String="n1_minvalue_redline";
+			private var n2_maxvalue_redline:String="n2_maxvalue_redline";
+			private var n2_minvalue_redline:String="n2_minvalue_redline";
+			private var ff_maxvalue_redline:String="ff_maxvalue_redline";
+			private var ff_minvalue_redline:String="ff_minvalue_redline";
+			
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var allA01List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01LeftChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01RightChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_egt:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_n1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_n2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_ff:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_t2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_p125_p2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_p25_p2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_p3_p25:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_p49_p3:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_egt_margin_1:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04Compu_egt_margin_2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01Compu_div_egt_margin:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n1_1RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n1_2RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n2_1RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n2_2RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var egtMargin_1RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var egtMargin_2RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var egt_1RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var egt_2RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var ff_1RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var ff_2RankList:ArrayCollection = new ArrayCollection();
+			
+			
+			
+			[Bindable]
+			private var egt_left:String="";
+			
+			[Bindable]
+			private var egt_right:String="";
+			
+			[Bindable]
+			private var n1_left:String="";
+			
+			[Bindable]
+			private var n1_right:String="";
+			
+			[Bindable]
+			private var n2_left:String="";
+			
+			[Bindable]
+			private var n2_right:String="";
+			
+			[Bindable]
+			private var ff_left:String="";
+			
+			[Bindable]
+			private var ff_right:String="";
+			
+			[Bindable]
+			private var p125_p2_left:String="";
+			
+			[Bindable]
+			private var p125_p2_right:String="";
+			
+			[Bindable]
+			private var p25_p2_left:String="";
+			
+			[Bindable]
+			private var p25_p2_right:String="";
+			
+			[Bindable]
+			private var p3_p25_left:String="";
+			
+			[Bindable]
+			private var p3_p25_right:String="";
+			
+			[Bindable]
+			private var p49_p3_left:String="";
+			
+			[Bindable]
+			private var p49_p3_right:String="";
+			
+			[Bindable]
+			private var egt_margin_left:String="";
+			
+			[Bindable]
+			private var egt_margin_right:String="";
+			
+			[Bindable]
+			private var warnList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var faultList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var workList:ArrayCollection = new ArrayCollection();
+			
+			//Flex页面初始化处理
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				
+				beginTime = DateUtil.moveMonth(endTime,-1);
+				
+				engineService.endpoint = endpoint;
+				engineService.destination = engineFormDest;
+				
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				//远程服务添加监听
+				engineService.getIaevEngineA01ChartData.addEventListener(ResultEvent.RESULT,getIaevEngineA01ChartDataHandler);
+				engineService.getIaevEngineA01ChartData.addEventListener(FaultEvent.FAULT,getIaevEngineA01ChartDataErrorHandler);	
+			}
+			//Flex页面构建完处理
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,M.MODELSERIES MODELSERIES#,AIRCRAFTSN 机号,M.MODELCODE 机型,(select model from B_ENGINE_INFO E, B_ENGINE_MODEL EM where E.Engmodelid=EM.Id and E.AIRCRAFTID=A.Id and rownum=1) 发动机型号 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				egt_left="EGT左";
+				egt_right="EGT右";
+				
+				n1_left="N2左";
+				n1_right="N2右";
+				
+				p125_p2_left="P125/P2左";
+				p125_p2_right="P125/P2右";
+				
+				p25_p2_left="P25/P2左";
+				p25_p2_right="P25/P2右";
+				
+				p3_p25_left="P3/P25左";
+				p3_p25_right="P3/P25右";
+				
+				p49_p3_left="P3/P49左";
+				p49_p3_right="P3/P49右";
+				
+				n2_left="N2左";
+				n2_right="N2右";
+				
+				ff_left="FF左";
+				ff_right="FF右";
+				
+				egt_margin_left="EGT Margin左";
+				egt_margin_right="EGT Margin右";
+
+				engine_chart_div_egt.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_div_n1.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_chart_div_n2.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_chart_div_ff.plotChart.dataTipFunction=trendTipStrFuncKgh;
+				
+				engine_chart_p125p2.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_div_p125p2.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_p25p2.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_div_p25p2.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_p3p25.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_div_p3p25.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_p49p3.plotChart.dataTipFunction=trendTipStrFuncnull;
+				engine_chart_div_p49p3.plotChart.dataTipFunction=trendTipStrFuncnull;
+				
+				engine_chart_t2.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_div_t2.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_t3.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_egt_margin.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_div_egt_margin.plotChart.dataTipFunction=trendTipStrFuncTp;
+				
+				engine_chart_egt_delta.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_ff_delta.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_chart_n1_delta.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_chart_n2_delta.plotChart.dataTipFunction=trendTipStrFuncRev;
+				
+				engine_chart_tn.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_div_tn.plotChart.dataTipFunction=trendTipStrFuncTp;
+				
+				warn_chart.plotChart.dataTipFunction = engCfdTipFunc;
+				warn_chart.leftChk.label = "告警";
+				warn_chart.rightChk.label = "故障";
+				warn_chart.pointChk.visible = false;
+				warn_chart.lineAxis.maximum = 85;
+				warn_chart.lineAxis.minimum = 65;
+				warn_chart.changePlot1.setStyle("fill",color_orange);
+				warn_chart.changePlot2.setStyle("fill",color_purple);
+				
+				mwork_chart.plotChart.dataTipFunction = engMWorkTipFunc;
+				mwork_chart.leftChk.visible = false;
+				mwork_chart.rightChk.visible = false;
+				mwork_chart.pointChk.visible = false;
+				mwork_chart.lineAxis.maximum = 3;
+				mwork_chart.lineAxis.minimum = 1;
+				mwork_chart.changePlot1.setStyle("fill",color_green);
+			}
+			public function engMWorkTipFunc(e:HitData):String{
+				var tip:String = "";
+				var item:Object = e.item;
+				var ps:PlotSeries = e.element as PlotSeries;
+				var yField:String = ps.yField;
+				var xField:String = ps.xField;
+				
+				var mttype:String = item["MTTYPE"];
+				var content:String = item["CONTEXTCN"];
+				var wsn:String = item["WORKORDERSN"];
+				var comments:String = item["COMMENTS"];
+				
+				tip += "维修类型："+mttype;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n说明："+comments;
+				tip += "\n生产编号："+wsn;
+				tip += "\n工作内容:" + content;
+				
+				return tip;
+			}
+			
+			public function engCfdTipFunc(e:HitData):String{
+				var tip:String = "";
+				var item:Object = e.item;
+				var ps:PlotSeries = e.element as PlotSeries;
+				var yField:String = ps.yField;
+				var xField:String = ps.xField;
+				
+				var atano:String = item["ATANO"];
+				var content:String = item["CONTENT"];
+				var acnum:String = item["ACNUM"];
+				var type:String = item["TYPE"];
+				var typestr:String = "告警";
+				if(type == "F"){
+					typestr = "故障";
+				}
+				tip += typestr + "\n" + "机号："+acnum+" 章节："+atano;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+content;
+				
+				return tip;
+			}
+			
+			//查询按钮处理
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				OperatingTipUtil.startOperat("正在查询....",this);
+				engineService.getIaevEngineA01ChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+			}
+			//导出按钮处理
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"Iaev巡航性能");
+			}
+			private function tabCompanentCreateComplete():void{
+				engine_chart_egt.plotChart.dataTipFunction=trendTipStrFuncTp;
+				engine_chart_ff.plotChart.dataTipFunction=trendTipStrFuncKgh;
+				engine_chart_n1.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_chart_n2.plotChart.dataTipFunction=trendTipStrFuncRev;
+				
+				engine_chart_egt.redlineFieldUpperLimitValue=egt_maxvalue_redline;
+				engine_chart_egt.redlineFieldLowerLimitValue=egt_minvalue_redline;
+				engine_chart_n2.redlineFieldUpperLimitValue=n2_maxvalue_redline;
+				engine_chart_n2.redlineFieldLowerLimitValue=n2_minvalue_redline;
+				engine_chart_n1.redlineFieldUpperLimitValue=n1_maxvalue_redline;
+				engine_chart_n1.redlineFieldLowerLimitValue=n1_minvalue_redline;
+				engine_chart_ff.redlineFieldUpperLimitValue=ff_maxvalue_redline;
+				engine_chart_ff.redlineFieldLowerLimitValue=ff_minvalue_redline;
+				
+			}
+			//远程监听返回结果处理
+			private function getIaevEngineA01ChartDataHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				allA01LeftChangedList = res["allA01LeftChangedList"];
+				allA01RightChangedList = res["allA01RightChangedList"];
+				allA01Compu_egt = res["allA01Compu_div_egt"];
+				allA01Compu_n1 = res["allA01Compu_div_n1"];
+				allA01Compu_n2 = res["allA01Compu_div_n2"];
+				allA01Compu_ff = res["allA01Compu_div_ff"];
+				allA01Compu_t2 = res["allA01Compu_div_t2"];
+				allA01Compu_p125_p2 = res["allA01Compu_div_p125p2"];
+				allA01Compu_p25_p2 = res["allA01Compu_div_p25p2"];
+				allA01Compu_p3_p25 = res["allA01Compu_div_p3p25"];
+				allA01Compu_p49_p3 = res["allA01Compu_div_p49p3"];
+				allA04Compu_egt_margin_1 = res["allA04Compu_egt_margin_1"];
+				allA04Compu_egt_margin_2 = res["allA04Compu_egt_margin_2"];
+
+				allA01Compu_div_egt_margin = res["allA01Compu_div_egt_margin"];
+				allA01List = res["allA01List"];
+				n1_1RankList = res["n1_1RankList"];
+				n1_2RankList = res["n1_2RankList"];
+				
+				egtMargin_1RankList = res["egtMargin_1RankList"];
+				egtMargin_1RankList = res["egtMargin_1RankList"];
+				
+				n2_1RankList = res["n2_1RankList"];
+				n2_2RankList = res["n2_2RankList"];
+				
+				egt_1RankList = res["egt_1RankList"];
+				egt_2RankList = res["egt_2RankList"];
+				
+				ff_1RankList = res["ff_1RankList"];
+				ff_2RankList = res["ff_2RankList"];
+				
+				warnList = res["warnList"];
+				faultList = res["faultList"];
+				workList = res["workList"];
+				
+				if(allA01List.length>0){
+					
+					redlineChkClick();
+				}
+			}
+			//远程监听失败处理
+			private function getIaevEngineA01ChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询Iaev发动机A01数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			public function trendTipStrFuncTp(e:HitData):String{
+				return trendTipStrFunc(e,"°C");
+			}
+			public function trendTipStrFuncRev(e:HitData):String{
+				return trendTipStrFunc(e,"%");
+			}
+			public function trendTipStrFuncRev_D(e:HitData):String{
+				return trendTipStrFunc_D(e,"%");
+			}
+			public function trendTipStrFuncKgh(e:HitData):String{
+				return trendTipStrFunc(e,"Kg/小时");
+			}
+			public function trendTipStrFuncAngle(e:HitData):String{
+				return trendTipStrFunc_x(e,"角度");
+			}
+			public function trendTipStrFuncnull(e:HitData):String{
+				return trendTipStrFunc(e,"");
+			}
+			public function trendTipStrFuncAngle_x(e:HitData):String{
+				return trendTipStrFunc_x(e,"角度");
+			}
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var position:String;
+				var number:String;
+				if(e.contextColor==0x0000ff){
+					position = "1#";
+					number = item["ESN_1"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}else if(e.contextColor==0xff0000){
+					position = "2#";
+					number = item["ESN_2"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}
+				if(item[xField] is Date){
+					tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				}else if(item[xField] is Number){
+					var dateTemp:Date = DateUtil.parseMsToDate(item[xField]);
+					tip += "\n"+ DateUtil.dateToString(dateTemp,1);
+				}
+				tip += "\n"+ item[yField]+unitStr;
+				return tip;
+			}
+			
+			public function trendTipStrFunc_D(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var position:String;
+				var number:String;
+				if(e.contextColor==0x0000ff){
+					position = "1#";
+					number = item["ESN_1"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}else if(e.contextColor==0xff0000){
+					position = "2#";
+					number = item["ESN_2"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}
+				if(item[xField] is Date){
+					tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				}else if(item[xField] is Number){
+					var dateTemp:Date = DateUtil.parseMsToDate(item[xField]);
+					tip += "\n"+ DateUtil.dateToString(dateTemp,1);
+				}
+				tip += "\n"+"原值："+ item[yField.substring(8,yField.length)]
+				tip += "\n"+"偏离度：" + item[yField]+unitStr;
+				return tip;
+			}
+			
+			public function trendTipStrFunc_x(e:HitData,unitStr:String):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var position:String;
+				var number:String;
+				if(e.contextColor==0x0000ff){
+					position = "1#";
+					number = item["ESN_1"];
+				}else if(e.contextColor==0xff0000){
+					position = "2#";
+					number = item["ESN_2"];
+				}
+				tip += "\n"+"位置："+position+" 序号："+number;
+				tip += "\n"+ item[xField];
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			//红线复选框点击 
+			private function redlineChkClick():void{
+				var mtd:MetadataTemplet = MetadataTempletUtil.getInstance().findMetadataTemplet("ReadLineConfig");
+				var xml:XML = mtd.contentXML;
+				var redline_egt_maxvalue:String="" 
+				var redline_egt_minvalue:String=""
+				var redline_n1_maxvalue:String="" 
+				var redline_n1_minvalue:String=""
+				var redline_n2_maxvalue:String="" 
+				var redline_n2_minvalue:String=""
+				var redline_ff_maxvalue:String=""
+				var redline_ff_minvalue:String=""
+				
+				
+				for(var i:Number = 0;i <xml.children().length()-1;i++){
+					var acmodelStr:String=xml.headitem[i].@acmodel;
+					if(acmodel.localeCompare(acmodelStr)==0){
+						redline_egt_maxvalue=xml.headitem[i].iae_a01egt_redlinevalue.@upperlimitvalue;
+						redline_egt_minvalue=xml.headitem[i].iae_a01egt_redlinevalue.@lowerlimitvalue;
+						redline_n1_maxvalue=xml.headitem[i].iae_a01n1_redlinevalue.@upperlimitvalue;
+						redline_n1_minvalue=xml.headitem[i].iae_a01n1_redlinevalue.@lowerlimitvalue;
+						redline_n2_maxvalue=xml.headitem[i].iae_a01n2_redlinevalue.@upperlimitvalue;
+						redline_n2_minvalue=xml.headitem[i].iae_a01n2_redlinevalue.@lowerlimitvalue;
+						redline_ff_maxvalue=xml.headitem[i].iae_a01ff_redlinevalue.@upperlimitvalue;
+						redline_ff_minvalue=xml.headitem[i].iae_a01ff_redlinevalue.@lowerlimitvalue;
+						
+					}
+				}
+				if(""==redline_egt_maxvalue){
+					redline_egt_maxvalue=xml.defaultconfig.iae_a01egt_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_egt_minvalue){
+					redline_egt_minvalue=xml.defaultconfig.iae_a01egt_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n1_maxvalue){
+					redline_n1_maxvalue=xml.defaultconfig.iae_a01n1_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n1_minvalue){
+					redline_n1_minvalue=xml.defaultconfig.iae_a01n1_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n2_maxvalue){
+					redline_n2_maxvalue=xml.defaultconfig.iae_a01n2_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n2_minvalue){
+					redline_n2_minvalue=xml.defaultconfig.iae_a01n2_redlinevalue.@lowerlimitvalue;
+				}
+			
+				if(""==redline_ff_maxvalue){
+					redline_ff_maxvalue=xml.defaultconfig.iae_a01ff_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_ff_minvalue){
+					redline_ff_minvalue=xml.defaultconfig.iae_a01ff_redlinevalue.@lowerlimitvalue;
+				}
+				for(var j:int=0;j<allA01List.length;j++){
+					allA01List[j][egt_maxvalue_redline]=redline_egt_maxvalue; 
+					allA01List[j][egt_minvalue_redline]=redline_egt_minvalue;
+					allA01List[j][n1_maxvalue_redline]=redline_n1_maxvalue; 
+					allA01List[j][n1_minvalue_redline]=redline_n1_minvalue;
+					allA01List[j][n2_maxvalue_redline]=redline_n2_maxvalue; 
+					allA01List[j][n2_minvalue_redline]=redline_n2_minvalue;
+					allA01List[j][ff_maxvalue_redline]=redline_ff_maxvalue; 
+					allA01List[j][ff_minvalue_redline]=redline_ff_minvalue;
+				}
+			
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:CheckBox id="isKChk" label="斜率计算" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<mx:TabNavigator id="monitor" width="100%"  height="100%" creationPolicy="auto" resizeToContent="true">
+			<mx:VBox label="巡航性能" width="100%" height="100%">
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="warn_chart" chartName="CFD故障和告警" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="false"
+													valField1="YVAL" point1Name="CFD故障"
+													valField2="YVAL" point2Name="CFD告警"
+													changList1="{warnList}" changList2="{faultList}"
+													chartTitle_left="" chartTitle_right="">
+					</component:ReportTrendDualChart>
+					<component:ReportTrendDualChart id="mwork_chart" chartName="发动机维修工作" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="false" 
+													valField1="YVAL" 
+													changList1="{workList}"
+													chartTitle_left="" >
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_egt_delta" chartName="DELTA EGT(排气温度)" height="100%" width="100%"
+													xField="UTCDATE"   colorTipVisible="true"
+													valField1="DELTA_EGT_1" point1Name="EGT左"
+													valField2="DELTA_EGT_2" point2Name="EGT右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													isSlope="true" 
+													slopeList1="{egt_1RankList}"  slopeList2="{egt_2RankList}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{egt_left}" chartTitle_right="{egt_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_egt" chartName="DIV EGT(排气温度差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true"
+													valField1="DIV_EGT_1" point1Name="EGT左(DIV)" pointTypeField1="V_POINTTYPE" 
+													valField2="DIV_EGT_2" point2Name="EGT右(DIV)" pointTypeField2="V_POINTTYPE" 
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{egt_left}" chartTitle_right="{egt_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_n1_delta" chartName="DELTA N1(转速)" height="100%" width="100%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="DELTA_N1_1" point1Name="N1左"
+													valField2="DELTA_N1_2" point2Name="N1右"
+													isSlope="true" 
+													slopeList1="{n1_1RankList}"  slopeList2="{n1_2RankList}"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n1_left}" chartTitle_right="{n1_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_n1" chartName="DIV N1(转速差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true" 
+													valField1="DIV_N1_1" point1Name="N1左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_N1_2" point2Name="N1右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n1_left}" chartTitle_right="{n1_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_n2_delta" chartName="DELTA N2(转速)" height="100%" width="100%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="DELTA_N2_1" point1Name="N2左"
+													valField2="DELTA_N2_2" point2Name="N2右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													isSlope="true" 
+													slopeList1="{n2_1RankList}"  slopeList2="{n2_2RankList}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n2_left}" chartTitle_right="{n2_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_n2" chartName="DIV N2(转速差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true"
+													valField1="DIV_N2_1" point1Name="N2左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_N2_2" point2Name="N2右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n2_left}" chartTitle_right="{n2_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_ff_delta" chartName="DELTA FF(燃油流量)" height="100%" width="100%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="DELTA_FF_1" point1Name="FF左"
+													valField2="DELTA_FF_2" point2Name="FF右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													isSlope="true" 
+													slopeList1="{ff_1RankList}"  slopeList2="{ff_2RankList}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{ff_left}" chartTitle_right="{ff_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_ff" chartName="DIV FF(燃油流量差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true"
+													valField1="DIV_FF_1" point1Name="FF左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_FF_2" point2Name="FF右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{ff_left}" chartTitle_right="{ff_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_p125p2" chartName="P125/P2(风扇增压比)" height="100%" width="100%"
+													xField="UTCDATE"   colorTipVisible="true"
+													valField1="P125P2_1" point1Name="P125/P2左"
+													valField2="P125P2_2" point2Name="P125/P2右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p125_p2_left}" chartTitle_right="{p125_p2_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_p125p2" chartName="DIV P125/P2(风扇增压比差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true"
+													valField1="DIV_P125P2_1" point1Name="P125/P2左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_P125P2_2" point2Name="P125/P2右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p125_p2_left}" chartTitle_right="{p125_p2_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_p25p2" chartName="P25/P2(低压压气机增压比)" height="100%" width="100%"
+													xField="UTCDATE"   colorTipVisible="true"
+													valField1="P25P2_1" point1Name="P25/P2左"
+													valField2="P25P2_2" point2Name="P25/P2右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p25_p2_left}" chartTitle_right="{p25_p2_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_p25p2" chartName="DIV P25/P2(低压压气机增压比差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+													valField1="DIV_P25P2_1" point1Name="P25/P2左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_P25P2_2" point2Name="P25/P2右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p25_p2_left}" chartTitle_right="{p25_p2_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_p3p25" chartName="P3/P25(高压压气机增压比)" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="true" 
+													valField1="P3P25_1" point1Name="P3/P25左"
+													valField2="P3P25_2" point2Name="P3/P25右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p3_p25_left}" chartTitle_right="{p3_p25_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_p3p25" chartName="DIV P3/P25(高压压气机增压比差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+													valField1="DIV_P3P25_1" point1Name="P3/P25左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_P3P25_2" point2Name="P3/P25右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p3_p25_left}" chartTitle_right="{p3_p25_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_p49p3" chartName="P3/P49(涡轮落压比)" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="true"
+													valField1="P49P3_1" point1Name="P3/P49左"
+													valField2="P49P3_2" point2Name="P3/P49右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p49_p3_left}" chartTitle_right="{p49_p3_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_p49p3" chartName="DIV P3/P49(涡轮落压比差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+													valField1="DIV_P49P3_1" point1Name="P3/P49左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_P49P3_2" point2Name="P3/P49右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{p49_p3_left}" chartTitle_right="{p49_p3_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_t2" chartName="T2(发动机风扇进口的温度)" height="100%" width="100%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="T2_1" point1Name="T2左"
+													valField2="T2_2" point2Name="T2右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="T2左" chartTitle_right="T2右">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_t2" chartName="DIV T2(发动机风扇进口的温度差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+													valField1="DIV_T2_1" point1Name="T2左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_T2_2" point2Name="T2右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="T2左" chartTitle_right="T2右">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_egt_margin" chartName="EGT_M(发动机起飞裕度)" height="100%" width="100%"
+													xField="UTCDATE"   colorTipVisible="true"
+													valField1="EGT_MARGIN_1" point1Name="EGT_M左" pointTypeField1="V_POINTTYPE"
+													valField2="EGT_MARGIN_2" point2Name="EGT_M右" pointTypeField2="V_POINTTYPE"
+													allList1="{allA04Compu_egt_margin_1}" allList2="{allA04Compu_egt_margin_2}"
+													isSlope="true" 
+													slopeList1="{egtMargin_1RankList}"  slopeList2="{egtMargin_2RankList}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{egt_margin_left}" chartTitle_right="{egt_margin_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_egt_margin" chartName="DIV EGT_M(发动机裕度差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM"  colorTipVisible="true"
+													valField1="DIV_EGT_MARGIN1" point1Name="EGT_M左(DIV)" pointTypeField1="V_POINTTYPE"
+													valField2="DIV_EGT_MARGIN2" point2Name="EGT_M右(DIV)" pointTypeField2="V_POINTTYPE"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{egt_margin_left}" chartTitle_right="{egt_margin_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_t3" chartName="DELTA T3(高压压气机出口温度)" height="100%" width="50%"
+													xField="UTCDATE" colorTipVisible="true" 
+													valField1="DELTA_T3_1" point1Name="T3左"
+													valField2="DELTA_T3_2" point2Name="T3右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="T3左" chartTitle_right="T3右">
+					</component:ReportTrendDualChart>
+					<component:ReportTrendDualChart id="engine_chart_t25" chartName="DELTA T25(低压压气机出口温度)" height="100%" width="50%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="DELTA_T25_1" point1Name="T25左"
+													valField2="DELTA_T25_2" point2Name="T25右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="T25左" chartTitle_right="T25右">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_tn" chartName="TN(吊架温度)" height="100%" width="100%"
+													xField="UTCDATE"  colorTipVisible="true"
+													valField1="TN_1" point1Name="TN左"
+													valField2="TN_2" point2Name="TN右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="TN左" chartTitle_right="TN右">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_div_tn" chartName="DIV TN(吊架温度差分)" height="100%" width="100%"
+													xField="UTCDATE" colorAttribute="ALARMNUM" 
+													valField1="DIV_TN_1" point1Name="TN左(DIV)" 
+													valField2="DIV_TN_2" point2Name="TN右(DIV)" 
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="TN左" chartTitle_right="TN右">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox label="原值" width="100%" height="100%" creationComplete="tabCompanentCreateComplete()">
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_egt" chartName="EGT(排气温度)" height="100%" width="100%"
+													xField="UTCDATE"  isRedLine="true" colorTipVisible="true"
+													valField1="EGT_1" point1Name="EGT左"
+													valField2="EGT_2" point2Name="EGT右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{egt_left}" chartTitle_right="{egt_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="engine_chart_ff" chartName="FF(燃油流量)" height="100%" width="100%"
+													xField="UTCDATE"  isRedLine="true" colorTipVisible="true"
+													valField1="FF_1" point1Name="FF左"
+													valField2="FF_2" point2Name="FF右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{ff_left}" chartTitle_right="{ff_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="engine_chart_n1" chartName="N1(转速)" height="100%" width="100%"
+													xField="UTCDATE"  isRedLine="true" colorTipVisible="true"
+													valField1="N1_1" point1Name="N1左"
+													valField2="N1_2" point2Name="N1右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n1_left}" chartTitle_right="{n1_right}">
+					</component:ReportTrendDualChart>
+					<component:ReportTrendDualChart id="engine_chart_n2" chartName="N2(转速)" height="100%" width="100%"
+													xField="UTCDATE"  isRedLine="true" colorTipVisible="true"
+													valField1="N2_1" point1Name="N2左"
+													valField2="N2_2" point2Name="N2右"
+													allList1="{allA01List}" allList2="{allA01List}"
+													changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+													chartTitle_left="{n2_left}" chartTitle_right="{n2_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+			</mx:VBox>	
+		</mx:TabNavigator>
+	</mx:VBox>	
+	
+</mx:Module>

@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="1000" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A01CFM报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import com.apms.flex.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a01cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a01cData:Object;//译后报文内容
+			
+			
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ert_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var qe_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ert_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ap_2:String;
+			
+			[Bindable]
+			private var n1_n1:String;
+			[Bindable]
+			private var n1c_n1:String;
+			[Bindable]
+			private var n2_n1:String;
+			[Bindable]
+			private var egt_n1:String;
+			[Bindable]
+			private var ff_n1:String;
+			[Bindable]
+			private var ps13_n1:String;
+			[Bindable]
+			private var n1_n2:String;
+			[Bindable]
+			private var n1c_n2:String;
+			[Bindable]
+			private var n2_n2:String;
+			[Bindable]
+			private var egt_n2:String;
+			[Bindable]
+			private var ff_n2:String;
+			[Bindable]
+			private var ps13_n2:String;
+			
+			[Bindable]
+			private var p25_s1:String;
+			[Bindable]
+			private var t25_s1:String;
+			[Bindable]
+			private var p3_s1:String;
+			[Bindable]
+			private var t3_s1:String;
+			[Bindable]
+			private var t5_s1:String;
+			[Bindable]
+			private var vsv_s1:String;
+			[Bindable]
+			private var vbv_s1:String;
+			[Bindable]
+			private var p25_s2:String;
+			[Bindable]
+			private var t25_s2:String;
+			[Bindable]
+			private var p3_s2:String;
+			[Bindable]
+			private var t3_s2:String;
+			[Bindable]
+			private var t5_s2:String;
+			[Bindable]
+			private var vsv_s2:String;
+			[Bindable]
+			private var vbv_s2:String;
+			
+			[Bindable]
+			private var hpt_t1:String;
+			[Bindable]
+			private var lpt_t1:String;
+			[Bindable]
+			private var gle_t1:String;
+			[Bindable]
+			private var pd_t1:String;
+			[Bindable]
+			private var tn_t1:String;
+			[Bindable]
+			private var pt2_t1:String;
+			[Bindable]
+			private var oiqh_t1:String;
+			[Bindable]
+			private var hpt_t2:String;
+			[Bindable]
+			private var lpt_t2:String;
+			[Bindable]
+			private var gle_t2:String;
+			[Bindable]
+			private var pd_t2:String;
+			[Bindable]
+			private var tn_t2:String;
+			[Bindable]
+			private var pt2_t2:String;
+			[Bindable]
+			private var oiqh_t2:String;
+			
+			[Bindable]
+			private var vn_v1:String;
+			[Bindable]
+			private var vl_v1:String;
+			[Bindable]
+			private var pha_v1:String;
+			[Bindable]
+			private var pht_v1:String;
+			[Bindable]
+			private var vc_v1:String;
+			[Bindable]
+			private var vh_v1:String;
+			[Bindable]
+			private var evm_v1:String;
+			[Bindable]
+			private var vn_v2:String;
+			[Bindable]
+			private var vl_v2:String;
+			[Bindable]
+			private var pha_v2:String;
+			[Bindable]
+			private var pht_v2:String;
+			[Bindable]
+			private var vc_v2:String;
+			[Bindable]
+			private var vh_v2:String;
+			[Bindable]
+			private var evm_v2:String;
+			
+			[Bindable]
+			private var vn_v3:String;
+			[Bindable]
+			private var vl_v3:String;
+			[Bindable]
+			private var pha_v3:String;
+			[Bindable]
+			private var pht_v3:String;
+			[Bindable]
+			private var n1_v3:String;
+			[Bindable]
+			private var vn_v4:String;
+			[Bindable]
+			private var vl_v4:String;
+			[Bindable]
+			private var pha_v4:String;
+			[Bindable]
+			private var pht_v4:String;
+			[Bindable]
+			private var n1_v4:String;
+			[Bindable]
+			private var vn_v5:String;
+			[Bindable]
+			private var vl_v5:String;
+			[Bindable]
+			private var pha_v5:String;
+			[Bindable]
+			private var pht_v5:String;
+			[Bindable]
+			private var n1_v5:String;
+			[Bindable]
+			private var vn_v6:String;
+			[Bindable]
+			private var vl_v6:String;
+			[Bindable]
+			private var pha_v6:String;
+			[Bindable]
+			private var pht_v6:String;
+			[Bindable]
+			private var n1_v6:String;
+			
+			[Bindable]
+			private var oip_v7:String;
+			[Bindable]
+			private var oit_v7:String;
+			[Bindable]
+			private var ecw1_v7:String;
+			[Bindable]
+			private var ssel_v7:String;
+			[Bindable]
+			private var oip_v8:String;
+			[Bindable]
+			private var oit_v8:String;
+			[Bindable]
+			private var ecw1_v8:String;
+			[Bindable]
+			private var ssel_v8:String;
+			
+			
+			
+			private function creationComplete():void
+			{
+				a01cData = a01cvo.dataMap;
+				
+				esn_1 = a01cData['esn_1'];
+				ehrs_1 = a01cData['ehrs_1'];
+				ert_1 = a01cData['ert_1'];
+				ecyc_1 = a01cData['ecyc_1'];
+				ap_1 = a01cData['ap_1'];
+				qe_1 = a01cData['qe_ec'];
+				esn_2 = a01cData['esn_2'];
+				ehrs_2 = a01cData['ehrs_2'];
+				ert_2 = a01cData['ert_2'];
+				ecyc_2 = a01cData['ecyc_2'];
+				ap_2 = a01cData['ap_2'];
+				
+				n1_n1 = a01cData['n1_1'];
+				n1c_n1 = a01cData['n1c_1'];
+				n2_n1 = a01cData['n2_1'];
+				egt_n1 = a01cData['egt_1'];
+				ff_n1 = a01cData['ff_1'];
+				ps13_n1 = a01cData['ps13_1'];
+				n1_n2 = a01cData['n1_2'];
+				n1c_n2 = a01cData['n1c_2'];
+				n2_n2 = a01cData['n2_2'];
+				egt_n2 = a01cData['egt_2'];
+				ff_n2 = a01cData['ff_2'];
+				ps13_n2 = a01cData['ps13_2'];
+				
+				p25_s1 = a01cData['p25_1'];
+				t25_s1 = a01cData['t25_1'];
+				p3_s1 = a01cData['p3_1'];
+				t3_s1 = a01cData['t3_1'];
+				t5_s1 = a01cData['t5_1'];
+				vsv_s1 = a01cData['vsv_1'];
+				vbv_s1 = a01cData['vbv_1'];
+				p25_s2 = a01cData['p25_2'];
+				t25_s2 = a01cData['t25_2'];
+				p3_s2 = a01cData['p3_2'];
+				t3_s2 = a01cData['t3_2'];
+				t5_s2 = a01cData['t5_2'];
+				vsv_s2 = a01cData['vsv_2'];
+				vbv_s2 = a01cData['vbv_2'];
+				
+				hpt_t1 = a01cData['hpt_1'];
+				lpt_t1 = a01cData['lpt_1'];
+				gle_t1 = a01cData['gle_1'];
+				pd_t1 = a01cData['pd_1'];
+				tn_t1 = a01cData['tn_1'];
+				pt2_t1 = a01cData['pt2_1'];
+				oiqh_t1 = a01cData['oiqh_1'];
+				hpt_t2 = a01cData['hpt_2'];
+				lpt_t2 = a01cData['lpt_2'];
+				gle_t2 = a01cData['gle_2'];
+				pd_t2 = a01cData['pd_2'];
+				tn_t2 = a01cData['tn_2'];
+				pt2_t2 = a01cData['pt2_2'];
+				oiqh_t2 = a01cData['oiqh_2'];
+				
+				vn_v1 = a01cData['vn_1'];
+				vl_v1 = a01cData['vl_1'];
+				pha_v1 = a01cData['pha_1'];
+				pht_v1 = a01cData['pht_1'];
+				vc_v1 = a01cData['vc_1'];
+				vh_v1 = a01cData['vh_1'];
+				evm_v1 = a01cData['evm_1'];
+				vn_v2 = a01cData['vn_2'];
+				vl_v2 = a01cData['vl_2'];
+				pha_v2 = a01cData['pha_2'];
+				pht_v2 = a01cData['pht_2'];
+				vc_v2 = a01cData['vc_2'];
+				vh_v2 = a01cData['vh_2'];
+				evm_v2 = a01cData['evm_2'];
+				
+				vn_v3 = a01cData['vn_1_sd'];
+				vl_v3 = a01cData['vl_1_sd'];
+				pha_v3 = a01cData['pha_1_sd'];
+				pht_v3 = a01cData['pht_1_sd'];
+				n1_v3 = a01cData['n1_1_sd'];
+				vn_v4 = a01cData['vn_2_sd'];
+				vl_v4 = a01cData['vl_2_sd'];
+				pha_v4 = a01cData['pha_2_sd'];
+				pht_v4 = a01cData['pht_2_sd'];
+				n1_v4 = a01cData['n1_2_sd'];
+				vn_v5 = a01cData['vn_1_sc'];
+				vl_v5 = a01cData['vl_1_sc'];
+				pha_v5 = a01cData['pha_1_sc'];
+				pht_v5 = a01cData['pht_1_sc'];
+				n1_v5 = a01cData['n1_1_sc'];
+				vn_v6 = a01cData['vn_2_sc'];
+				vl_v6 = a01cData['vl_2_sc'];
+				pha_v6 = a01cData['pha_2_sc'];
+				pht_v6 = a01cData['pht_2_sc'];
+				n1_v6 = a01cData['n1_2_sc'];
+				
+				oip_v7 = a01cData['oip_1'];
+				oit_v7 = a01cData['oit_1'];
+				ecw1_v7 = a01cData['ecw1'];
+				ssel_v7 = a01cData['ssel_1'];
+				oip_v8 = a01cData['oip_2'];
+				oit_v8 = a01cData['oit_2'];
+				ecw1_v8 = a01cData['ecw2'];
+				ssel_v8 = a01cData['ssel_2'];
+				
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A01 CFM报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+		<mx:HDividedBox id="contentBox" width="980" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{a01cData.tel_content}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   ENGINE CRUISE REPORT(01)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE CRUISE REPORT(01)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a01cvo}" height="190"/>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ERT" color="red" width="60"/><mx:Label text="ECYC" color="red" width="60"/>
+					<mx:Label text="AP" color="red" width="80"/><mx:Label text="QE" color="red" width="70"/>					
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="飞行小时" color="blue" width="60"/>
+					<mx:Label text="运行小时" color="blue" width="60"/><mx:Label text="循环数" color="blue" width="60"/>
+					<mx:Label text="自动驾驶状态" color="blue" width="80"/><mx:Label text="稳态数据量" color="blue" width="70"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ert_1}" width="60"/><mx:Label text="{ecyc_1}" width="60"/>
+					<mx:Label text="{ap_1}" width="80"/><mx:Label text="{qe_1}" width="70"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ert_2}" width="60"/><mx:Label text="{ecyc_2}" width="60"/>
+					<mx:Label text="{ap_2}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="N1" color="red" width="70"/><mx:Label text="N1C" color="red" width="70"/>
+					<mx:Label text="N2" color="red" width="70"/><mx:Label text="EGT" color="red" width="60"/>
+					<mx:Label text="FF" color="red" width="60"/><mx:Label text="PS13" color="red" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="实际N1转速" color="blue" width="70"/><mx:Label text="指令N1转速" color="blue" width="70"/>
+					<mx:Label text="实际N2转速" color="blue" width="70"/><mx:Label text="排气温度" color="blue" width="60"/>
+					<mx:Label text="燃油流量" color="blue" width="60"/><mx:Label text="1.3位置静态压力" color="blue" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N1" width="30"/><mx:Label text="{n1_n1}" width="70"/><mx:Label text="{n1c_n1}" width="70"/>
+					<mx:Label text="{n2_n1}" width="70"/><mx:Label text="{egt_n1}" width="60"/>
+					<mx:Label text="{ff_n1}" width="60"/><mx:Label text="{ps13_n1}" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N2" width="30"/><mx:Label text="{n1_n2}" width="70"/><mx:Label text="{n1c_n2}" width="70"/>
+					<mx:Label text="{n2_n2}" width="70"/><mx:Label text="{egt_n2}" width="60"/>
+					<mx:Label text="{ff_n2}" width="60"/><mx:Label text="{ps13_n2}" width="100"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="P25" color="red" width="100"/><mx:Label text="T25" color="red" width="80"/>
+					<mx:Label text="P3" color="red" width="100"/><mx:Label text="T3" color="red" width="70"/>
+					<mx:Label text="T5" color="red" width="70"/><mx:Label text="VSV" color="red" width="70"/>
+					<mx:Label text="VBV" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="2.5位置静态压力" color="blue" width="100"/><mx:Label text="2.5位置温度" color="blue" width="80"/>
+					<mx:Label text="3位置静态压力" color="blue" width="100"/><mx:Label text="3位置温度" color="blue" width="70"/>
+					<mx:Label text="5位置温度" color="blue" width="70"/><mx:Label text="VSV角度" color="blue" width="70"/>
+					<mx:Label text="VBV角度" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{p25_s1}" width="100"/><mx:Label text="{t25_s1}" width="80"/>
+					<mx:Label text="{p3_s1}" width="100"/><mx:Label text="{t3_s1}" width="70"/>
+					<mx:Label text="{t5_s1}" width="70"/><mx:Label text="{vsv_s1}" width="70"/>
+					<mx:Label text="{vbv_s1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S2" width="30"/><mx:Label text="{p25_s2}" width="100"/><mx:Label text="{t25_s2}" width="80"/>
+					<mx:Label text="{p3_s2}" width="100"/><mx:Label text="{t3_s2}" width="70"/>
+					<mx:Label text="{t5_s2}" width="70"/><mx:Label text="{vsv_s2}" width="70"/>
+					<mx:Label text="{vbv_s2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="HPT" color="red" width="60"/><mx:Label text="LPT" color="red" width="60"/>
+					<mx:Label text="GLE" color="red" width="70"/><mx:Label text="PD" color="red" width="70"/>
+					<mx:Label text="TN" color="red" width="60"/><mx:Label text="PT2" color="red" width="70"/>
+					<mx:Label text="OIQH" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="高压涡轮" color="blue" width="60"/><mx:Label text="低压涡轮" color="blue" width="60"/>
+					<mx:Label text="发电机负载" color="blue" width="70"/><mx:Label text="引气预冷器" color="blue" width="70"/>
+					<mx:Label text="吊架温度" color="blue" width="60"/><mx:Label text="位置2总压" color="blue" width="70"/>
+					<mx:Label text="上个航段" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="间隙控制" color="blue" width="60"/><mx:Label text="间隙控制" color="blue" width="60"/>
+					<mx:Label text="" color="blue" width="70"/><mx:Label text="进口压力" color="blue" width="70"/>
+					<mx:Label text="" color="blue" width="60"/><mx:Label text="" color="blue" width="70"/>
+					<mx:Label text="油消耗率" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T1" width="30"/><mx:Label text="{hpt_t1}" width="60"/><mx:Label text="{lpt_t1}" width="60"/>
+					<mx:Label text="{gle_t1}" width="70"/><mx:Label text="{pd_t1}" width="70"/>
+					<mx:Label text="{tn_t1}" width="60"/><mx:Label text="{pt2_t1}" width="70"/>
+					<mx:Label text="{oiqh_t1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T2" width="30"/><mx:Label text="{hpt_t2}" width="60"/><mx:Label text="{lpt_t2}" width="60"/>
+					<mx:Label text="{gle_t2}" width="70"/><mx:Label text="{pd_t2}" width="70"/>
+					<mx:Label text="{tn_t2}" width="60"/><mx:Label text="{pt2_t2}" width="70"/>
+					<mx:Label text="{oiqh_t2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="VN" color="red" width="85"/><mx:Label text="VL" color="red" width="85"/>
+					<mx:Label text="PHA" color="red" width="85"/><mx:Label text="PHT" color="red" width="85"/>
+					<mx:Label text="VC" color="red" width="85"/><mx:Label text="VH" color="red" width="85"/>
+					<mx:Label text="EVM" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="前部风扇段N1" color="blue" width="85"/><mx:Label text="后部涡轮段N1" color="blue" width="85"/>
+					<mx:Label text="前部风扇" color="blue" width="85"/><mx:Label text="后部涡轮段" color="blue" width="85"/>
+					<mx:Label text="前部风扇段N2" color="blue" width="85"/><mx:Label text="后部涡轮段N2" color="blue" width="85"/>
+					<mx:Label text="控制字" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="最高抖动值" color="blue" width="85"/><mx:Label text="最高抖动值" color="blue" width="85"/>
+					<mx:Label text="抖动向量角度" color="blue" width="85"/><mx:Label text="抖动向量角度" color="blue" width="85"/>
+					<mx:Label text="最高抖动值" color="blue" width="85"/><mx:Label text="最高抖动值" color="blue" width="85"/>
+					<mx:Label text="" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V1" width="30"/><mx:Label text="{vn_v1}" width="85"/><mx:Label text="{vl_v1}" width="85"/>
+					<mx:Label text="{pha_v1}" width="85"/><mx:Label text="{pht_v1}" width="85"/>
+					<mx:Label text="{vc_v1}" width="85"/><mx:Label text="{vh_v1}" width="85"/>
+					<mx:Label text="{evm_v1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V2" width="30"/><mx:Label text="{vn_v2}" width="85"/><mx:Label text="{vl_v2}" width="85"/>
+					<mx:Label text="{pha_v2}" width="85"/><mx:Label text="{pht_v2}" width="85"/>
+					<mx:Label text="{vc_v2}" width="85"/><mx:Label text="{vh_v2}" width="85"/>
+					<mx:Label text="{evm_v2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="STABLE DESCENT" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="VN" color="red" width="85"/><mx:Label text="VL" color="red" width="85"/>
+					<mx:Label text="PHA" color="red" width="85"/><mx:Label text="PHT" color="red" width="85"/>
+					<mx:Label text="N1" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="前部风扇段N1" color="blue" width="85"/><mx:Label text="后部涡轮段N1" color="blue" width="85"/>
+					<mx:Label text="前部风扇" color="blue" width="85"/><mx:Label text="后部涡轮段" color="blue" width="85"/>
+					<mx:Label text="N1" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="最高抖动值" color="blue" width="85"/><mx:Label text="最高抖动值" color="blue" width="85"/>
+					<mx:Label text="抖动向量角度" color="blue" width="85"/><mx:Label text="抖动向量角度" color="blue" width="85"/>
+					<mx:Label text="" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V3" width="30"/><mx:Label text="{vn_v3}" width="85"/><mx:Label text="{vl_v3}" width="85"/>
+					<mx:Label text="{pha_v3}" width="85"/><mx:Label text="{pht_v3}" width="85"/>
+					<mx:Label text="{n1_v3}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V4" width="30"/><mx:Label text="{vn_v4}" width="85"/><mx:Label text="{vl_v4}" width="85"/>
+					<mx:Label text="{pha_v4}" width="85"/><mx:Label text="{pht_v4}" width="85"/>
+					<mx:Label text="{n1_v4}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V5" width="30"/><mx:Label text="{vn_v5}" width="85"/><mx:Label text="{vl_v5}" width="85"/>
+					<mx:Label text="{pha_v5}" width="85"/><mx:Label text="{pht_v5}" width="85"/>
+					<mx:Label text="{n1_v5}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V6" width="30"/><mx:Label text="{vn_v6}" width="85"/><mx:Label text="{vl_v6}" width="85"/>
+					<mx:Label text="{pha_v6}" width="85"/><mx:Label text="{pht_v6}" width="85"/>
+					<mx:Label text="{n1_v6}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIP" color="red" width="60"/><mx:Label text="OIT" color="red" width="60"/>
+					<mx:Label text="ECW1" color="red" width="70"/><mx:Label text="SSEL" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油压力" color="blue" width="60"/><mx:Label text="滑油温度" color="blue" width="60"/>
+					<mx:Label text="告警控制字" color="blue" width="70"/><mx:Label text="控制字" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V7" width="30"/><mx:Label text="{oip_v7}" width="60"/><mx:Label text="{oit_v7}" width="60"/>
+					<mx:Label text="{ecw1_v7}" width="70"/><mx:Label text="{ssel_v7}" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V8" width="30"/><mx:Label text="{oip_v8}" width="60"/><mx:Label text="{oit_v8}" width="60"/>
+					<mx:Label text="{ecw1_v8}" width="70"/><mx:Label text="{ssel_v8}" width="180"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a01cData.acmodel}" rptno="A01"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

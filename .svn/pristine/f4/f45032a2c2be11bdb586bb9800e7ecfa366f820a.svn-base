@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A36-APU燃油消耗报文" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a36vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a36Data:Object;//译后报文内容
+			
+			private function creationComplete():void
+			{
+				a36Data = a36vo.dataMap;
+			}
+			
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A36-APU燃油消耗报文");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator height="100%" width="100%">
+		<mx:HDividedBox id="contentBox" width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="0" id="formatBox">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   ENG START AIR VALVE RPT(49)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>				
+				<report:ReportHeaderPanel headHashVo="{a36vo}" height="190"/>
+								
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="S0" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="OPERATE(MINS)" chineseName1="运行时间" leftVal="{a36Data.operate_mins}" boxWidth="120" />
+					<report:OneValuesReportPanel englishName="STOPTIME"  chineseName1="STOPTIME" leftVal="{a36Data.stoptime}" boxWidth="150" />
+					<report:OneValuesReportPanel englishName="VID"  chineseName1="VID" leftVal="{a36Data.vid}" boxWidth="80" />
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="S1" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="FUSED(KG)" chineseName1="燃油消耗量(KG)" leftVal="{a36Data.fused}" boxWidth="300" />
+				</mx:HBox>
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:TabNavigator>
+</containers:SuperPanel>

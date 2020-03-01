@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:LinearAxis id="lineAxis" baseAtZero="false" autoAdjust="true" />
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.HitData;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.MetadataTemplet;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var engineService:RemoteObject = new RemoteObject;
+			private var engineFormDest:String = ApmsUIConst.ENGINFORMSERVICE;
+			private var formService:RemoteObject;
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			
+			private var acnum:String ;//查询机号
+			private var acmodel:String="";
+			
+			
+			private var egt_maxvalue_redline:String="egt_maxvalue_redline";
+			private var egt_minvalue_redline:String="egt_minvalue_redline";
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var allA01LeftChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01RightChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04LeftChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04RightChangedList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA01List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA04List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n1_1A01RankList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var n1_2A01RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n2_1A01RankList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var n2_2A01RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n1_1A04RankList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var n1_2A04RankList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var n2_1A04RankList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var n2_2A04RankList:ArrayCollection = new ArrayCollection();
+			
+			//Flex页面初始化处理
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				
+				beginTime = DateUtil.moveMonth(endTime,-1);
+				
+				engineService.endpoint = endpoint;
+				engineService.destination = engineFormDest;
+				
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				//远程服务添加监听
+				engineService.getIaevEngineVibrationChartData.addEventListener(ResultEvent.RESULT,getIaevEngineVibrationChartDataHandler);
+				engineService.getIaevEngineVibrationChartData.addEventListener(FaultEvent.FAULT,getIaevEngineVibrationChartDataErrorHandler);	
+			}
+			//Flex页面构建完处理
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,M.MODELSERIES MODELSERIES#,AIRCRAFTSN 机号,M.MODELCODE 机型,(select model from B_ENGINE_INFO E, B_ENGINE_MODEL EM where E.Engmodelid=EM.Id and E.AIRCRAFTID=A.Id and rownum=1) 发动机型号 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+				engine_a01_chart_n1.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_a01_chart_n2.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_a04_chart_n1.plotChart.dataTipFunction=trendTipStrFuncRev;
+				engine_a04_chart_n2.plotChart.dataTipFunction=trendTipStrFuncRev;
+				
+				engine_a01_chart_pha.plotChart.dataTipFunction=trendTipStrFuncJD;
+				engine_a04_chart_pha.plotChart.dataTipFunction=trendTipStrFuncJD;
+				
+				engine_chart_VB1_1_A01.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB1_2_A01.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB2_1_A01.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB2_2_A01.plotChart.horizontalAxis = lineAxis;
+				
+				engine_chart_VB1_1_A04.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB1_2_A04.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB2_1_A04.plotChart.horizontalAxis = lineAxis;
+				engine_chart_VB2_2_A04.plotChart.horizontalAxis = lineAxis;
+			}
+			//查询按钮处理
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				OperatingTipUtil.startOperat("正在查询....",this);
+				engineService.getIaevEngineVibrationChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+			}
+			//导出按钮处理
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"IAE振动值");
+			}
+			//远程监听返回结果处理
+			private function getIaevEngineVibrationChartDataHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				allA01LeftChangedList = res["allA01LeftChangedList"];
+				allA01RightChangedList = res["allA01RightChangedList"];
+				
+				allA04LeftChangedList = res["allA04LeftChangedList"];
+				allA04RightChangedList = res["allA04RightChangedList"];
+				allA01List = res["allA01List"];
+				allA04List = res["allA04List"];
+				
+				n1_1A01RankList = res["n1_1A01RankList"];
+				n1_2A01RankList = res["n1_2A01RankList"];
+				n2_1A01RankList = res["n2_1A01RankList"];
+				n2_2A01RankList = res["n2_2A01RankList"];
+				
+				n1_1A04RankList = res["n1_1A04RankList"];
+				n1_2A04RankList = res["n1_2A04RankList"];
+				n2_1A04RankList = res["n2_1A04RankList"];
+				n2_2A04RankList = res["n2_2A04RankList"];
+								
+			}
+			//远程监听失败处理
+			private function getIaevEngineVibrationChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询Iaev发动机振动值数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			public function trendTipStrFuncRev(e:HitData):String{
+				return trendTipStrFunc(e," Unit");
+			}
+			
+			public function trendTipStrFuncJD(e:HitData):String{
+				return trendTipStrFunc(e," 角度");
+			}
+			
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var position:String;
+				var number:String;
+				if(e.contextColor==0x0000ff){
+					position = "1#";
+					number = item["ESN_1"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}else if(e.contextColor==0xff0000){
+					position = "2#";
+					number = item["ESN_2"];
+					tip += "\n"+"位置："+position+" 序号："+number;
+				}
+				if(item[xField] is Date){
+					tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				}else if(item[xField] is Number){
+					var dateTemp:Date = DateUtil.parseMsToDate(item[xField]);
+					tip += "\n"+ DateUtil.dateToString(dateTemp,1);
+				}
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:CheckBox id="isKChk" label="斜率计算" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a01_chart_n1" chartName="N1 VIB(巡航)" height="100%" width="100%"
+											xField="UTCDATE"  colorTipVisible="true"
+											valField1="VB1_1" point1Name="N1 VIB左"
+											valField2="VB1_2" point2Name="N1 VIB右"
+											isSlope="true" 
+											slopeList1="{n1_1A01RankList}"  slopeList2="{n1_2A01RankList}"
+											allList1="{allA01List}" allList2="{allA01List}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											chartTitle_left="N1 VIB左" chartTitle_right="N1 VIB右">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a01_chart_n2" chartName="N2 VIB(巡航)" height="100%" width="100%"
+											xField="UTCDATE"   colorTipVisible="true"
+											valField1="VB2_1" point1Name="N2 VIB左"
+											valField2="VB2_2" point2Name="N2 VIB右"
+											isSlope="true" 
+											slopeList1="{n2_1A01RankList}"  slopeList2="{n2_2A01RankList}"
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											allList1="{allA01List}" allList2="{allA01List}"
+											chartTitle_left="N2 VIB左" chartTitle_right="N2 VIB右">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a01_chart_pha" chartName="PHA(风扇抖动向量角)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+											valField1="PHA_1" point1Name="PHA左" 
+											valField2="PHA_2" point2Name="PHA右" 
+											changList1="{allA01LeftChangedList}" changList2="{allA01RightChangedList}"
+											allList1="{allA01List}" allList2="{allA01List}"
+											chartTitle_left="PHA左" chartTitle_right="PHA右">
+			</component:ReportTrendDualChart>
+			<component:ReportTrendDualChart id="engine_a04_chart_pha" chartName="PHA起飞(风扇抖动向量角)" height="100%" width="100%"
+											xField="UTCDATE" colorAttribute="ALARMNUM" colorTipVisible="true"
+											valField1="PHA_1" point1Name="PHA左" 
+											valField2="PHA_2" point2Name="PHA右" 
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											allList1="{allA04List}" allList2="{allA04List}"
+											chartTitle_left="PHA左" chartTitle_right="PHA右">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendChart id="engine_chart_VB1_1_A01" chartName="左发N1振动值&amp;转速(巡航)" height="100%" width="100%"
+										xField="N1_1"  valField="VB1_1" 
+										changList="{allA01LeftChangedList}" 
+										allList="{allA01List}">
+			</component:ReportTrendChart>
+			
+			<component:ReportTrendChart id="engine_chart_VB1_2_A01" chartName="右发N1振动值&amp;转速(巡航)" height="100%" width="100%"
+										xField="N1_2"  valField="VB1_2" solidRed="true"
+										changList="{allA01RightChangedList}" 
+										allList="{allA01List}" > 
+			</component:ReportTrendChart>
+		</mx:HBox>
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendChart id="engine_chart_VB2_1_A01" chartName="左发N2振动值&amp;转速(巡航)" height="100%" width="100%"
+										xField="N2_1"  valField="VB2_1" 
+										changList="{allA01LeftChangedList}" 
+										allList="{allA01List}">
+			</component:ReportTrendChart>
+			
+			<component:ReportTrendChart id="engine_chart_VB2_2_A01" chartName="右发N2振动值&amp;转速(巡航)" height="100%" width="100%"
+										xField="N2_2"  valField="VB2_2" solidRed="true"
+										changList="{allA01RightChangedList}" 
+										allList="{allA01List}" > 
+			</component:ReportTrendChart>
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendDualChart id="engine_a04_chart_n1" chartName="N1 VIB(起飞)" height="100%" width="100%"
+											xField="UTCDATE"   colorTipVisible="true"
+											valField1="VB1_1" point1Name="N1 VIB左"
+											valField2="VB1_2" point2Name="N1 VIB右"
+											isSlope="true" 
+											slopeList1="{n1_1A04RankList}"  slopeList2="{n1_2A04RankList}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											allList1="{allA04List}" allList2="{allA04List}"
+											chartTitle_left="N1 VIB左" chartTitle_right="N1 VIB右">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="engine_a04_chart_n2" chartName="N2 VIB(起飞)" height="100%" width="100%"
+											xField="UTCDATE"   colorTipVisible="true"
+											valField1="VB2_1" point1Name="N2 VIB左"
+											valField2="VB2_2" point2Name="N2 VIB右"
+											isSlope="true" 
+											slopeList1="{n2_1A04RankList}"  slopeList2="{n2_2A04RankList}"
+											changList1="{allA04LeftChangedList}" changList2="{allA04RightChangedList}"
+											allList1="{allA04List}" allList2="{allA04List}"
+											chartTitle_left="N2 VIB左" chartTitle_right="N2 VIB右">
+			</component:ReportTrendDualChart>
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			
+			
+			
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendChart id="engine_chart_VB1_1_A04" chartName="左发N1振动值&amp;转速(起飞)" height="100%" width="100%"
+										xField="N1_1"  valField="VB1_1" 
+										changList="{allA04LeftChangedList}" 
+										allList="{allA04List}">
+			</component:ReportTrendChart>
+			
+			<component:ReportTrendChart id="engine_chart_VB1_2_A04" chartName="右发N1振动值&amp;转速(起飞)" height="100%" width="100%"
+										xField="N1_2"  valField="VB1_2" solidRed="true"
+										changList="{allA04RightChangedList}" 
+										allList="{allA04List}" > 
+			</component:ReportTrendChart>
+		</mx:HBox>
+		<mx:HBox height="100%" width="100%"  verticalAlign="top">
+			<component:ReportTrendChart id="engine_chart_VB2_1_A04" chartName="左发N2振动值&amp;转速(起飞)" height="100%" width="100%"
+										xField="N2_1"  valField="VB2_1" 
+										changList="{allA04LeftChangedList}" 
+										allList="{allA04List}">
+			</component:ReportTrendChart>
+			
+			<component:ReportTrendChart id="engine_chart_VB2_2_A04" chartName="右发N2振动值&amp;转速(起飞)" height="100%" width="100%"
+										xField="N2_2"  valField="VB2_2" solidRed="true"
+										changList="{allA04RightChangedList}" 
+										allList="{allA04List}" > 
+			</component:ReportTrendChart>
+		</mx:HBox>
+		
+	</mx:VBox>
+</mx:Module>
+

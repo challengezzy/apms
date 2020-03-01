@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   creationComplete="creationComplete()"
+			   showCloseButton="true"
+			   title="发动机小时循补录"
+			   width="400" height="300" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var engineDest:String = ApmsUIConst.ENGINFORMSERVICE;
+			private var enginService:RemoteObject = new RemoteObject;
+			
+			[Bindable]
+			public var esn:String;
+			
+			private function creationComplete():void
+			{	
+				enginService.endpoint = endpoint;
+				enginService.destination = engineDest;
+				enginService.addHourCycLog.addEventListener(ResultEvent.RESULT,recordOkHandler);
+				enginService.addHourCycLog.addEventListener(FaultEvent.FAULT,faultHandler);
+			}
+			
+			protected function addBtn_clickHandler(event:MouseEvent):void
+			{
+				var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+				
+				if(inputHour.text == null || inputHour.text == ""){
+					SmartXMessage.show("小时数据不能为空");
+					return;
+				}
+				
+				if(inputCyc.text == null || inputCyc.text == ""){
+					SmartXMessage.show("循环数据不能为空");
+					return;
+				}
+				
+				if(dataTimeChser.text == null || dataTimeChser.text == ""){
+					SmartXMessage.show("数据时间不能为空");
+					return;
+				}
+				
+				var obj:Object = new Object();
+				obj["ESN"] = esn;
+				obj["UPDATEUSER"] = user;
+				obj["HOUR"] = inputHour.text;
+				obj["CYCLE"] = inputCyc.text;
+				obj["DATETIME"] = dataTimeChser.text;
+				
+				enginService.addHourCycLog(obj);
+				
+				OperatingTipUtil.startOperat("数据处理中...");
+				
+			}
+			
+			private function recordOkHandler(event:ResultEvent):void{
+				var res:Object = event.result;
+				SmartXMessage.show("发动机小时循环数据补录成功！");
+				OperatingTipUtil.endOperat();
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function faultHandler(event:FaultEvent):void{
+				SmartXMessage.show("发动机报文小时循环数据补录失败!",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				OperatingTipUtil.endOperat();
+			}
+			
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	<mx:VBox width="100%" height="100%" verticalGap="2" paddingTop="10" paddingBottom="10" verticalAlign="middle">
+		<mx:VBox width="100%" paddingLeft="15" paddingRight="5" verticalAlign="middle">
+			<mx:HBox width="100%">
+				<mx:Label text="发动机序号" width="100"/>
+				<mx:TextInput width="120" id="inputEsn" text="{esn}" editable="false"/>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Label text="数据时间" width="100"/>
+				<component:DateTimeChooser id="dataTimeChser" editable="true" />
+			</mx:HBox>			
+			<mx:HBox width="100%">
+				<mx:Label text="发动机小时" width="100"/>
+				<mx:TextInput width="120" id="inputHour" restrict="0-9\-\."/>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Label text="发动机循环" width="100"/>
+				<mx:TextInput width="120" id="inputCyc" restrict="0-9" text="1"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:HBox width="100%" horizontalAlign="center" paddingTop="10">
+			<mx:Button id="addBtn" label="补录" click="addBtn_clickHandler(event)"/>
+			<mx:Button id="cancelBtn" label="取消" click="cancelBtn_clickHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

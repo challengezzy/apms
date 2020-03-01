@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import myreport.ReportViewer;
+			import myreport.export.ExportEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var maintainArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				
+				dep_aptOrArr_apt.selectedIndex=1;
+				flightListPanel.simpleQueryPanel.height=0;
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				maintainArr=new ArrayCollection([{val:""},{val:"TR"},{val:"AF"},{val:"PF"},{val:"AF+PF"}]);
+				
+				FlexGlobals.topLevelApplication.setStyle("backgroundColor","0xffffff");
+				//注册导出事件
+				ReportViewer.Instance.addEventListener(ExportEvent.EXPORT, OnExport);
+			}
+			
+			private function OnExport(event:ExportEvent):void
+			{
+				var file:FileReference;
+				if(event.FileType == ExportEvent.FILE_TYPE_PDF)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "未来落地航班列表.pdf");
+				}
+				else if(event.FileType == ExportEvent.FILE_TYPE_XLS)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "未来落地航班列表.xls");
+				}
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql ="";
+				querySql +=" select flt_date_str,iata_c_name,";
+				querySql +="  co_seq_name,flightno_union, acnum, acmodel,baseorg, apt_union, maintaintype,stda, ";
+				querySql +=" ac_stop,t_eta,t_etd, release_user, maintain_user, duty_user,guardian_user,handover_user";
+				querySql +=" from V_FLIGHTSCH_JOIN_REPORT f";
+				querySql +=" where 1=1 ";
+				//zhangzy 20160405 杭州加上航前的数据查询
+				if(""==maintaintype.textInput.text){
+					querySql +=" and f.MAINTAINTYPE = any('TR', 'PF','AF+PF', 'AF')";
+				}else{
+					querySql +=" and f.MAINTAINTYPE ='"+maintaintype.textInput.text+"'";
+				}
+				querySql +=" and f.TIMEFILTER > sysdate -0.5/24 ";//前推30分钟
+				if(""==hours.text){
+					querySql +=" and f.TIMEFILTER < sysdate + 2 * 1 / 24";
+				}else{
+					querySql +=" and f.TIMEFILTER < sysdate + "+hours.text+" * 1 / 24";
+				}
+				if(""==dep_aptOrArr_apt.textInput.text){
+					querySql +=" and f.APT = any('SHA', 'PVG')";
+				}else{
+					querySql +=" and f.APT ='"+dep_aptOrArr_apt.textInput.text+"'";
+				}
+				flightListPanel.sql = querySql;
+				flightListPanel.refresh();
+			}
+			/**
+			 *打印
+			 */  
+			protected function print():void{
+				var print:CoolPrintJob = new CoolPrintJob();
+				print.clearPrintObject();
+				print.addPrintObject(flightListPanel);
+				print.print();
+			}
+			/**
+			 *打印预览
+			 */ 
+			private function previewReport():void
+			{
+				//source支持url:String，xml:XML，null参数类型
+				myreport.ReportViewer.Instance.Show("com/apms/flex/reportxml/XmlFlightWillBeArrived.xml", getTableData(), getParameterData());
+				myreport.ReportViewer.Instance.width = 900;
+				PopUpManager.centerPopUp(myreport.ReportViewer.Instance);
+			}
+			/**
+			 *打印
+			 */ 
+			private function PrintReport():void
+			{
+				myreport.ReportEngine.LoadAndPrintAsync("com/apms/flex/reportxml/XmlFlightWillBeArrived.xml", getTableData(), getParameterData());
+			}
+			private function getTableData():ArrayCollection
+			{
+			    var flightArr:ArrayCollection=flightListPanel.dataListGrid.dataProvider as ArrayCollection;
+				var list:ArrayCollection = new ArrayCollection();
+				for (var i:int = 0; i < flightArr.length; i++)
+				{
+					list.addItem(
+						{
+						航班日期: flightArr[i].flt_date_str==null?"":flightArr[i].flt_date_str, 
+						公司: flightArr[i].iata_c_name==null?"":flightArr[i].iata_c_name, 
+						分公司: flightArr[i].co_seq_name==null?"":flightArr[i].co_seq_name, 
+						航班号: flightArr[i].flightno_union==null?"":flightArr[i].flightno_union,
+						机号: flightArr[i].acnum==null?"":flightArr[i].acnum,
+						机型: flightArr[i].acmodel==null?"":flightArr[i].acmodel,
+						所属基地: flightArr[i].baseorg==null?"":flightArr[i].baseorg,
+						经停航站: flightArr[i].apt_union==null?"":flightArr[i].apt_union,
+						维护: flightArr[i].maintaintype==null?"":flightArr[i].maintaintype,
+						起落: flightArr[i].stda==null?"":flightArr[i].stda,
+						机位: flightArr[i].ac_stop==null?"":flightArr[i].ac_stop,
+						预达: flightArr[i].t_eta==null?"":flightArr[i].t_eta,
+						预起: flightArr[i].t_etd==null?"":flightArr[i].t_etd,
+						放行人: flightArr[i].release_user==null?"":flightArr[i].release_user,
+						维修人: flightArr[i].maintain_user==null?"":flightArr[i].maintain_user,
+						勤务人: flightArr[i].duty_user==null?"":flightArr[i].duty_user,
+						接机人: flightArr[i].guardian_user==null?"":flightArr[i].guardian_user,
+						出港人: flightArr[i].handover_user==null?"":flightArr[i].handover_user});
+				}
+				
+				return list;
+			}
+			private function getParameterData():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				dict["打印时间"] = new Date();
+				dict["空白行"] ="   ";
+				if(""!=hours.text){
+					dict["主标题"] = "未来"+hours.text+"小时接送航班清单";
+				}else{
+					dict["主标题"] = "未来2小时接送航班清单";
+				}
+				if(""!=dep_aptOrArr_apt.textInput.text){
+					dict["落地机场"]=dep_aptOrArr_apt.textInput.text;
+				}else{
+					dict["落地机场"]="SHA,PVG,HGH";
+				}
+				
+				return dict;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="维护类型:"/>  
+			<s:ComboBox id="maintaintype" dataProvider="{maintainArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="未来小时:"/> 
+			<mx:TextInput id="hours" text="2"/>
+			<s:Spacer width="20"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="打印预览" click="previewReport()"/>
+			<mx:Button label="打印" click="PrintReport()"/>
+			
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="true"
+									sql="{querySql}" dataSource="{apmsDs}" >
+			<component:columns>
+				<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="90" id="fltdateDgc"/>
+				<mx:DataGridColumn headerText="公司" dataField="iata_c_name" width="50" visible="false"/>
+				<mx:DataGridColumn headerText="分公司" dataField="co_seq_name" width="50" visible="false"/> 
+				<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="130" id="flightnoUnionDgc"/>
+				<mx:DataGridColumn headerText="机号" dataField="acnum" width="65"/>
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="50" />
+				<mx:DataGridColumn headerText="所属基地" dataField="baseorg" width="100" />
+				<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="140" id="aptUnionDgc" />
+				<mx:DataGridColumn headerText="维护" dataField="maintaintype" width="55" id="maintaintypeDgc"/>
+				<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="120" id="stdaDgc"/>
+				<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="45" id="acstopDgc"/>
+				<mx:DataGridColumn headerText="预达" dataField="t_eta" width="65" id="etaDgc"/>
+				<mx:DataGridColumn headerText="预起" dataField="t_etd" width="65" id="etdDgc"/>
+				<mx:DataGridColumn headerText="放行人" dataField="release_user" width="70" id="releaseUserDgc"/>
+				<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="70" id="maintainUserDgc" />
+				<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="70" id="dutyUserDgc" />
+				<mx:DataGridColumn headerText="接机人" dataField="guardian_user" width="70" id="guardianUserDgc" />
+				<mx:DataGridColumn headerText="出港人" dataField="handover_user" width="70" id="handoverUserDgc" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

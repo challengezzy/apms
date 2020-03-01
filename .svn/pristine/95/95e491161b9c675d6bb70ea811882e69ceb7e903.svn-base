@@ -1,0 +1,937 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   initialize="init()"
+					   creationComplete="creationComplete()" 
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="1600" height="768" verticalGap="1"  
+					   title="保留故障单打印"
+					   allowDrag="true" allowClose="true" 
+					   allowMaximize="true"  allowMinimize="true" allowResize="true" 
+					   >
+	<fx:Declarations>	
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.managers.PopUpManager;
+			[Bindable]
+			private var eightWordsLen:Number;
+			[Bindable]
+			public var ddReportVo:Object;	
+			private function init():void{
+				eightWordsLen=70;
+				//基地编号
+				MB_CODE.text=ddReportVo.APT_IATA;
+				//DD号
+				DD_NO.text=ddReportVo.DD_NO;
+				
+				ACNUM.text=ddReportVo.AC_ID;//机号
+				WO_NO.text=ddReportVo.WORK_NO;//工作指令号
+				ENG_APU_SN.text=ddReportVo.ENG_SN;//发动机编号
+				TRANSFERRED_FROM.text=ddReportVo.TRANS_FROM;//转录自
+				ISSUE_DATE_LOCALITY.text=ddReportVo.FIRST_DATE;//首次报告日期
+				AC_TOTAL_FH_CYC.text=ddReportVo.TOTAL_FH+"/"+ddReportVo.TOTAL_CYCL;//总飞行小时/循环
+				DD_REPORT_TEMP_ACT.text=ddReportVo.DEFECT_RPT;//报告及措施
+				DD_REPORT_ACT.text=	ddReportVo.RECT;//措施
+				NUM_RELEASE.text="放行数量:"+ddReportVo.NUM_RELEASE;
+				NUM_INSTALL.text="安装数量:"+ddReportVo.NUM_INSTALL;
+				NUM_BAD.text="故障数量:"+ddReportVo.NUM_BAD;
+				ATA_NO.text=ddReportVo.ATA_NO;//章节号
+				var DD_CLS:String=ddReportVo.DD_CLS;//分类
+				switch(DD_CLS){
+					case "A":DD_CLS_A.selected=true;break;
+					case "B":DD_CLS_B.selected=true;break;
+					case "C":DD_CLS_C.selected=true;break;
+					case "D":DD_CLS_D.selected=true;break;
+					case "I":DD_CLS_I.selected=true;break;
+					case "M":DD_CLS_M.selected=true;break;
+					case "S":DD_CLS_S.selected=true;break;
+					case "CBS-F":DD_CLS_CBS_F.selected=true;break;
+					case "CBS-C":DD_CLS_CBS_C.selected=true;break;
+					case "CBS-Y":DD_CLS_CBS_Y.selected=true;break;
+					case "CBS-A":DD_CLS_CBS_A.selected=true;break;
+					case "CBG":DD_CLS_CBG.selected=true;break;
+					case "CBL":DD_CLS_CBL.selected=true;break;
+					case "CBO":DD_CLS_CBO.selected=true;break;	
+				}
+				var SERVICE_SIGN:int=ddReportVo.SEVICE_SIGN;//服务影响程度
+				switch(SERVICE_SIGN){
+					case 0:SERVICE_SIGN_0.selected=true;break;
+					case 1:SERVICE_SIGN_1.selected=true;break;
+					case 2:SERVICE_SIGN_2.selected=true;break;
+				}
+				TARGET_DATE_FH_CYC.text=ddReportVo.KEEP_DATE+"/"+ddReportVo.KEEP_FH+"/"+ddReportVo.KEEP_FC;//计划保留时间,飞行小时,循环
+				REQUIRED_GRND_TIME.text=ddReportVo.REQ_GRANDT;//停场时间
+				MH_REQUIRED.text=ddReportVo.REQ_MH;//所需工时
+				var M_FLAG:int =ddReportVo.M_FLAG;
+				switch(M_FLAG){
+					case 0:M_FLAG_0.selected=true;break;
+					case 1:M_FLAG_1.selected=true;break;
+				}
+				var SRM_CODE:int =ddReportVo.SRM_CODE;
+				switch(SRM_CODE){
+					case 0:SRM_CODE_0.selected=true;break;
+					case 1:SRM_CODE_1.selected=true;break;
+				}
+				PROPOSER_DATE.text=ddReportVo.PROPOSER+"/"+ddReportVo.PROPOSED_DATE;
+				APPROVED_BY_DATE.text=ddReportVo.APPROVER+"/"+ddReportVo.APPROVED_DATE;
+				RECTIFICATION.text=ddReportVo.STATUS;
+				MECHANIC_DATE.text=ddReportVo.TECHNICIAN+"/"+ddReportVo.TARGET_DATE
+				INSPECTOR_DATE.text=ddReportVo.INSPECTOR+"/"+ddReportVo.TARGET_DATE
+				YELLOW_COPY_REM.text=ddReportVo.EF_MAN;
+				//flt_no.text=ddReportVo["FLT_NO"];//航班号
+				//dalaytime.text=ddReportVo["DALAYTIME"];//延误时间
+				//opentime.text=ddReportVo["OPENTIME"];//实际开门时间
+				//closetime.text=ddReportVo["CLOSETIME"];//实际关门时间
+				//airportname.text=ddReportVo["AIRPORTNAME"];//发生航站
+				//var type:int=-1;
+				//type=ddReportVo["TYPE"] as int;//类别
+				//ap_lastap.text=ddReportVo["AP_LASTAP"];//上次航后基地
+				//var occurphase:int=-1;
+				//occurphase=ddReportVo["OCCURPHASE"] as int;//发生阶段
+				//var maintenancelevel:int=-1;
+				//maintenancelevel=ddReportVo["MAINTENANCELEVEL"] as int;//维修级别
+				//eventdesc.text=ddReportVo["EVENTDESC"];//事件描述
+				//var isthirdfault:int=-1;
+				//isthirdfault=ddReportVo["ISTHIRDFAULT"];//是否三次维修
+				//var solution:String=ddReportVo["solution"];//处理措施
+				//if(solution==null){
+					//solutionandcauseanalysis.text="";
+				//}else{
+					//solutionandcauseanalysis.text="处理措施："+solution;
+				//}
+				//var causeanalysis:String=ddReportVo["causeanalysis"];//原因分析
+				//if(causeanalysis==null){
+					//solutionandcauseanalysis.text=solutionandcauseanalysis.text+"";
+				//}else{
+					//solutionandcauseanalysis.text=solutionandcauseanalysis.text+"\n"+"原因分析："+causeanalysis;
+				//}
+				//var maintenancereasontype:int=-1;
+				//maintenancereasontype=ddReportVo["MAINTENANCEREASONTYPE"] as int;//工程机务分类
+				//reporter_dept.text=ddReportVo["REPORTER_DEPT"];//报告单位
+				//reporter.text=ddReportVo["REPORTER"];//报告人
+				//updatetime.text=ddReportVo["UPDATETIME"];//报告时间
+				//switch(type){
+					//case 0:fanhang.selected=true;break;
+					//case 1:gaihang.selected=true;break;
+					//case 2:huahui.selected=true;break;
+					//case 3:huanji.selected=true;break;
+					//case 4:huojing.selected=true;break;
+					//case 5:dimiantingche.selected=true;break;
+					//case 6:kongzhongtingche.selected=true;break;
+					//case 7:yanwu.selected=true;break;
+					//case 8:quxiao.selected=true;break;
+					//case 9:chongchupaodao.selected=true;break;
+					//case 10:zhongzhiqifei.selected=true;break;
+					//case 11:zhongduanqifei.selected=true;break;
+					//case 12:qita_type.selected=true;break;
+				//}
+				//switch(occurphase){
+					//case 0:dimian.selected=true;break;
+					//case 1:qifei.selected=true;break;
+					//case 2:xunhang.selected=true;break;
+					//case 3:zhuolu.selected=true;break;
+					//case 4:huaxing.selected=true;break;
+					//case 5:pasheng.selected=true;break;
+					//case 6:xiajiang.selected=true;break;
+					//case 7:qita_fashengjieduan.selected=true;break;
+				//}
+				//switch(maintenancelevel){
+					//case 0:hangqian.selected=true;break;
+					//case 1:guozhan.selected=true;break;
+					//case 2:hanghou.selected=true;break;
+					//case 3:dingjian.selected=true;break;
+					//case 4:zhiling.selected=true;break;
+					//case 5:qita_weixiujibie.selected=true;break;
+				//}
+				//switch(isthirdfault){
+					//case 0:shi.selected=true;break;
+					//case 1:fou.selected=true;break;
+					//case 2:busheji.selected=true;break;
+				//}
+				//switch(maintenancereasontype){
+					//case 0:jiexieguzhang.selected=true;break;
+					//case 1:weixiubudang.selected=true;break;
+					//case 2:shengchanjihua.selected=true;break;
+					//case 3:shebeishishi.selected=true;break;
+					//case 4:renli.selected=true;break;
+					//case 5:hangcai.selected=true;break;
+					//case 6:gongcheng.selected=true;break;
+					//case 6:zhiliang.selected=true;break;
+				//}
+			}
+			private function creationComplete():void{
+				
+				
+				
+			}
+			
+			//			protected function print():void{
+			//				var print:CoolPrintJob = new CoolPrintJob();
+			//				print.clearPrintObject();
+			//				print.addPrintObject(unusualReportWindow);
+			//				print.print();
+			//			}
+			
+			//			protected function printPreview():void{
+			//				var print:CoolPrintJob = new CoolPrintJob();
+			//				//smartPrint.container = this;
+			//				print.clearPrintObject();
+			//				print.addPrintObject(unusualReportWindow);
+			//				print.preview();
+			//			}
+			/**
+			 *导出图片
+			 */
+			protected function exportHandler(event:MouseEvent):void{
+				PictureExportUtil.exportChart(DDReportWindow,"DD单打印");
+			}
+		]]>		
+	</fx:Script>
+	<mx:VBox>
+
+	<mx:HBox width="100%" height="100%"> 
+		<mx:Spacer width="100%"/>
+		<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+	</mx:HBox>
+	<mx:VBox id="DDReportWindow" width="100%" paddingLeft="15" paddingRight="15">
+		
+		<mx:HRule width="100%" />
+		<mx:HBox width="1400"  horizontalAlign="center">
+			<mx:VBox>
+				<mx:Label text="DEFERRED DEFECT " fontWeight="bold"   paddingTop="10"/>	
+				<mx:Label text="保留故障单" fontWeight="bold"   paddingTop="10"/>
+			</mx:VBox>
+		</mx:HBox>
+	<mx:Grid width="1400"  horizontalGap="0" verticalGap="0" verticalAlign="middle" horizontalAlign="center" >
+		<mx:GridRow width="100%" height="60" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+				<mx:VBox width="100%">
+				<mx:Label text="MB CODE"/>
+				<mx:Label text="执管基地代码"/>
+				</mx:VBox>
+				
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+				<mx:VBox width="100%">
+				<mx:Label text="DD NO."/>
+				<mx:Label text="保留故障编号"/>
+				</mx:VBox>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="WO-NO"/>
+				<mx:Label text="工作指令号"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="A/C REG"/>
+				<mx:Label text="飞机号"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="ENG/APU S/N"/>
+				<mx:Label text="发动机/APU 序号"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="19%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="TRANSFERRED FROM"/>
+				<mx:Label text="转录自何文件"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="ISSUE DATE/LOCALITY"/>
+				<mx:Label text="首次报告日期/地点"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="A/C TOTAL FH/CYC"/>
+				<mx:Label text="飞机的总飞行小时/循环"/>
+				</mx:VBox>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="40" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="MB_CODE"/>
+				</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="DD_NO"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="WO_NO"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="ACNUM"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="ENG_APU_SN"/>
+			
+			</mx:GridItem>
+			<mx:GridItem width="19%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="TRANSFERRED_FROM"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="ISSUE_DATE_LOCALITY"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="AC_TOTAL_FH_CYC"/>
+				
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="2" width="23%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label text="DD REPORT  TEMP ACT"/>
+				<mx:Label text="保留报告及临时措施"/>
+			</mx:GridItem>
+			<mx:GridItem colSpan="6" width="77%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+			</mx:GridItem>
+	  	</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="left">
+				<mx:Label id="DD_REPORT_TEMP_ACT"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="left">
+				<mx:Label id="DD_REPORT_ACT"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="60" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="NAME"/>
+				<mx:Label text="名称"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="P/N"/>
+				<mx:Label text="件号"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="QUANTITY"/>
+				<mx:Label text="数量"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="ATA CHAPTER"/>
+				<mx:Label text="ATA 章节"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem colSpan="2" width="29%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="DD CLASSIFICATION"/>
+				<mx:Label text="保留故障分类"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="SERVICE EFFECT"/>
+				<mx:Label text="影响服务程度"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="OPERATION LIMITED"/>
+				<mx:Label text="运行限制"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="90" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="NAME"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="PN"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+					<mx:VBox>
+						<mx:Label id="NUM_BAD"/>
+						<mx:Label id="NUM_RELEASE"/>
+						<mx:Label id="NUM_INSTALL"/>
+					</mx:VBox>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="ATA_NO"/>
+				
+			</mx:GridItem>
+			<mx:GridItem colSpan="2" width="29%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox verticalAlign="bottom">
+					<mx:HBox>
+						<mx:CheckBox label="A" id="DD_CLS_A"/>
+						<mx:CheckBox label="B" id="DD_CLS_B"/>
+						<mx:CheckBox label="C" id="DD_CLS_C"/>
+						<mx:CheckBox label="D" id="DD_CLS_D"/>
+						<mx:CheckBox label="I" id="DD_CLS_I"/>
+						<mx:CheckBox label="M" id="DD_CLS_M"/>
+						<mx:CheckBox label="S" id="DD_CLS_S"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:CheckBox label="CBS-F" id="DD_CLS_CBS_F"/>
+						<mx:CheckBox label="CBS-C" id="DD_CLS_CBS_C"/>
+						<mx:CheckBox label="CBS-Y" id="DD_CLS_CBS_Y"/>
+						<mx:CheckBox label="CBS-A" id="DD_CLS_CBS_A"/>
+						
+					</mx:HBox>
+					<mx:HBox>
+						<mx:CheckBox label="CBG" id="DD_CLS_CBG"/>
+						<mx:CheckBox label="CBL" id="DD_CLS_CBL"/>
+						<mx:CheckBox label="CBO" id="DD_CLS_CBO"/>
+						
+					</mx:HBox>
+				</mx:VBox>
+			
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+
+					<mx:VBox>
+						<mx:CheckBox label="严重" id="SERVICE_SIGN_2"/>
+						<mx:CheckBox label="一般" id="SERVICE_SIGN_1"/>
+						<mx:CheckBox label="不影响" id="SERVICE_SIGN_0"/>
+						
+					</mx:VBox>
+
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="OPERATION_LIMITED"/>
+				
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="80" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="REASON_CODE"/>
+				<mx:Label text="保留原因代码"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="TARGET DATE/FH/CYC"/>
+				<mx:Label text="计划保留时间/飞行小时/循环"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="REQUIRED"/>
+				<mx:Label text="GRND TIME"/>
+				<mx:Label text="所需停场时间"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="MH REQUIRED"/>
+				<mx:Label text="所需工时"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="REQUIRED M"/>
+				<mx:Label text="是否有M项要求"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="19%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="REQUIRED ON A/C"/>
+				<mx:Label text="是否需放入机上保留故障单夹"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="PROPOSER/DATE"/>
+				<mx:Label text="申请人/日期"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="APPROVED BY/DATE"/>
+				<mx:Label text="批准人/日期"/>
+				</mx:VBox>	
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="60" >
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="REASON_CODE"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="TARGET_DATE_FH_CYC"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="REQUIRED_GRND_TIME"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="8%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="MH_REQUIRED"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+					<mx:VBox>
+						<mx:CheckBox label="是" id="M_FLAG_1"/>
+						<mx:CheckBox label="否" id="M_FLAG_0"/>
+						
+					</mx:VBox>
+				
+				
+			</mx:GridItem>
+			<mx:GridItem width="11%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+					
+					<mx:VBox>
+						<mx:CheckBox label="是" id="SRM_CODE_1"/>
+						<mx:CheckBox label="否" id="SRM_CODE_0"/>
+						
+					</mx:VBox>
+			
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="PROPOSER_DATE"/>
+				
+			</mx:GridItem>
+			<mx:GridItem width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="APPROVED_BY_DATE"/>
+				
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="2" width="23%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label text="RECTIFICATION 处理结果"/>
+				
+			</mx:GridItem>
+			<mx:GridItem colSpan="6" width="77%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:Label id="RECTIFICATION"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="20" >
+			<mx:GridItem  colSpan="8" width="100%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+			</mx:GridItem>
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="70" >
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="MECHANIC/DATE"/>
+				<mx:Label text="维修人员/日期"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="INSPECTOR/DATE"/>
+				<mx:Label text="检验人员/日期"/>
+				</mx:VBox>
+			</mx:GridItem>
+			<mx:GridItem  colSpan="2" width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				<mx:VBox width="100%">
+				<mx:Label text="YELLOW COPY REM"/>
+				
+				<mx:Label text="保留故障单夹中黄色副页撤除者"/>
+				</mx:VBox>	
+			</mx:GridItem>
+			<mx:GridItem rowSpan="2" colSpan="5"   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+					<mx:VBox>
+						<mx:Label text="执管基地代码："/>
+						<mx:Label text="成都：CD"/>
+						<mx:Label text="重庆：CQ"/>
+						<mx:Label text="杭州：HZ"/>
+						<mx:Label text="武汉：WH"/>
+						
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="天津：TJ"/>
+						<mx:Label text="呼和浩特：HH"/>
+						<mx:Label text="上海：SH"/>
+						<mx:Label text="Ameco：AM"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="保留原因代码："/>
+						<mx:Label text="观察项目：OI"/>
+						<mx:Label text="缺航材：LS"/>
+						<mx:Label text="无足够停场时间：SG"/>
+						<mx:Label text="需特殊准备：SP"/>
+					</mx:VBox>
+					<mx:VBox>
+						<mx:Label text="白色原页存入保留故障单卷宗"/>
+						<mx:Label text="黄色副页存入保留故障单夹"/>
+						<mx:Label text="粉色副页送生产计划部门"/>
+						<mx:Label text="绿色副页送质量部门"/>
+						<mx:Label text="金黄色副页送备料部门"/>
+					</mx:VBox>
+				
+			</mx:GridItem>
+			
+		</mx:GridRow>
+		<mx:GridRow width="100%" height="70" >
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+							 <mx:Label id="MECHANIC_DATE"/>
+			</mx:GridItem>
+			<mx:GridItem width="15%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+							 <mx:Label id="INSPECTOR_DATE"/>
+			</mx:GridItem>
+			<mx:GridItem  colSpan="2" width="20%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+				
+							 <mx:Label id="YELLOW_COPY_REM"/>
+					
+			</mx:GridItem>
+		</mx:GridRow>
+	</mx:Grid>
+	</mx:VBox>
+		
+	</mx:VBox>
+	<!--
+	<mx:VBox>
+		<mx:HBox width="100%" height="100%"> 
+			<mx:Spacer width="100%"/>
+			<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+		</mx:HBox>
+		<mx:VBox id="DDReportWindow" width="100%" height="100%" paddingLeft="15" paddingRight="15">
+			<mx:HRule width="100%" />
+			<mx:HBox width="1400"  horizontalAlign="center">
+				<mx:VBox>
+				<mx:Label text="DEFERRED DEFECT " fontWeight="bold"   paddingTop="10"/>	
+				<mx:Label text="保留故障单" fontWeight="bold"   paddingTop="10"/>
+				</mx:VBox>
+			</mx:HBox>
+			
+			<mx:HRule width="1210" />
+			
+			<mx:HBox width="100%">
+				<mx:VRule height="60"/>
+				<mx:VBox width="100"  >
+				<mx:Label text="MB CODE" height="40"  textAlign="center"  />
+				<mx:Label text="执管基地代码" height="40" textAlign="center"  />
+				</mx:VBox>
+				<mx:VRule height="60" />
+				<mx:VBox width="160">
+				<mx:Label text="DD NO."   textAlign="center"/>
+				<mx:Label text="保留故障编号" textAlign="center"/>	
+				</mx:VBox>
+				<mx:VRule height="60" />
+				<mx:VBox width="100">
+				<mx:Label text="WO-NO"  textAlign="center"/>
+				<mx:Label text="工作指令号"  textAlign="center"/>	
+				</mx:VBox>	
+				<mx:VRule height="60" />
+				<mx:VBox width="100">
+				<mx:Label text="A/C REG"  textAlign="center"/>
+				<mx:Label text="飞机号"  textAlign="center"/>	
+				</mx:VBox>	
+				<mx:VRule height="60" />
+				<mx:VBox width="120">
+				<mx:Label text="ENG/APU S/N"  textAlign="center"/>
+				<mx:Label text="发动机/APU 序号"  textAlign="center"/>
+				</mx:VBox>	
+				<mx:VRule height="60" />
+				<mx:VBox width="150">
+				<mx:Label text="TRANSFERRED FROM"  textAlign="center"/>
+				<mx:Label text="转录自何文件"  textAlign="center"/>
+				</mx:VBox>	
+				<mx:VRule height="60" />
+				<mx:VBox width="180">
+				<mx:Label text="ISSUE DATE/LOCALITY"  textAlign="center"/>
+				<mx:Label text="首次报告日期/地点"  textAlign="center"/>					
+				</mx:VBox>	
+				<mx:VRule height="60" />
+				<mx:VBox width="160">
+				<mx:Label text="A/C TOTAL FH/CYC"  textAlign="center"/>
+				<mx:Label text="飞机的总飞行小时/循环"  textAlign="center"/>
+				</mx:VBox>	
+				<mx:VRule height="60" />
+			</mx:HBox>
+			
+			<mx:HRule width="1210" />
+			
+			<mx:HBox width="100%">
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+				<mx:Label  id="baseid"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="160">
+				<mx:Label  id="dd_no"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+				<mx:Label  id="wo_no"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+				<mx:Label  id="acnum"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="120">
+				<mx:Label  id="eng_apu_sn"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="150">	
+				<mx:Label  id="transferred"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="180">
+				<mx:Label id="issue_date_locality"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="160">
+				<mx:Label id="total_fh_cyc"/>
+				</mx:VBox>
+				<mx:VRule height="60" />
+			</mx:HBox>
+			
+			<mx:HRule width="1210"/>
+			
+			<mx:HBox width="100%">
+				<mx:VRule height="60" />
+				<mx:VBox width="270">
+				<mx:Label text="DD REPORT  TEMP ACT"/>
+				<mx:Label text="保留报告及临时措施"/>
+				</mx:VBox>
+				<mx:VRule height="60" />
+				<mx:VBox width="920">
+				</mx:VBox>
+				<mx:VRule height="60" />
+			</mx:HBox>
+			<mx:HRule width="1210"/>
+			<mx:HBox width="100%">
+				<mx:VRule height="60" />
+				<mx:VBox width="100%">
+				<mx:Label  id="Temp_act"/>
+				</mx:VBox>
+				<mx:VRule height="60" />
+			</mx:HBox>
+			
+			<mx:HRule width="1210"/>
+			<mx:HBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="NAME"/>
+					<mx:Label text="名称"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="160">
+					<mx:Label text="P/N"/>
+					<mx:Label text="件号"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="QUANTITY"/>
+					<mx:Label text="数量"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="ATA CHAPTER"/>
+					<mx:Label text="章节"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="290">
+					<mx:Label text="DD CLASSIFICATION"/>
+					<mx:Label text="保留故障分类"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="180">
+					<mx:Label text="SERVICE EFFECT"/>
+					<mx:Label text="影响服务程度"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="150">
+					<mx:Label text="OPERATION LIMITED"/>
+					<mx:Label text="运行限制"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+			</mx:HBox>
+			<mx:HRule width="1210"/>
+			
+			<mx:HBox width="100%">
+				<mx:Label  width="50" id="pname"/>
+				<mx:Label width="80" id="pn"/>
+				<mx:Label width="150" id="quantity"/>
+				<mx:Label width="150" id="ata_chapter"/>
+				<mx:Label width="150" id="dd_class"/>
+				<mx:Label width="150" id="service_efect"/>
+				<mx:Label width="150" id="operation_limited"/>
+			</mx:HBox>
+			
+			<mx:HRule width="1210"/>
+			<mx:HBox width="1400">
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="REASON CODE"/>
+					<mx:Label text="保留原因代码"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="160">
+					<mx:Label text="TARGET DATE/FH/CYC"/>
+					<mx:Label text="计划保留时间/飞行小时/循环"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="REQUIRED" height="15" fontSize="12"/>
+					<mx:Label text="GRND TIME"  height="15" fontSize="12"/>
+					<mx:Label text="所需停场时间"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="100">
+					<mx:Label text="MH REQUIRED"/>
+					<mx:Label text="所需工时"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="120">
+					<mx:Label text="REQUIRED M"/>
+					<mx:Label text="是否有M项要求"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="180">
+					<mx:Label text="REQUIRED ON A/C"/>
+					<mx:Label text="是否需放入机上保留故障单夹"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="150">
+					<mx:Label text="PROPOSER/DATE"/>
+					<mx:Label text="申请人/日期"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="140">
+					<mx:Label text="APPROVED BY/DATE"/>
+					<mx:Label text="批准人/日期"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />			
+			</mx:HBox>
+			<mx:HBox width="1400">
+				<mx:Label  width="50" id="reason_code"/>
+				<mx:Label width="80" id="target_date_fh_cyc"/>
+				<mx:Label width="150" id="required_grnd_time"/>
+				<mx:Label width="150" id="mh_required"/>
+				<mx:Label width="150" id="required_m"/>
+				<mx:Label width="150" id="required_on_a_c"/>
+				<mx:Label width="150" id="proposer_date"/>
+				<mx:Label width="150" id="approved_by_date"/>
+			</mx:HBox>
+			
+			
+			<mx:HRule width="1400"/>
+			<mx:HBox width="1120">
+				<mx:Label text="RECTIFICATION|处理结果"/>
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="" width="100%" id="rectification"/>
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="" width="100%" />
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="" width="100%"/>
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="" width="100%" />
+				
+			</mx:HBox>
+			
+			<mx:HRule width="1210"/>
+			
+			<mx:HBox width="440">
+				<mx:VRule height="60"  />
+				<mx:VBox width="120">
+					<mx:Label text="MECHANIC/DATE"/>
+					<mx:Label text="维修人员/日期"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:VBox width="120">
+					<mx:Label text="INSPECTOR/DATE"/>
+					<mx:Label text="检验人/日期"/>
+				</mx:VBox>
+				<mx:VRule height="60"/>
+				<mx:VBox width="200">
+					<mx:Label text="YELLOW COPY REM"/>
+					<mx:Label text="保留故障单夹中黄色副页撤除者"/>
+				</mx:VBox>
+				<mx:VRule height="60"  />
+				<mx:HRule width="440"/>
+				<mx:VBox>
+				<mx:VRule height="60"  />	
+				
+					<mx:Label  width="120" id="mechanic_date"/>
+					<mx:VRule height="60"  />
+					<mx:Label width="120" id="inspector_date"/>
+					<mx:VRule height="60"  />
+					<mx:Label width="200" id="yellow_copy_rem"/>
+					<mx:VRule height="60"  />
+				</mx:VBox>
+				
+			</mx:HBox>
+			<mx:HRule width="1210"/>
+			<mx:HBox>
+				<mx:Label text="执管基地代码："/>
+				<mx:Label text="成都：CD"/>
+				<mx:Label text="重庆：CQ"/>
+				<mx:Label text="杭州：HZ"/>
+				<mx:Label text="武汉：WH"/>
+				<mx:Label text="天津：TJ"/>
+				<mx:Label text="呼和浩特：HH"/>
+				<mx:Label text="上海：SH"/>
+				<mx:Label text="Ameco：AM"/>
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="保留原因代码："/>
+				<mx:Label text="观察项目：OI"/>
+				<mx:Label text="缺航材：LS"/>
+				<mx:Label text="无足够停场时间：SG"/>
+				<mx:Label text="需特殊准备：SP"/>
+				
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="白色原页存入保留故障单卷宗"/>
+				<mx:Label text="黄色副页存入保留故障单夹"/>
+				<mx:Label text="粉色副页送生产计划部门"/>
+				<mx:Label text="绿色副页送质量部门"/>
+				<mx:Label text="金黄色副页送备料部门"/>
+			</mx:HBox>
+			
+		</mx:VBox>
+		
+	</mx:VBox>
+	-->
+</containers:SuperPanel>

@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.MetadataTemplet;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var airConditionDest:String = ApmsUIConst.AIRCONDITION_SERVICE;
+			private var airConditionService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			
+			private var markObj:Object;
+			
+			[Bindable]
+			private var changList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA21List:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allA21Compu:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			[Bindable]
+			private var n1_left:String="";
+			[Bindable]
+			private var n1_right:String="";
+			[Bindable]
+			private var n2_left:String="";
+			[Bindable]
+			private var n2_right:String="";
+			[Bindable]
+			private var p3_left:String="";
+			[Bindable]
+			private var p3_right:String="";
+			[Bindable]
+			private var t3_left:String="";
+			[Bindable]
+			private var t3_right:String="";
+			[Bindable]
+			private var pd_left:String="";
+			[Bindable]
+			private var pd_right:String="";
+			[Bindable]
+			private var hpv_left:String="";
+			[Bindable]
+			private var hpv_right:String="";
+			[Bindable]
+			private var prv_left:String="";
+			[Bindable]
+			private var prv_right:String="";
+			[Bindable]
+			private var tpo_left:String="";
+			[Bindable]
+			private var tpo_right:String="";
+			private var pd_maxvalue_redline:String="pd_maxvalue_redline";
+			private var pd_minvalue_redline:String="pd_minvalue_redline";
+			
+			private var hpv_maxvalue_redline:String="hpv_maxvalue_redline";
+			private var hpv_minvalue_redline:String="hpv_minvalue_redline";
+			
+			private var prv_maxvalue_redline:String="prv_maxvalue_redline";
+			private var prv_minvalue_redline:String="prv_minvalue_redline";
+			
+			private var tpo_maxvalue_redline:String="tpo_maxvalue_redline";
+			private var tpo_minvalue_redline:String="tpo_minvalue_redline";
+			
+			private var n1_maxvalue_redline:String="n1_maxvalue_redline";
+			private var n1_minvalue_redline:String="n1_minvalue_redline";
+			
+			private var n2_maxvalue_redline:String="n2_maxvalue_redline";
+			private var n2_minvalue_redline:String="n2_minvalue_redline";
+			
+			
+			private var p3_maxvalue_redline:String="p3_maxvalue_redline";
+			private var p3_minvalue_redline:String="p3_minvalue_redline";
+			
+			private var t3_maxvalue_redline:String="t3_maxvalue_redline";
+			private var t3_minvalue_redline:String="t3_minvalue_redline";
+			
+			private var acmodel:String="";
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-1);
+				
+				airConditionService.endpoint = endpoint;
+				airConditionService.destination = airConditionDest;
+				//远程服务添加监听
+				airConditionService.getAirbleedA21ChartData.addEventListener(ResultEvent.RESULT,getAircondA21ChartDataHandler);
+				airConditionService.getAirbleedA21ChartData.addEventListener(FaultEvent.FAULT,getAircondA21ChartDataErrorHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,M.modelcode modelcode#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+						acmodel = acRefPanel.returnVO.code;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+				aircond_chart1.plotChart.dataTipFunction=trendTipStrFunc0;
+				aircond_chart1.redlineFieldUpperLimitValue=n1_maxvalue_redline;
+				aircond_chart1.redlineFieldLowerLimitValue=n1_minvalue_redline;
+				aircond_chart2.plotChart.dataTipFunction=trendTipStrFunc0;
+				
+				aircond_chart3.plotChart.dataTipFunction=trendTipStrFunc0;
+				aircond_chart3.redlineFieldUpperLimitValue=n2_maxvalue_redline;
+				aircond_chart3.redlineFieldLowerLimitValue=n2_minvalue_redline;
+				aircond_chart4.plotChart.dataTipFunction=trendTipStrFunc0;
+				
+				aircond_chart5.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart5.redlineFieldUpperLimitValue=p3_maxvalue_redline;
+				aircond_chart5.redlineFieldLowerLimitValue=p3_minvalue_redline;
+				aircond_chart6.plotChart.dataTipFunction=trendTipStrFunc1;
+				
+				aircond_chart7.plotChart.dataTipFunction=trendTipStrFunc2;
+				aircond_chart7.redlineFieldUpperLimitValue=t3_maxvalue_redline;
+				aircond_chart7.redlineFieldLowerLimitValue=t3_minvalue_redline;
+				aircond_chart8.plotChart.dataTipFunction=trendTipStrFunc2;
+				
+				aircond_chart9.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart9.redlineFieldUpperLimitValue=pd_maxvalue_redline;
+				aircond_chart9.redlineFieldLowerLimitValue=pd_minvalue_redline;
+				
+				aircond_chart10.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart13.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart13.redlineFieldUpperLimitValue=prv_maxvalue_redline;
+				aircond_chart13.redlineFieldLowerLimitValue=prv_minvalue_redline;
+				
+				aircond_chart14.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart15.plotChart.dataTipFunction=trendTipStrFunc2;
+				aircond_chart15.redlineFieldUpperLimitValue=tpo_maxvalue_redline;
+				aircond_chart15.redlineFieldLowerLimitValue=tpo_minvalue_redline;
+				
+				aircond_chart16.plotChart.dataTipFunction=trendTipStrFunc2;
+				
+				n1_left="N1左";
+				n1_right="N1右";
+				aircond_chart1.colorTipVisible=true;
+				aircond_chart2.colorTipVisible=true;
+				n2_left="N2左";
+				n2_right="N2右";
+				aircond_chart3.colorTipVisible=true;
+				aircond_chart4.colorTipVisible=true;
+				p3_left="P3左";
+				p3_right="P3右";
+				aircond_chart5.colorTipVisible=true;
+				aircond_chart6.colorTipVisible=true;
+				t3_left="T3左";
+				t3_right="T3右";
+				aircond_chart7.colorTipVisible=true;
+				aircond_chart8.colorTipVisible=true;
+				pd_left="PD左";
+				pd_right="PD右";
+				aircond_chart9.colorTipVisible=true;
+				aircond_chart10.colorTipVisible=true;
+				prv_left="PRV左";
+				prv_right="PRV右";
+				aircond_chart13.colorTipVisible=true;
+				aircond_chart14.colorTipVisible=true;
+				
+				tpo_left="TPO左";
+				tpo_right="TPO右";
+				aircond_chart15.colorTipVisible=true;
+				aircond_chart16.colorTipVisible=true;
+				
+				aircond_chart9.rptno="A21";
+				aircond_chart10.rptno="A21";
+				aircond_chart13.rptno="A21";
+				aircond_chart14.rptno="A21";
+				aircond_chart15.rptno="A21";
+				aircond_chart16.rptno="A21";
+				aircond_chart1.rptno="A21";
+				aircond_chart2.rptno="A21";
+				aircond_chart3.rptno="A21";
+				aircond_chart4.rptno="A21";
+				aircond_chart5.rptno="A21";
+				aircond_chart6.rptno="A21";
+				aircond_chart7.rptno="A21";
+				aircond_chart8.rptno="A21";
+				
+			}
+			
+			public function trendTipStrFunc0(e:HitData):String{
+				return trendTipStrFunc(e,"");
+			}
+			
+			public function trendTipStrFunc1(e:HitData):String{
+				return trendTipStrFunc(e,"psi");
+			}
+			
+			public function trendTipStrFunc2(e:HitData):String{
+				return trendTipStrFunc(e,"°C");
+			}
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			private function getAircondA21ChartDataHandler(event:ResultEvent):void 
+			{
+				changList = null;
+				allList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				changList = res["changList"];
+				allList = res["allList"];
+				
+				allA21List = res["allA21List"];
+				allA21Compu = res["allA21Compu"];
+				if(allA21List.length>0){
+					
+					
+					redlineChkClick();
+				}
+				
+			}
+			//红线复选框点击 
+			private function redlineChkClick():void{
+				var redline_pd_maxvalue:String="";  
+				var redline_pd_minvalue:String="";
+				
+				var redline_hpv_maxvalue:String="";
+				var redline_hpv_minvalue:String="";
+				
+				var redline_prv_maxvalue:String="";
+				var redline_prv_minvalue:String="";
+				
+				var redline_tpo_maxvalue:String="";
+				var redline_tpo_minvalue:String="";
+				
+				var redline_n1_maxvalue:String="";
+				var redline_n1_minvalue:String="";
+				
+				var redline_n2_maxvalue:String="";
+				var redline_n2_minvalue:String="";
+				
+				var redline_p3_maxvalue:String="";
+				var redline_p3_minvalue:String="";
+				
+				var redline_t3_maxvalue:String="";
+				var redline_t3_minvalue:String="";
+				
+				var mtd:MetadataTemplet = MetadataTempletUtil.getInstance().findMetadataTemplet("ReadLineConfig");
+				var xml:XML = mtd.contentXML;
+				for(var i:Number = 0;i <xml.children().length()-1;i++){
+					var acmodelStr:String=xml.headitem[i].@acmodel;
+					if(acmodel.localeCompare(acmodelStr)==0){
+						redline_pd_maxvalue=xml.headitem[i].a21pd_redlinevalue.@upperlimitvalue;
+						redline_pd_minvalue=xml.headitem[i].a21pd_redlinevalue.@lowerlimitvalue;
+						
+						redline_hpv_maxvalue=xml.headitem[i].a21hpv_redlinevalue.@upperlimitvalue;
+						redline_hpv_minvalue=xml.headitem[i].a21hpv_redlinevalue.@lowerlimitvalue;
+						
+						redline_prv_maxvalue=xml.headitem[i].a21prv_redlinevalue.@upperlimitvalue;
+						redline_prv_minvalue=xml.headitem[i].a21prv_redlinevalue.@lowerlimitvalue;
+						
+						redline_tpo_maxvalue=xml.headitem[i].a21tpo_redlinevalue.@upperlimitvalue;
+						redline_tpo_minvalue=xml.headitem[i].a21tpo_redlinevalue.@lowerlimitvalue;
+						
+						redline_n1_maxvalue=xml.headitem[i].a21n1_redlinevalue.@upperlimitvalue;
+						redline_n1_minvalue=xml.headitem[i].a21n1_redlinevalue.@lowerlimitvalue;
+						
+						redline_n2_maxvalue=xml.headitem[i].a21n2_redlinevalue.@upperlimitvalue;
+						redline_n2_minvalue=xml.headitem[i].a21n2_redlinevalue.@lowerlimitvalue;
+						
+						redline_p3_maxvalue=xml.headitem[i].a21p3_redlinevalue.@upperlimitvalue;
+						redline_p3_minvalue=xml.headitem[i].a21p3_redlinevalue.@lowerlimitvalue;
+						
+						redline_t3_maxvalue=xml.headitem[i].a21t3_redlinevalue.@upperlimitvalue;
+						redline_t3_minvalue=xml.headitem[i].a21t3_redlinevalue.@lowerlimitvalue;
+						
+					}
+				}
+				if(""==redline_pd_maxvalue){
+					redline_pd_maxvalue=xml.defaultconfig.a21pd_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_pd_minvalue){
+					redline_pd_minvalue=xml.defaultconfig.a21pd_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_hpv_maxvalue){
+					redline_hpv_maxvalue=xml.defaultconfig.a21hpv_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_hpv_minvalue){
+					redline_hpv_minvalue=xml.defaultconfig.a21hpv_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_prv_maxvalue){
+					redline_prv_maxvalue=xml.defaultconfig.a21prv_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_prv_minvalue){
+					redline_prv_minvalue=xml.defaultconfig.a21prv_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_tpo_maxvalue){
+					redline_tpo_maxvalue=xml.defaultconfig.a21tpo_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_tpo_minvalue){
+					redline_tpo_minvalue=xml.defaultconfig.a21tpo_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n1_maxvalue){
+					redline_n1_maxvalue=xml.defaultconfig.a21n1_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n1_minvalue){
+					redline_n1_minvalue=xml.defaultconfig.a21n1_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n2_maxvalue){
+					redline_n2_maxvalue=xml.defaultconfig.a21n2_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n2_minvalue){
+					redline_n2_minvalue=xml.defaultconfig.a21n2_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_p3_maxvalue){
+					redline_p3_maxvalue=xml.defaultconfig.a21p3_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_p3_minvalue){
+					redline_p3_minvalue=xml.defaultconfig.a21p3_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_t3_maxvalue){
+					redline_t3_maxvalue=xml.defaultconfig.a21t3_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_t3_minvalue){
+					redline_t3_minvalue=xml.defaultconfig.a21t3_redlinevalue.@lowerlimitvalue;
+				}
+				for(var j:int=0;j<allA21List.length;j++){
+					allA21List[j][pd_maxvalue_redline]=redline_pd_maxvalue; 
+					allA21List[j][pd_minvalue_redline]=redline_pd_minvalue;
+					
+					allA21List[j][hpv_maxvalue_redline]=redline_hpv_maxvalue; 
+					allA21List[j][hpv_minvalue_redline]=redline_hpv_minvalue;
+					
+					allA21List[j][prv_maxvalue_redline]=redline_prv_maxvalue; 
+					allA21List[j][prv_minvalue_redline]=redline_prv_minvalue;
+						
+					allA21List[j][tpo_maxvalue_redline]=redline_tpo_maxvalue; 
+					allA21List[j][tpo_minvalue_redline]=redline_tpo_minvalue;
+						
+					allA21List[j][n1_maxvalue_redline]=redline_n1_maxvalue; 
+					allA21List[j][n1_minvalue_redline]=redline_n1_minvalue;
+						
+					allA21List[j][n2_maxvalue_redline]=redline_n2_maxvalue; 
+					allA21List[j][n2_minvalue_redline]=redline_n2_minvalue;
+						
+					allA21List[j][p3_maxvalue_redline]=redline_p3_maxvalue; 
+					allA21List[j][p3_minvalue_redline]=redline_p3_minvalue;
+						
+					allA21List[j][t3_maxvalue_redline]=redline_t3_maxvalue; 
+					allA21List[j][t3_minvalue_redline]=redline_t3_minvalue;
+				}
+			}
+			private function getAircondA21ChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A21计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				airConditionService.getAirbleedA21ChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"引气系统监控");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="mainChart"  width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:CheckBox id="isKChk" label="斜率计算" enabled="false" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:TabNavigator width="100%"  height="100%" creationPolicy="auto" resizeToContent="true">
+			<mx:VBox label="引起系统" width="100%" height="100%">
+				<mx:HBox>
+					<!-- <mx:Label text="空调系统状态" /> -->
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart9" chartName="PD(预冷器进口压力)" height="100%" width="50%"
+													xField="UTCDATE"  isRedLine="true"
+													valField1="PD_S1" point1Name="PD左"
+													valField2="PD_T1" point2Name="PD右"
+													isAvg5="true" avg5Field1="PD_S1_ROLL5" avg5Field2="PD_T1_ROLL5"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{pd_left}" chartTitle_right="{pd_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart10" chartName="DIV PD(预冷器进口压力差分)" height="100%" width="50%"
+													xField="UTCDATE"   avg5Field1="PD_ROLL5" avg5Field2="PD_ROLL5" colorAttribute="PD_ALARMNUM"
+													valField1="DIV_PD_S1" point1Name="PD左" 	pointTypeField1="PD_POINTTYPE"
+													valField2="DIV_PD_T1" point2Name="PD右" 	pointTypeField2="PD_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{pd_left}" chartTitle_right="{pd_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart13" chartName="PIN PRV(引气调节活门进口压力)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="PIN_PRV_M1" point1Name="PIN PRV左"
+													valField2="PIN_PRV_M2" point2Name="PIN PRV右"
+													isAvg5="true" avg5Field1="PRV1_Z1_ROLL5" avg5Field2="PRV2_Z1_ROLL5"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{prv_left}" chartTitle_right="{prv_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart14" chartName="DIV PIN PRV(引气调节活门进口压力分差)" height="100%" width="50%"
+													xField="UTCDATE"  colorAttribute="PIN_PRV_ALARMNUM"
+													valField1="DIV_PIN_PRV_M1" point1Name="PIN PRV左" pointTypeField1="PIN_PRV_POINTTYPE"
+													valField2="DIV_PIN_PRV_M2" point2Name="PIN PRV右" pointTypeField2="PIN_PRV_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{prv_left}" chartTitle_right="{prv_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart15" chartName="TPO(预冷气出口温度)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="TPO_S1" point1Name="TPO左"
+													valField2="TPO_T1" point2Name="TPO右"
+													isAvg5="true" avg5Field1="TPO_S1_ROLL5" avg5Field2="TPO_T1_ROLL5"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{tpo_left}" chartTitle_right="{tpo_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart16" chartName="DIV TPO(预冷气出口温度分差)" height="100%" width="50%"
+													xField="UTCDATE"  avg5Field1="TPO_ROLL5" avg5Field2="TPO_ROLL5" colorAttribute="TPO_ALARMNUM"
+													valField1="DIV_TPO_S1" point1Name="DIV TPO左" pointTypeField1="TPO_POINTTYPE"
+													valField2="DIV_TPO_T1" point2Name="DIV TPO右" pointTypeField2="TPO_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{tpo_left}" chartTitle_right="{tpo_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart1" chartName="N1(N1转速)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="N1_E1" point1Name="N1左"
+													valField2="N1_N1" point2Name="N1右"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{n1_left}" chartTitle_right="{n1_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart2" chartName="DIV N1(N1转速分差)" height="100%" width="50%"
+													xField="UTCDATE"  avg5Field1="N1_ROLL5" avg5Field2="N1_ROLL5" colorAttribute="N1_ALARMNUM"
+													valField1="DIV_N1_E1" point1Name="N1左" 	pointTypeField1="N1_POINTTYPE"
+													valField2="DIV_N1_N1" point2Name="N1右" 	pointTypeField2="N1_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{n1_left}" chartTitle_right="{n1_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart3" chartName="N2(N2转速)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="N2_E1" point1Name="N2左"
+													valField2="N2_N1" point2Name="N2右"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{n2_left}" chartTitle_right="{n2_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart4" chartName="DIV N2(N2转速分差)" height="100%" width="50%"
+													xField="UTCDATE"  avg5Field1="N2_ROLL5" avg5Field2="N2_ROLL5" colorAttribute="N2_ALARMNUM"
+													valField1="DIV_N2_E1" point1Name="N2左" 	pointTypeField1="N2_POINTTYPE"
+													valField2="DIV_N2_N1" point2Name="N2右" 	pointTypeField2="N2_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{n2_left}" chartTitle_right="{n2_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart5" chartName="P3(发动机高压压气机出口压力)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="P3_S1" point1Name="P3左"
+													valField2="P3_T1" point2Name="P3右"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{p3_left}" chartTitle_right="{p3_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart6" chartName="DIV P3(发动机高压压气机出口压力分差)" height="100%" width="50%"
+													xField="UTCDATE"  avg5Field1="P3_ROLL5" avg5Field2="P3_ROLL5" colorAttribute="P3_ALARMNUM"
+													valField1="DIV_P3_S1" point1Name="P3左" 	pointTypeField1="P3_POINTTYPE"
+													valField2="DIV_P3_T1" point2Name="P3右" 	pointTypeField2="P3_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{p3_left}" chartTitle_right="{p3_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				<mx:HBox height="100%" width="100%">
+					<component:ReportTrendDualChart id="aircond_chart7" chartName="T3(发动机高压压气机出口温度)" height="100%" width="50%"
+													xField="UTCDATE" isRedLine="true"
+													valField1="T3_S1" point1Name="T3左"
+													valField2="T3_T1" point2Name="T3右"
+													allList1="{allA21List}" allList2="{allA21List}"
+													chartTitle_left="{t3_left}" chartTitle_right="{t3_right}">
+					</component:ReportTrendDualChart>
+					
+					<component:ReportTrendDualChart id="aircond_chart8" chartName="DIV T3(发动机高压压气机出口温度分差)" height="100%" width="50%"
+													xField="UTCDATE"  avg5Field1="T3_ROLL5" avg5Field2="T3_ROLL5" colorAttribute="T3_ALARMNUM"
+													valField1="DIV_T3_S1" point1Name="T3左" 	pointTypeField1="T3_POINTTYPE"
+													valField2="DIV_T3_T1" point2Name="T3右" 	pointTypeField2="T3_POINTTYPE"
+													allList1="{allA21Compu}" allList2="{allA21Compu}"
+													chartTitle_left="{t3_left}" chartTitle_right="{t3_right}">
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				
+				
+				
+			</mx:VBox >
+			
+		</mx:TabNavigator>
+	</mx:VBox>
+</mx:Module>

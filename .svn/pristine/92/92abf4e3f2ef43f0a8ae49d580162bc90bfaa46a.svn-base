@@ -1,0 +1,1580 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*" xmlns:datagrid="com.cool.components.datagrid.*" xmlns:item="com.cool.components.item.*">
+	
+	<fx:Metadata>
+		[Event(name="dataRefresh",type="mx.events.FlexEvent")]
+	</fx:Metadata>
+	
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="flightService" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="getLastFlightSynInfo" result="result4getLastFlightSynInfo(event)" 
+					   fault="fault4getLastFlightSynInfo(event)">
+			</mx:method>
+			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.component.CellColorRender;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.aircraft.AircraftNumStatisticsTitleWindow;
+			import com.apms.flex.modules.aircraft.AircraftNumStatisticsWindow;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.modules.flight.info.CfdFaultInfoViewWindow;
+			import com.apms.flex.modules.flight.info.CfdWarningInfoViewWindow;
+			import com.apms.flex.modules.flight.info.DelayQueryInfoWindow;
+			import com.apms.flex.modules.flight.info.FlightAcStateWindow;
+			import com.apms.flex.modules.flight.info.FlightAcstopWindow;
+			import com.apms.flex.modules.flight.info.FlightChangeImportantWindow;
+			import com.apms.flex.modules.flight.info.FlightChangeLogConfirmWindow;
+			import com.apms.flex.modules.flight.info.FlightConfirmModifyWindow;
+			import com.apms.flex.modules.flight.info.FlightDdInfoWindow;
+			import com.apms.flex.modules.flight.info.FlightMtworkWindow;
+			import com.apms.flex.modules.flight.info.FlightReporterWindow;
+			import com.apms.flex.modules.flight.info.FlightRunTipWindow;
+			import com.apms.flex.modules.flight.info.FlightTaskDispatchWindow;
+			import com.apms.flex.modules.flight.info.FlightTroubleshootingReporterWindow;
+			import com.apms.flex.modules.flight.info.FlightWorkStateWindow;
+			import com.apms.flex.modules.flight.info.RunningAirInfoWindow;
+			import com.apms.flex.modules.flight.info.RunningAirInfoWindow2;
+			import com.apms.flex.modules.flight.info.RunningAirItemWorkWindow2;
+			import com.apms.flex.modules.flight.info.Self_DefinedListWindow;
+			import com.apms.flex.modules.login.LoginWindow;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.apms.flex.vo.LoginUserVo;
+			import com.cool.components.event.ItemComponentEvent;
+			import com.hurlant.eval.ast.Void;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.utils.ObjectUtil;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.CompareUtil;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable] 
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			
+			private var loginvo:LoginUserVo;
+			
+			private var loginWindow:LoginWindow = new LoginWindow();
+			private var filterCondPanel:FlightUnionFilterPanel = new FlightUnionFilterPanel();
+			
+			private var changelogConfirmPanel:FlightChangeLogConfirmWindow = new FlightChangeLogConfirmWindow();
+			private var flightConfirmPanel:FlightConfirmModifyWindow = new FlightConfirmModifyWindow();
+			private var taskDispatchPanel:FlightTaskDispatchWindow = new FlightTaskDispatchWindow();
+			private var runtipPanel:FlightRunTipWindow = new FlightRunTipWindow();
+			private var ddinfoPanel:FlightDdInfoWindow = new FlightDdInfoWindow();
+			private var runningAirInfoWindow:RunningAirInfoWindow2;
+			private var runningAirItemWorkWindow:RunningAirItemWorkWindow2;
+
+			private var mtworkWindow:FlightMtworkWindow = new FlightMtworkWindow();
+			private var delayQueryInfoWindow:DelayQueryInfoWindow;
+			private var cfdFaultInfoView:CfdFaultInfoViewWindow;
+			private var cfdWarningInfoView:CfdWarningInfoViewWindow;
+			private var flightReporterPanel:FlightReporterWindow ;
+			private var flightTroubleshootingReporterWindow:FlightTroubleshootingReporterWindow;
+			private var acStatePanel:FlightAcStateWindow;
+			private var workStatePanel:FlightWorkStateWindow;
+			private var acstopPanel:FlightAcstopWindow = new FlightAcstopWindow();
+			
+			private var importantChangeWindow:FlightChangeImportantWindow = new FlightChangeImportantWindow();
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			[Bindable]
+			private var aptItemVo:TempletItemVO = new TempletItemVO();
+			[Bindable]
+			private var isLogin:Boolean = false; //是否已登录
+			
+			private var aptcode:String ;//机场3字码
+			private var aptid:String ;
+			private var aptname:String ;
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var querySql:String = "";
+			
+			private var queryFilter:String = "1=1";
+			
+			/** 定时器 */
+			private var timer:Timer;
+			private var timerChg:Timer;
+			
+			[Bindable]
+			private var intfUpdateTime:String = "同步时间:";
+			[Bindable]
+			private var intfToolTip:String = ""; 
+			
+			private var color_yellow:uint = 0xDDCC33;//土黄 FFCC33
+			private var color_red:uint = 0xFF5555;//绛红 CC3333
+			private var color_orange:uint = 0xFF9933;//橙色FF9900
+			private var color_green:uint = 0x99CC33;//淡绿色
+			private var color_purple:uint = 0xC100CE;//紫色
+			
+			private var ac_state_a:Number = 0;
+			private var ac_state_d:Number = 0;
+			public var dutyIndex:int=-1;
+			public var releaseIndex:int=-1;
+			private var so:SharedObject;
+			[Bindable]
+			private var columnList:XMLListCollection = new XMLListCollection();
+			private var isFirstSet:Boolean = true;
+			private var initDgColumns:Array;
+			[Bindable]
+			public var contentXml:XML = <root>
+							<login>
+								<!-- 记录登录用户的信息，便于自动登录 -->
+								<username value=""/>
+								<password value=""/>
+							</login>
+							<datagrid_set>
+								<columns>
+									<!-- 记录每个列的顺序、宽度、和是否显示  -->
+									<column headerText="分公司" dataField="co_seq_name" width="50" visible="false" />
+									<column headerText="航班日期" dataField="flt_date_str" width="90" visible="true"/>
+									<column headerText="航班号" dataField="flightno_union" width="130" visible="true"/>
+									<column headerText="机号" dataField="acnum" width="65" visible="true"/>
+									<column headerText="机型" dataField="acmodel" width="90"  visible="true"/>
+									<column headerText="所属基地" dataField="baseorg" width="100" visible="true"/>
+									<column headerText="经停航站" dataField="apt_union" width="140"  visible="true"/>
+									<column headerText="维护" dataField="maintaintype" width="55"  visible="true"/>
+									<column headerText="次日外站" dataField="outsidefornight" width="65" visible="true"/>
+									<column headerText="计划到达/起飞" dataField="stda" width="120"  visible="true"/>
+									<column headerText="机位" dataField="ac_stop" width="45"  visible="true"/>
+									<column headerText="预达" dataField="t_eta" width="65"  visible="true"/>
+									<column headerText="CDM" dataField="t_cdmout" width="65"  visible="true"/>
+									<column headerText="预起" dataField="t_etd" width="65"  visible="true"/>
+									<column headerText="到达剩余" dataField="remain_min_arr" width="55" visible="true"/>
+									<column headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc" visible="true"/>
+									<column headerText="工作状态" dataField="workforce_state_name" width="70"  visible="true"/>
+									<column headerText="DD" dataField="flag_ddm" width="40"  visible="true"/>
+									<column headerText="提醒单" dataField="flag_tip" width="55" visible="true"/>
+									<column headerText="故障" dataField="ishavefault" width="70"  visible="true"/>
+									<column headerText="告警" dataField="ishavewarning" width="70" visible="true"/>
+									<column headerText="放行人" dataField="release_user" width="70" visible="true"/>
+									<column headerText="维修人" dataField="maintain_user" width="70" visible="true"/>
+									<column headerText="勤务人" dataField="duty_user" width="70"  visible="true"/>
+									<column headerText="接机人" dataField="guardian_user" width="70" visible="true"/>
+									<column headerText="出港人" dataField="handover_user" width="70" visible="true"/>
+									<column headerText="接机组" dataField="pickupcrew_user" width="70" visible="true"/>
+									<column headerText="清洁" dataField="clean_user" width="70" visible="true"/>
+									<column headerText="污水车" dataField="sewage_user" width="70" visible="true"/>
+									<column headerText="实际到达" dataField="t_in_time" width="65" visible="true"/>
+									<column headerText="实际起飞" dataField="t_out_time" width="65" visible="true"/>
+									<column headerText="电源车" dataField="auto_power" width="70" visible="true" />
+									<column headerText="气源车" dataField="auto_airsrc" width="70" visible="true"/>
+									<column headerText="空调车" dataField="auto_aircond" width="70" visible="true"/>
+									<column headerText="拖车" dataField="auto_trailer" width="70" visible="true"/>
+									<column headerText="除雪车" dataField="auto_snowrm" width="70" visible="true"/>
+									<column headerText="客梯车" dataField="auto_lift" width="70" visible="true"/>
+									<column headerText="测量气压" dataField="airpress_user" width="70" visible="true"/>
+									<column headerText="通电" dataField="poweron_user" width="70" visible="true"/>
+									<column headerText="双签" dataField="sign2_user" width="70" visible="true"/>
+									<column headerText="区域负责" dataField="area_user" width="70" visible="true"/>
+									<column headerText="维修工作" dataField="mtwork" width="80" visible="true"/>
+									<column headerText="起飞剩余" dataField="remain_min_dep" width="55" visible="true"/>
+									<column headerText="OMIS备注" dataField="memo" width="180" visible="true"/>
+									<column headerText="航班备注" dataField="flightdesc" width="180" visible="true"/>
+								</columns>
+							</datagrid_set>
+							</root>;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				aptItemVo = new TempletItemVO();
+				aptItemVo.itemtype="参照";
+				aptItemVo.itemname="选择航站";
+				aptItemVo.itemkey="APT";
+				aptItemVo.refdesc="SELECT id id#,lower(CODE_3) 三字码,NAME 名称 FROM V_AIRPORT_REFQUERY;ds=datasource_apms";
+				
+				endTime = DateUtil.moveHour(new Date(),10);
+				beginTime = DateUtil.moveHour(new Date(),-2);
+			}
+			
+			private function aptChangeHandler(event:ItemComponentEvent):void{
+				if(aptRef.returnVO != null){
+					//获取参照的返回值
+					aptcode = aptRef.returnVO.code.toUpperCase();
+					aptid= aptRef.returnVO.id;
+					aptname = aptRef.returnVO.name;
+				}else{
+					aptid = null;
+					aptcode = null;
+					aptname = null;
+				}
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				flightListPanel.removeQueryPanel();
+				flightListPanel.lockedColumnCount = 3;//前3列锁定
+				flightListPanel.alternatingItemColors = [0xFFF5EE,0xD1EEEE];
+				
+				aptRef.editable = false;
+				
+				queryColumns.push("acnum");
+				queryColumns.push("flightno_union");
+				queryColumns.push("acportstate");
+				
+				timer = new Timer(60000);
+				timer.addEventListener(TimerEvent.TIMER,onTimerHandler);
+				
+				//1.5分钟执行一次
+				timerChg = new Timer(90000);
+				timerChg.addEventListener(TimerEvent.TIMER,onTimerChgHandler );
+				timerChg.start();
+				
+				var rightClickMenuItems:Array = [];
+				
+				//rightClickMenuItems.addItem({label:"刷新(R)",keyname:MTChartConst.MTCHART_KEY_REFRESH,icon:AssetsFileLib.refreshIcon ,enabled:true });
+				//菜单权限控制,可根据不同的登录角色,控制操作菜单
+				rightClickMenuItems.push({label:"变动信息",keyname:"changeconfirm"});
+				rightClickMenuItems.push({label:"工作分配",keyname:"taskdispatch"});
+				rightClickMenuItems.push({label:"航班确认",keyname:"flightconfirm"});
+				rightClickMenuItems.push({label:"工作状态",keyname:"workstate" ,enabled:true });
+				rightClickMenuItems.push({label:"飞机状态",keyname:"acstate" ,enabled:true });
+				rightClickMenuItems.push({label:"工作通报",keyname:"workreport" ,enabled:true });
+				rightClickMenuItems.push({label:"排故记录通报",keyname:"troubleshootingreport" ,enabled:true });
+				rightClickMenuItems.push({label:"运行提示单",keyname:"runtip" ,enabled:true });
+				rightClickMenuItems.push({label:"DD单",keyname:"ddinfo" ,enabled:true });
+				rightClickMenuItems.push({label:"机位提醒",keyname:"acstoptip" ,enabled:true });
+				rightClickMenuItems.push({label:"接机信息表",keyname:"runningAirInfo" ,enabled:true });
+				rightClickMenuItems.push({label:"接机工作项目清单表",keyname:"runningAirItemWork" ,enabled:true });
+				rightClickMenuItems.push({label:"延误原因查询表",keyname:"delayQueryInfo" ,enabled:true });
+
+				flightListPanel.dataListGrid.setRightClickMenuItems(rightClickMenuItems);
+				flightListPanel.dataListGrid.rightClickMenu.addEventListener(MenuEvent.ITEM_CLICK,onRightMenuClicked);
+				
+				//添加列颜色渲染
+				addColumnRender();
+				
+				loginBtn_clickHandler(null);
+				
+			}
+			/**
+			 * 初始化航班列表
+			 */ 
+			private function refreshFlightDatagrid():void{
+				//动态设置显示列
+				var newDgcolumns:Array = new Array();
+				
+				if( isFirstSet == true){
+					//获取原始最全的列记录
+					initDgColumns = flightListPanel.dataListGrid.columns;
+					isFirstSet = false;
+				}
+				
+				flightListPanel.dataListGrid.columns = initDgColumns;
+				var datagridWidth:Number = 10;
+				
+				for each(var column:XML in columnList){
+					var df:String = column.@dataField;
+					for each( var dgc:DataGridColumn in initDgColumns){
+						var dgcField:String = dgc.dataField;
+						if(df == dgcField && column.@visible=="true" ){
+							//添加到显示列
+							newDgcolumns.push(dgc);
+							
+							dgc.headerText = column.@headerText;
+							var colwidth:Number = new Number(column.@width);
+							dgc.width = colwidth;
+							dgc.visible = column.@visible=="true"?true:false;
+							
+							datagridWidth += colwidth;
+							break;
+						}
+					}
+				}
+				flightListPanel.dataListGrid.columns = newDgcolumns;
+				//flightListPanel.dataListGrid.width = datagridWidth;
+			}
+			
+			/** 定时器处理 */
+			private function onTimerChgHandler(evnet:TimerEvent):void{
+				//获取航班更新信息
+				if(aptcode == null || aptcode == ""){
+					//SmartXMessage.show("请先选择机场!");
+					return;
+				}
+				flightService.getLastFlightSynInfo(aptcode);
+				
+			}
+			
+			/** 定时器处理 */
+			private function onTimerHandler(evnet:TimerEvent):void{
+				if(aptcode == null || aptcode == ""){
+					SmartXMessage.show("请先选择机场!");
+					return;
+				}
+				
+				onQuery(null);
+				
+			}
+			
+			//	分页查询相关		begin
+			private function fault4getLastFlightSynInfo(event:FaultEvent):void
+			{
+				SmartXMessage.show("查询最新航班同步信息失败！");
+			}	
+			
+			private function result4getLastFlightSynInfo(event:ResultEvent):void 
+			{
+				//SmartXMessage.show("同步信息查询成功！");
+				var synlog:Object = event.result;
+				var changeTime:Date = synlog["updatetime"];
+				intfUpdateTime = "同步时间：" +DateUtil.dateToFormatStr(changeTime,"MM-DD JJ:NN");
+				intfToolTip = "更新："+synlog["num_update"]+"条，新增："+synlog["num_add"]+"条，取消："+synlog["num_cancel"]+"条";
+				
+				//有重要更新
+				if( synlog["change_num_total"] != "0" ){
+					warnLabel.text = "航班重要更新["+ synlog["change_num_total"] +"]条";
+					warnLabel.visible = true;
+				}else{
+					warnLabel.visible = false;
+				}
+				
+			}
+			
+			private function onRightMenuClicked(event:MenuEvent):void{
+				var item:Object = event.item;
+				if(item == null)
+					return;
+				
+				if( flightListPanel.dataListGrid != null && flightListPanel.getSelectedRowValue() == null ){
+					Alert.show("请选择一条航班计划!");
+					return ;
+				}
+				
+				var flightRow:Object = flightListPanel.getSelectedRowValue();
+				
+				if(item.keyname == "changeconfirm"){
+					
+					onChangeLogConfirmHander(flightRow);
+					
+				}else if(item.keyname == "workstate"){
+					//工作状态更新
+					onWorkStateHandler(flightRow);
+
+				}else if(item.keyname == "acstate"){
+					//飞机状态更新
+					onAcStateHandler(flightRow);
+					
+				}else if(item.keyname == "taskdispatch"){
+					//工作分配
+					onFlihtTaskDispatchHandler(flightRow);
+					
+					
+				}else if(item.keyname == "flightconfirm" ){
+					//航班确认
+					onFlihtConfirmHandler(flightRow);
+					
+				}else if(item.keyname == "detailinfo" ){
+					
+				}else if(item.keyname == "workreport" ){
+					onReporterHandler(flightRow);
+				}else if(item.keyname == "troubleshootingreport" ){
+					onTroubleshootingHandler(flightRow);
+				}else if(item.keyname == "runtip" ){
+					onRuntipHandler(flightRow);
+				}else if(item.keyname == "ddinfo" ){
+					onDDinfoHandler(flightRow);
+				}else if(item.keyname == "acstoptip" ){
+					onAcstopHandler(flightRow);
+				}else if(item.keyname == "runningAirInfo" ){
+					onRunningAirInfoHandler(flightRow);
+				}else if(item.keyname == "runningAirItemWork" ){
+					onRunningAirItemWorkHandler(flightRow);
+				}else if(item.keyname == "delayQueryInfo"){
+					onDelayQueryInfoHandler(flightRow);
+				}
+				
+			}
+			
+			protected function onQuery(event:MouseEvent):void
+			{
+				if(aptcode == null || aptcode == ""){
+					SmartXMessage.show("请先选择机场!");
+					return;
+				}
+				
+				var begin:String =  "TO_DATE('" + dateBegin.text + "', 'YYYY-MM-DD HH24:MI:SS')";
+				var end:String =  "TO_DATE('" + dateEnd.text + "', 'YYYY-MM-DD HH24:MI:SS')";
+				var now:Date = new Date();
+//				if( DateUtil.dayDiff(now,dateBegin.nowTime) > 3){
+//					SmartXMessage.show("开始日期必须为3天内！");
+//					return ;
+//				}
+//				if( DateUtil.dayDiff(dateEnd.nowTime, now) > 5){
+//					SmartXMessage.show("结束日期必须为5天内！");
+//					return ;
+//				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql = " select datatype, flt_date, flt_date_str, iata_c, iata_c_name, co_seq, co_seq_name, acnum, acmodel,acmodelid ";
+				querySql += "   , apt, maintaintype, workforce_state, workforce_state_name,baseorg ";
+				querySql += "   , ac_stop,isconfirmed, isconfirmed_name,islockedin,islockedin_name ";
+				querySql += "   ,memo,flightdesc, flt_pk_a, flt_pk_d, flightno_union,flightno_a,flightno_d, apt_union ";
+				querySql += "   , stda, sta, std, cta, ctd,eta,etd,t_eta, t_etd ,remain_min_arr,remain_min_dep ";
+				querySql += ",t_in_time,t_out_time";
+				querySql += " ,duty_user,maintain_user,release_user,guardian_user,handover_user ";
+				querySql += " ,vehicle_user,pickupcrew_user,clean_user,sewage_user ";
+				querySql += " ,auto_power,auto_airsrc,auto_aircond,auto_trailer,auto_snowrm,auto_lift";
+				querySql += " ,airpress_user,poweron_user,sign2_user,area_user";
+				querySql += " , ac_state_a, ac_state_name_a, ac_state_d, ac_state_name_d, acportstate";
+				querySql += ", dd_flag, m_flag ,dd_flag||m_flag flag_ddm ";
+				querySql += " ,s_tip,j_tip,g_tip,c_tip,uc_tip ,s_tip||j_tip||g_tip||c_tip||v_tip||l_tip flag_tip ";
+				querySql += "   , chgalternum,chglognum,ishavefault,ishavewarning,timefilter,outsidefornight ";
+				querySql += ",t_cdmout,cdm_out";
+				querySql += ",mtwork";
+				querySql += " from v_flightsch_join t ";
+				querySql += " where t.apt = '"+aptcode+"'  "; //and t.cancel_flag=0 在视图中已限制
+//				querySql += " and ( timefilter <=  sysdate+ "+nextXH+"/24 ) ";
+//				querySql += " and ( timefilter >=  sysdate-"+ preXH +"/24 ) "; 
+				querySql += "   AND timefilter >="+begin+" and timefilter <="+end+"  ";
+				querySql += " and " + queryFilter;
+				
+				//mcc 和 车队是两种排序方式
+				var roletype:String = ClientEnviorment.getInstance().getVar("ROLETYPE") as String;
+				if("FLEET"== roletype){
+					querySql += " order by t.cdm_out asc nulls last,t.ctd asc nulls last,t.acnum,t.ac_stop";
+				}else{
+					querySql += " order by t.chgalternum asc,t.cta asc nulls last,t.cdm_out asc nulls last,t.acnum,t.ac_stop"
+				}
+				//querySql += " order by chgalternum,datatype,timefilter asc";
+				
+				flightListPanel.sql = querySql;
+				flightListPanel.refresh();
+			}
+			/**
+			 * 飞机数量统计
+			 */ 
+			private function onAircraftNumQuery(event:MouseEvent):void{
+				var aircraftNumStatisticsTitleWindow:AircraftNumStatisticsTitleWindow=new AircraftNumStatisticsTitleWindow();
+				aircraftNumStatisticsTitleWindow.codeSelected=aptRef.returnVO.code.toUpperCase();
+				PopUpManager.addPopUp(aircraftNumStatisticsTitleWindow,this);
+				PopUpManager.centerPopUp(aircraftNumStatisticsTitleWindow);
+			}
+			
+			/**
+			 * 自定义
+			 */ 
+			private function self_defined(event:MouseEvent):void{
+				var self_DefinedListWindow:Self_DefinedListWindow=new Self_DefinedListWindow();
+				
+				self_DefinedListWindow.loginname = loginvo.loginname;
+				self_DefinedListWindow.flightDgRefresh=flightDgRefresh;
+				PopUpManager.addPopUp(self_DefinedListWindow,this);
+				PopUpManager.centerPopUp(self_DefinedListWindow);
+			}
+			
+			private function flightDgRefresh():void{
+				so = SharedObject.getLocal("flightColumnSet"+loginvo.loginname);
+				if(so.data.ContentXml == null){
+					columnList.source = contentXml.datagrid_set.columns.column;
+				}else{
+					contentXml = so.data.ContentXml as XML;
+				}
+				
+				columnList.source = contentXml.datagrid_set.columns.column;
+				refreshFlightDatagrid();
+				this.flightListPanel.validateNow();
+			}
+			
+			private function onChangeLogConfirmHander(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var fltpk_a:String = row["flt_pk_a"];
+				var fltpk_d:String = row["flt_pk_d"];
+				//航班变动确认
+				changelogConfirmPanel.aptCode = aptcode;
+				changelogConfirmPanel.reporter=loginBtn.label;
+				changelogConfirmPanel.setFlightPK(fltpk_a,fltpk_d);
+				if(row.release_user==null&&row.maintain_user&&null
+					&&row.duty_user==null&&row.guardian_user&&null
+					&&row.handover_user==null){
+					changelogConfirmPanel.receiverArr=null;
+				}else{
+					var arr:ArrayCollection=null;
+					arr=new ArrayCollection();
+					addItemforArr(arr,row.release_user);
+					addItemforArr(arr,row.maintain_user);
+					addItemforArr(arr,row.duty_user);
+					addItemforArr(arr,row.guardian_user);
+					addItemforArr(arr,row.handover_user);
+					
+					changelogConfirmPanel.receiverArr=arr;
+				}
+				PopUpManager.addPopUp(changelogConfirmPanel,this);
+				PopUpManager.centerPopUp(changelogConfirmPanel);
+			}
+			
+			private function onFlightFilterSetOk():void
+			{
+				//设置过滤条件子句
+				queryFilter = filterCondPanel.conditionStr;
+				if(filterCondPanel.isQuery == true){
+					onQuery(null);
+				}
+				
+			}
+			
+			private function onFlightFilterCondHandler():void{
+				filterCondPanel.okFunc = onFlightFilterSetOk;
+				filterCondPanel.isQuery = false;
+				
+				PopUpManager.addPopUp(filterCondPanel,this);
+				PopUpManager.centerPopUp(filterCondPanel);
+				
+			}
+			
+			protected function onReporterHandler(row:Object,dataField:String=null):void{
+				if(flightListPanel.getSelectedRowValue() != null){
+					flightReporterPanel= new FlightReporterWindow();
+					var row:Object = flightListPanel.getSelectedRowValue();					
+					
+					var acnum:String = row["acnum"];
+					flightReporterPanel.maintaintype=row["maintaintype"];
+					flightReporterPanel.setFlightno( row["flt_pk_a"] ,row["flightno_a"] ,row["flt_pk_d"]  ,row["flightno_d"] );
+					flightReporterPanel.user=loginBtn.label;
+					PopUpManager.addPopUp(flightReporterPanel,this);
+					PopUpManager.centerPopUp(flightReporterPanel);
+					
+				}else{
+					SmartXMessage.show("请选择一行！");
+				}
+			}
+			
+			protected function onTroubleshootingHandler(row:Object,dataField:String=null):void{
+				if(flightListPanel.getSelectedRowValue() != null){
+					flightTroubleshootingReporterWindow= new FlightTroubleshootingReporterWindow();
+					var row:Object = flightListPanel.getSelectedRowValue();					
+					
+					var acnum:String = row["acnum"];
+					flightTroubleshootingReporterWindow.maintaintype=row["maintaintype"];
+					flightTroubleshootingReporterWindow.setFlightno( row["flt_pk_a"] ,row["flightno_a"] ,row["flt_pk_d"]  ,row["flightno_d"] );
+					flightTroubleshootingReporterWindow.user=loginBtn.label;
+					PopUpManager.addPopUp(flightTroubleshootingReporterWindow,this);
+					PopUpManager.centerPopUp(flightTroubleshootingReporterWindow);
+					
+				}else{
+					SmartXMessage.show("请选择一行！");
+				}
+			}
+			
+			protected function onAcstopHandler(row:Object,dataField:String=null):void{
+				var row:Object = null;				
+				row = flightListPanel.getSelectedRowValue();					
+				acstopPanel.setQueryValue(aptid, row["ac_stop"]);
+				
+				PopUpManager.addPopUp(acstopPanel,this);
+				PopUpManager.centerPopUp(acstopPanel);
+			}
+			/**
+			 *为数组添加一组数据
+			 */ 
+			private function addItemforArr(arr:ArrayCollection,str:String,strFlag:String=""):void{
+				if(str!=null&&StringUtil.trim(str)!=""){
+					if(str.indexOf(",")!=-1){
+						var arrTemp:Array=str.split(",");
+						for(var i:int=0;i<arrTemp.length;i++){
+							var strTemp:String=arrTemp[i];
+							if(StringUtil.trim(strTemp)!=""){
+								var j:int;
+								var flag:Boolean=true;
+								for(j=0;j<arr.length;j++){
+									if(arr[j]==strTemp){
+										flag=false;
+									}
+								}
+								if(flag){
+									arr.addItem(strTemp);
+									if("duty_user"==strFlag){
+										dutyIndex=arr.length-1;
+									}
+									if("releaseIndex"==strFlag){
+										releaseIndex=arr.length-1;
+									}
+								}
+							}
+						}
+					}else{
+						var m:int;
+						var flagElse:Boolean=true;
+						for(m=0;m<arr.length;m++){
+							if(arr[m]==str){
+								flagElse=false;
+							}
+						}
+						if(flagElse){
+							arr.addItem(str);
+							if("duty_user"==strFlag){
+								dutyIndex=arr.length-1;
+							}
+							if("releaseIndex"==strFlag){
+								releaseIndex=arr.length-1;
+							}
+						}
+					}
+				}
+			}
+			protected function onAcStateHandler(row:Object,dataField:String=null):void{
+				acStatePanel = new FlightAcStateWindow();
+				var row:Object = null;				
+				row = flightListPanel.getSelectedRowValue();					
+				acStatePanel.setFlightValue(row);
+				if(row.release_user==null&&row.maintain_user&&null
+					&&row.duty_user==null&&row.guardian_user&&null
+					&&row.handover_user==null){
+					acStatePanel.reporterArr=null;
+				}else{
+					var arr:ArrayCollection=null;
+					arr=new ArrayCollection();
+					addItemforArr(arr,row.release_user);
+					addItemforArr(arr,row.maintain_user);
+					addItemforArr(arr,row.duty_user,"duty_user");
+					addItemforArr(arr,row.guardian_user);
+					addItemforArr(arr,row.handover_user);
+					
+					acStatePanel.reporterArr=arr;
+					if(dutyIndex!=-1){
+						acStatePanel.selectedReporterIndex=dutyIndex;
+					}
+				}
+				PopUpManager.addPopUp(acStatePanel,this);
+				PopUpManager.centerPopUp(acStatePanel);
+			}
+			
+			protected function onWorkStateHandler(row:Object,dataField:String=null):void{
+				
+				var row:Object = null;				
+				row = flightListPanel.getSelectedRowValue();	
+				workStatePanel= new FlightWorkStateWindow();
+				workStatePanel.setFlightValue(row);
+				workStatePanel.flightDataGrid = flightListPanel;
+				
+				if(row.release_user==null&&row.maintain_user==null
+					&&row.duty_user==null&&row.guardian_user==null
+					&&row.handover_user==null){
+					workStatePanel.reporterArr=null;
+				}else{
+					var arr:ArrayCollection=null;
+					arr=new ArrayCollection();
+
+					addItemforArr(arr,row.release_user,"release_user");
+					addItemforArr(arr,row.maintain_user);
+					addItemforArr(arr,row.duty_user,"duty_user");
+					addItemforArr(arr,row.guardian_user);
+					addItemforArr(arr,row.handover_user);
+					workStatePanel.reporterArr=arr;
+					if(dutyIndex!=-1){
+						workStatePanel.selectedDutyReporterIndex=dutyIndex;
+					}
+					if(releaseIndex!=-1){
+						workStatePanel.selectedReleaseReporterIndex=releaseIndex;
+					}
+				}
+				PopUpManager.addPopUp(workStatePanel,this);
+				PopUpManager.centerPopUp(workStatePanel);
+				
+			}
+			
+			protected function onDDinfoHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var acnum:String = row["acnum"];
+				ddinfoPanel.setAcnum(acnum);
+				
+				PopUpManager.addPopUp(ddinfoPanel,this);
+				PopUpManager.centerPopUp(ddinfoPanel);
+			}
+			
+			protected function onMtworkInfoHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var acnum:String = row["acnum"];
+				var fltdate:String = row["flt_date_str"];
+				
+				mtworkWindow.setFilter(acnum, fltdate);
+				
+				PopUpManager.addPopUp(mtworkWindow,this);
+				PopUpManager.centerPopUp(mtworkWindow);
+			}
+			
+			protected function onRunningAirInfoHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var acnum:String = row["acnum"];
+				var fltpk_a:String = row["flt_pk_a"];
+				var fltpk_d:String = row["flt_pk_d"];
+				var fltno_a:String = row["flightno_a"];
+				var fltno_d:String = row["flightno_d"];
+				var ac_stop:String = row["ac_stop"];
+				runningAirInfoWindow=new RunningAirInfoWindow2();
+				runningAirInfoWindow.flightObj=row;
+				runningAirInfoWindow.user=loginBtn.label;
+				runningAirInfoWindow.setAcnum(acnum);
+				runningAirInfoWindow.setFlightno(fltno_a,fltno_d);
+				runningAirInfoWindow.setFlightid(fltpk_a,fltpk_d);
+				runningAirInfoWindow.setAcAp(ac_stop,aptRef.returnVO.code);
+				PopUpManager.addPopUp(runningAirInfoWindow,this);
+				PopUpManager.centerPopUp(runningAirInfoWindow);
+			}
+			
+			protected function onRunningAirItemWorkHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var acnum:String = row["acnum"];
+				var flt_date:String = row["flt_date_str"].toString();
+				runningAirItemWorkWindow=new RunningAirItemWorkWindow2();
+				runningAirItemWorkWindow.flightObj=row;
+				runningAirItemWorkWindow.setAcnum(acnum);
+				runningAirItemWorkWindow.setFltDate(flt_date);
+				runningAirItemWorkWindow.user=loginBtn.label;
+				PopUpManager.addPopUp(runningAirItemWorkWindow,this);
+				PopUpManager.centerPopUp(runningAirItemWorkWindow);
+			}
+			
+			protected function onDelayQueryInfoHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var fltpk_a:String = row["flt_pk_a"];
+				var fltpk_d:String = row["flt_pk_d"];
+				delayQueryInfoWindow=new DelayQueryInfoWindow();
+				delayQueryInfoWindow.flightObj=row;
+				delayQueryInfoWindow.setFlightid(fltpk_a,fltpk_d);
+				PopUpManager.addPopUp(delayQueryInfoWindow,this);
+				PopUpManager.centerPopUp(delayQueryInfoWindow);
+			}
+			/**
+			 * 双击是否有故障列展示故障信息的内容
+			 */ 
+			protected function onFaultHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var ishavefaultStr:String=row.ishavefault;
+				if(ishavefaultStr!=""&&ishavefaultStr!=null){
+					var tempObject:Object=new Object();
+					tempObject["flt_pk_a"]=row.flt_pk_a;
+					tempObject["flt_pk_d"]=row.flt_pk_d;
+					cfdFaultInfoView= new CfdFaultInfoViewWindow();
+					cfdFaultInfoView.selObj=tempObject;
+					PopUpManager.addPopUp(cfdFaultInfoView,this);
+					PopUpManager.centerPopUp(cfdFaultInfoView);
+				}
+			}
+			
+			/**
+			 * 双击是否有警告列展示警告信息的内容
+			 */ 
+			protected function onWarningHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				var ishavewarningStr:String=row.ishavewarning;
+				if(ishavewarningStr!=""&&ishavewarningStr!=null){
+					var tempObject:Object=new Object();
+					tempObject["flt_pk_a"]=row.flt_pk_a;
+					tempObject["flt_pk_d"]=row.flt_pk_d;
+					cfdWarningInfoView= new CfdWarningInfoViewWindow();
+					cfdWarningInfoView.selObj=tempObject;
+					PopUpManager.addPopUp(cfdWarningInfoView,this);
+					PopUpManager.centerPopUp(cfdWarningInfoView);
+				}
+			}
+			protected function onRuntipHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();					
+				
+				runtipPanel.setAcnumFltpk(row["acnum"] ,row["flt_pk_a"]  ,row["flt_pk_d"] );
+				
+				PopUpManager.addPopUp(runtipPanel,this);
+				PopUpManager.centerPopUp(runtipPanel);
+			}
+			
+			protected function onExportHandler(event:MouseEvent):void
+			{
+				flightListPanel.exportCurData( aptcode +"航班计划清单");
+			}
+			
+			protected function onFlihtConfirmHandler(row:Object,dataField:String=null):void{
+				var row:Object = flightListPanel.getSelectedRowValue();
+				flightConfirmPanel = new FlightConfirmModifyWindow()
+				flightConfirmPanel.flightValue = row;
+				flightConfirmPanel.flightDataGrid = flightListPanel;
+				
+				PopUpManager.addPopUp(flightConfirmPanel,this);
+				PopUpManager.centerPopUp(flightConfirmPanel);
+			}
+			
+			protected function onFlihtTaskDispatchHandler(row:Object,dataField:String=null):void{
+				taskDispatchPanel.aptid = aptid;
+				taskDispatchPanel.aptcode = aptcode;
+				taskDispatchPanel.aptname = aptname;
+				
+				taskDispatchPanel.flightDataGrid = flightListPanel;
+				
+				row = flightListPanel.getSelectedRowValue();
+				taskDispatchPanel.setFlightValue(row);
+				
+				PopUpManager.addPopUp(taskDispatchPanel,this);
+				PopUpManager.centerPopUp(taskDispatchPanel);
+			}
+			
+			protected function onAutoRefresh_changeHandler():void
+			{
+				//开启、关闭自动刷新
+				if(cbAutoRefresh.selected){
+					if(timer && !timer.running){
+						timer.start();
+					}
+				}else{
+					timer.stop();
+				}
+				
+			}
+			
+			private function rowColorFlight(item:Object, rowIndex:int,dataIndex:int, color:uint):uint{
+
+				var chgalternum:Number = new Number(item["chgalternum"]);
+				var chglognum:Number = new Number(item["chglognum"]);
+				
+				if(chgalternum < 0)
+				{
+					return 0xFF9900;//橙色
+				}else if(chglognum < 0){
+					return 0xCCFF66; //淡绿色
+				}
+				
+				return color;
+			}
+			
+			private function addColumnRender():void{
+				
+				
+				var renderFlagdd:ClassFactory = new ClassFactory(CellColorRender);
+				renderFlagdd.properties = {dataField:"flag_ddm",doubleClickFunc:onDDinfoHandler };					
+				flagddDgc.itemRenderer = renderFlagdd;
+				//是否有故障
+				var renderFault:ClassFactory = new ClassFactory(CellColorRender);
+				renderFault.properties = {dataField:"ishavefault",colorFunc:ishavefaultsCellColor,doubleClickFunc:onFaultHandler };					
+				isHaveFaults.itemRenderer = renderFault;
+				
+				//是否有警告
+				var renderWarning:ClassFactory = new ClassFactory(CellColorRender);
+				renderWarning.properties = {dataField:"ishavewarning",colorFunc:ishavewarningCellColor,doubleClickFunc:onWarningHandler };					
+				isHaveWarnings.itemRenderer = renderWarning;
+				
+				var renderFlagtip:ClassFactory = new ClassFactory(CellColorRender);
+				renderFlagtip.properties = {dataField:"flag_tip",colorFunc:runtipCellColor,doubleClickFunc:onRuntipHandler };					
+				flagtipDgc.itemRenderer = renderFlagtip;
+				
+				//工作状态单元枨渲染
+				var render1:ClassFactory = new ClassFactory(CellColorRender);
+				render1.properties = {dataField:"workforce_state_name",colorFunc:workstateCellColor, doubleClickFunc:onWorkStateHandler };					
+				workstateDgc.itemRenderer = render1;
+				
+				var render2:ClassFactory = new ClassFactory(CellColorRender);
+				render2.properties = {dataField:"acnum",colorFunc:fltdateCellColor, doubleClickFunc:onChangeLogConfirmHander };					
+				acnumDgc.itemRenderer = render2;
+				
+				//CDM时间告警
+				var renderCdm:ClassFactory = new ClassFactory(CellColorRender);
+				renderCdm.properties = {dataField:"t_cdmout",colorFunc:cmdOutCellColor };					
+				cdmDgc.itemRenderer = renderCdm;
+				
+				var render3:ClassFactory = new ClassFactory(CellColorRender);
+				render3.properties = {dataField:"flightno_union",colorFunc:flightnoCellColor, doubleClickFunc:onFlihtConfirmHandler };					
+				flightnoUnionDgc.itemRenderer = render3;
+				
+				//人员安排
+				var renderReleaseUser:ClassFactory = new ClassFactory(CellColorRender);
+				renderReleaseUser.properties = {dataField:"release_user",colorFunc:userCellColor, doubleClickFunc:onFlihtTaskDispatchHandler };					
+				releaseUserDgc.itemRenderer = renderReleaseUser;
+				
+				var renderMaintainUser:ClassFactory = new ClassFactory(CellColorRender);
+				renderMaintainUser.properties = {dataField:"maintain_user",colorFunc:userCellColor , doubleClickFunc:onFlihtTaskDispatchHandler};					
+				maintainUserDgc.itemRenderer = renderMaintainUser;
+				
+				var renderDutyUser:ClassFactory = new ClassFactory(CellColorRender);
+				renderDutyUser.properties = {dataField:"duty_user",colorFunc:userCellColor, doubleClickFunc:onFlihtTaskDispatchHandler};					
+				dutyUserDgc.itemRenderer = renderDutyUser;
+				
+				//车辆
+				var renderVehicleUser:ClassFactory = new ClassFactory(CellColorRender);
+				renderVehicleUser.properties = {dataField:"auto_power",colorFunc:userCellColor, doubleClickFunc:onFlihtTaskDispatchHandler};					
+				autoPowerDgc.itemRenderer = renderVehicleUser;
+				
+				//预达和机位
+				var renderEta:ClassFactory = new ClassFactory(CellColorRender);
+				renderEta.properties = {dataField:"t_eta",colorFunc:etaAcStopColor};					
+				etaDgc.itemRenderer = renderEta;
+				
+				//预起
+				var renderEtd:ClassFactory = new ClassFactory(CellColorRender);
+				renderEtd.properties = {dataField:"t_etd",colorFunc:etdColor};					
+				etdDgc.itemRenderer = renderEtd;
+				
+				
+				var renderAcstop:ClassFactory = new ClassFactory(CellColorRender);
+				renderAcstop.properties = {dataField:"ac_stop",colorFunc:etaAcStopColor, doubleClickFunc:onAcstopHandler};					
+				acstopDgc.itemRenderer = renderAcstop;
+				
+				var renderAcportState:ClassFactory = new ClassFactory(CellColorRender);
+				renderAcportState.properties = {dataField:"acportstate",colorFunc:acportStateColor, doubleClickFunc:onAcStateHandler};					
+				acportstateDgc.itemRenderer = renderAcportState;
+				
+				var renderAptUnion:ClassFactory = new ClassFactory(CellColorRender);
+				renderAptUnion.properties = {dataField:"apt_union",colorFunc:aptUnionColor};					
+				aptUnionDgc.itemRenderer = renderAptUnion;
+				
+				//计划时间
+				var renderStda:ClassFactory = new ClassFactory(CellColorRender);
+				renderStda.properties = {dataField:"stda",colorFunc:stdaColor};					
+				stdaDgc.itemRenderer = renderStda;
+				
+				//维护
+				var renderMaintaintype:ClassFactory = new ClassFactory(CellColorRender);
+				renderMaintaintype.properties = {dataField:"maintaintype",doubleClickFunc:onRunningAirInfoHandler};					
+				maintaintypeDgc.itemRenderer = renderMaintaintype;
+				
+				//双击机型弹出工作通报列表
+				var renderAcmodel:ClassFactory = new ClassFactory(CellColorRender);
+				renderAcmodel.properties = {dataField:"acmodel",doubleClickFunc:onReporterHandler};					
+				acmodelDgc.itemRenderer = renderAcmodel;
+				
+				var renderMtwork:ClassFactory = new ClassFactory(CellColorRender);
+				renderMtwork.properties = {dataField:"mtwork",colorFunc:mtworkCellColor, doubleClickFunc:onMtworkInfoHandler};					
+				mtworkDgc.itemRenderer = renderMtwork;
+			}
+			
+			//综合判断飞机状态
+			private function judgeAcState(value:Object):void{
+				if( value["ac_state_a"] == null || value["ac_state_a"] == ""){
+					ac_state_a = 70; //如果没有到达航班状态，则为航前，前一航班飞机设定为已到港
+				}else{
+					ac_state_a = value["ac_state_a"];
+				}
+				
+				if( value["ac_state_d"] == null || value["ac_state_d"] == ""){
+					ac_state_d = 70;//如果后一航班状态为空，为航后，后一航班状态设置为靠桥，判断时不考虑
+				}else{
+					ac_state_d = value["ac_state_d"];
+				}
+				
+			}
+			
+			/**计划时间颜色*/
+			private function stdaColor(dataField:String,value:Object,colorField:String):uint{
+				judgeAcState(value);
+				
+				var minDep:Number = value["remain_min_dep"];
+				if( ac_state_a >=60 && ac_state_d < 40 ){
+					if( minDep <25 && minDep >= 15 ){
+						return color_yellow; //要出港的飞机在出港前25分钟还未进港
+					}else if(minDep <15 && minDep > 0){
+						return color_orange;
+					}else if(minDep <0){
+						return color_red;
+					}
+				}
+				return undefined;
+			}
+			
+			/**备降*/
+			private function aptUnionColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var memo:String = value["memo"];
+				if(memo != null && memo.indexOf("备降") > -1){
+					return color_orange;
+				}
+				return undefined;
+			}
+			
+			/**飞机状态*/
+			private function acportStateColor(dataField:String,value:Object,colorField:String):uint{
+				judgeAcState(value);
+				var minDep:Number = value["remain_min_dep"];
+				if(minDep != 0 && ac_state_a < 60){ //前一航班还未落地
+					if( minDep <25 ){
+						return color_red; //要出港的飞机在出港前25分钟还未进港
+					}
+				}
+				return undefined;
+			}
+			
+			/**预达和机位*/
+			private function etaAcStopColor(dataField:String,value:Object,colorField:String):uint{
+				judgeAcState(value);
+				var dataVal:String = value[dataField];
+				if(dataVal != null && dataVal != ""){
+					return undefined;
+				}
+				
+				var maintaintype:String=value["maintaintype"];//如果是航前则不染色
+				if(maintaintype=="PF"){
+					return undefined;
+				}
+				var minArr:Number = value["remain_min_arr"];
+				if(ac_state_a < 60 ){
+					if( minArr <30 && minArr >= 15){
+						return color_orange; //15~30分钟，没人员橙色
+					}else if( minArr < 15){
+						return color_red; //小时15分钟，红色
+					}
+				}else if(ac_state_a >= 60 && ac_state_d < 40 ){ //在港未起飞
+					return color_red;
+				}
+				
+				return undefined;
+			}
+			
+			/**预起*/
+			private function etdColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var etd:Date = value["etd"] as Date;
+				if(etd != null){
+					var std:Date = value["std"] as Date;
+					var minDif:Number = DateUtil.minuteDiff(etd,std);
+					if(minDif > 30){
+						return color_orange;
+					}
+				}
+				
+				return undefined;
+			}
+			
+			/**工作人员数据染色*/
+			private function userCellColor(dataField:String,value:Object,colorField:String):uint{
+				judgeAcState(value);
+				var userVal:String = value[dataField];
+				if(userVal != null && userVal != ""){
+					return undefined;
+				}
+				
+				var t_eta:String = value["t_eta"];
+				var minArr:Number = value["remain_min_arr"];
+				var minDep:Number = value["remain_min_dep"];
+				//未进港、在港、未出港
+				if( ac_state_a < 60 || (ac_state_a >=60 || ac_state_d < 40 ) ){
+					if(minArr < 60 && t_eta != null && t_eta != ""){
+						return color_yellow; //有预计没人员， 黄色
+					}else if( minArr <30 && minArr >= 15){
+						return color_orange; //15~30分钟，没人员橙色
+					}else if( minArr < 15 && minArr!=0){
+						return color_red; //小时15分钟，红色
+					}
+				}
+				return undefined;
+			}
+			
+			/**维修工作状态颜色渲染*/
+			private function mtworkCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var worknum:Number = new Number(value["mtwork"]);
+				var workMH:Number = new Number(value["mtwork_mh"]);//工时
+				//有未完成维修工作
+				if( workMH > 6 ){
+					return color_red;
+				}else if(worknum >0){
+					return color_green;
+				}
+				return undefined;
+			}
+			
+			/**运行提示*/
+			private function runtipCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var unconfirmedTip:String = value["uc_tip"];
+				//有提醒确认类
+				if( unconfirmedTip != null && unconfirmedTip == "UC" )
+				{
+					return color_orange;
+				}
+				return undefined;
+			}
+			/**故障染色*/
+			private function ishavefaultsCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var ishavefaultStr:String = value["ishavefault"];
+				//有提醒确认类
+				if( ishavefaultStr != null && ishavefaultStr == "是" )
+				{
+					return color_orange;
+				}
+				return undefined;
+			}
+			/**警告染色*/
+			private function ishavewarningCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var ishavewarningStr:String = value["ishavewarning"];
+				//有提醒确认类
+				if( ishavewarningStr != null && ishavewarningStr == "是" )
+				{
+					return color_orange;
+				}
+				return undefined;
+			}
+			/**航班号染色*/
+			private function flightnoCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var isConfirmedStr:String = value["isconfirmed"];
+				if(isConfirmedStr == "0")
+				{
+					return color_yellow;//橙色
+				}else if( value["islockedin"] == "1"){
+					return color_green;
+				}
+				return undefined;
+			}
+			
+			/**航班日期染色*/
+			private function fltdateCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var chgalternum:Number = value["chgalternum"];
+				var chglognum:Number = value["chglognum"];
+				if(chgalternum < 0)
+				{
+					return color_orange;
+				}else if(chglognum < 0){
+					return color_green; //淡绿色
+				}
+				return undefined;
+			}
+			
+			/**工作状态字段染色**/
+			private function workstateCellColor(dataField:String,value:Object,colorField:String):uint{
+				judgeAcState(value);
+				
+				var workstate:Number = value["workforce_state"];
+				if(workstate == 40 ){
+					return color_green;
+				}else{
+					
+					//如果飞机已落地，人员还未到岗，直接红色警示,杭州出现比预达时间还早30分钟落地的航班
+					if( ac_state_a >= 60 && workstate < 20){
+						return color_red;
+					}
+					
+					var minArr:Number = value["remain_min_arr"];
+					var minDep:Number = value["remain_min_dep"];
+					if(ac_state_a < 60 ){
+						if(minArr < 20 && workstate < 20){
+							return color_red;
+						}
+					}else if(ac_state_a >=60 && ac_state_d < 40 && workstate<40){ //在港，但是工作未完成
+						if(minDep < 25 && minDep > 15){
+							return color_orange;
+						}else if(minDep <= 15){
+							return color_red;
+						}
+					}
+					
+					//liuhaiwei要求添加，起飞前一个小时，没有完成 “空速管套取下的工作”,进行告警
+					var maintaintype:String=value["maintaintype"];//如果是航前则不染色
+					if( workstate <39 && minDep<45 && maintaintype =="PF" ){
+						return color_purple;
+					}
+					//杭州添加，PF航班在航前1个半小时，人员还未到位，进行告警
+					if( workstate <20 && minDep<90 && maintaintype =="PF" ){
+						return color_red;
+					}
+					//杭州添加，长短停航班，人员离开后在航前1个半小时，人员还未到位，进行告警
+					if( workstate ==23 && minDep<90 && maintaintype =="TR" ){
+						return color_red;
+					}
+				}
+				return undefined;
+			}
+			
+			/**工作状态字段染色**/
+			private function cmdOutCellColor(dataField:String,value:Object,colorField:String):uint{
+				
+				var maintaintype:String=value["maintaintype"];
+				var workstate:Number = value["workforce_state"];
+				var acstate:Number = value["ac_state_d"]
+				var cdm_out:Date = value["cdm_out"] as Date;
+				
+				if( maintaintype =="PF" || maintaintype=="TR" || maintaintype=="AF+PF" ){
+					if(workstate < 40 && acstate < 40){ //工作未完成，未起飞
+						if(cdm_out != null ){
+							var now:Date = new Date();
+							var minDif:Number = DateUtil.minuteDiff(cdm_out,now);
+							if(minDif < 10){
+								return color_red;
+							}else if(minDif < 20){
+								return color_orange;
+							}else if(minDif < 30){
+								return color_yellow;
+							}
+						}
+					}
+					
+				}
+				
+				return undefined;
+			}
+			
+			
+			protected function loginBtn_clickHandler(event:MouseEvent):void
+			{
+				loginWindow.loginOkFunc = onLoginOK;
+				PopUpManager.addPopUp(loginWindow,this,true);
+				PopUpManager.centerPopUp(loginWindow);
+			}
+			
+			private function onLoginOK():void{
+				isLogin = true;
+				loginvo = ClientEnviorment.getInstance().getVar("LOGIN_USERVO") as LoginUserVo;
+				loginBtn.label = loginvo.name;
+				//loginBtn.enabled = false;
+				
+				//设置登录用户
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_ID, loginvo.id);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_LOGINNAME, loginvo.loginname);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_NAME, loginvo.name);
+				
+				//设置默认机场
+				if(loginvo.airportCode != null && loginvo.airportCode != ""){
+					var aptvo:SimpleRefItemVO = new SimpleRefItemVO();
+					aptvo.id= loginvo.airportId;
+					aptvo.code = loginvo.airportCode;
+					aptvo.name = loginvo.airportName;
+					aptRef.setRealValue(aptvo); 
+					
+					aptRef.editable = true;
+				}
+				
+				so = SharedObject.getLocal("flightColumnSet"+loginvo.loginname);
+				if(so.data.ContentXml == null){
+					columnList.source = contentXml.datagrid_set.columns.column;
+				}else{
+					contentXml = so.data.ContentXml as XML;
+					columnList.source = contentXml.datagrid_set.columns.column;
+					refreshFlightDatagrid();
+				}
+			}
+			
+			
+			protected function onWarnLabel_clickHandler(event:MouseEvent):void
+			{
+				//显示重要变动信息
+				importantChangeWindow.aptCode = aptcode;
+				importantChangeWindow.reporter=loginBtn.label;
+				importantChangeWindow.refreshData();
+				PopUpManager.addPopUp(importantChangeWindow,this);
+				PopUpManager.centerPopUp(importantChangeWindow);
+				
+			}
+			
+			public function sort(obj1:Object,obj2:Object,columnName:String,column:DataGridColumn):int{
+				if(!isNaN(obj1[columnName])){
+					return sortNumber(obj1,obj2,columnName);
+				}
+				//				if(isDate(obj1[columnName])){
+				//					var inputFormat:String=getInputFormat(obj1[columnName]);
+				//					return sortDate(obj1,obj2,columnName,inputFormat);
+				//				}
+				return sortString(obj1,obj2,columnName,column);
+				
+			}     
+			
+			private function sortDate(obj1:Object, obj2:Object,columnName:String,inputFormat:String):int {
+				var date1:Date =DateField.stringToDate(obj1[columnName],DateUtil.getDateFormat(obj1[columnName]) );
+				var date2:Date =DateField.stringToDate(obj2[columnName],DateUtil.getDateFormat(obj2[columnName]) );
+				return ObjectUtil.dateCompare(date1, date2);
+			}
+			
+			
+			private function sortString(obj1:Object, obj2:Object,columnName:String,column:DataGridColumn):int{
+				var str1:String=obj1[columnName];
+				var str2:String=obj2[columnName];
+				if(str1 != null && obj2 == null)
+					return -1;
+				if(obj1 == null && obj2 != null)
+					return 1;
+				if(obj1 && obj2){
+					if(CompareUtil.hashTotalColumn(obj1)){
+						return (column.sortDescending?-1:1)*1;
+					}else if(CompareUtil.hashTotalColumn(obj2)){
+						return (column.sortDescending?-1:1)*-1;
+					}else{
+						return ObjectUtil.stringCompare(CompareUtil.getFirstPinYin(str1),CompareUtil.getFirstPinYin(str2),true);
+					}
+				}
+				return 0;
+			}
+			
+			private function sortNumber(obj1:Object, obj2:Object,columnName:String):int{
+				var num1:Number=Number(obj1[columnName]);
+				var num2:Number=Number(obj2[columnName]);
+				
+				return ObjectUtil.numericCompare(num1,num2);
+			}
+			
+			/**
+			 * 点击预达/预起表头列的排序
+			 */ 
+			public function stdaSortFunction(obj1:Object,obj2:Object):int{
+				var timefilter1:Date=obj1["timefilter"];
+				var timefilter2:Date=obj2["timefilter"];
+				if(timefilter1==null){
+					return -1;
+				}else if(timefilter2==null){
+					return 1;
+				}
+				return ObjectUtil.dateCompare(timefilter1,timefilter2);
+				
+			}
+			
+			/** 工作状态排序 */
+			public function workStateSortFunc(obj1:Object,obj2:Object):int{
+				return sortNumber(obj1,obj2,"workforce_state");
+			}
+			
+			/** 预起时间排序 **/
+			public function etdSortFunction(obj1:Object,obj2:Object):int{
+				var t_etd1:Date=obj1["etd"];
+				var t_etd2:Date=obj2["etd"];
+				
+				var mt1:String = obj1["maintaintype"];
+				var mt2:String = obj2["maintaintype"];
+				
+				//判断维护类型,航后排最后, 如果预达为空，使用一个大的时间
+				if(mt1 == "AF"){ 
+					t_etd1 = DateUtil.stringToDateDay("2099-01-01");
+				}else if(t_etd1 == null){
+					//预达时间为空时，取计划
+					t_etd1=obj1["std"];
+					if(t_etd1 == null){ //计划时间再为空，只能排最后啦
+						t_etd1 = DateUtil.stringToDateDay("2049-01-01");
+					}
+				}
+				
+				
+				if(mt2 == "AF"){ 
+					t_etd2 = DateUtil.stringToDateDay("2099-01-01");
+				}else if( t_etd2 == null ){
+					//预达时间为空时，取计划
+					t_etd2=obj2["std"];
+					if(t_etd1 == null){ //计划时间再为空，只能排最后啦
+						t_etd2 = DateUtil.stringToDateDay("2049-01-01");
+					}
+				}
+				
+				return ObjectUtil.dateCompare(t_etd1,t_etd2);
+			}
+			
+			/**
+			 * 点击预达表头列的排序
+			 */ 
+			public function etaSortFunction(obj1:Object,obj2:Object):int{
+				var t_eta1:Date=obj1["eta"];
+				var t_eta2:Date=obj2["eta"];
+				
+				var mt1:String = obj1["maintaintype"];
+				var mt2:String = obj2["maintaintype"];
+				
+				//判断维护类型,航前排最后, 如果预达为空，使用一个大的时间
+				if(mt1 == "PF"){ 
+					t_eta1 = DateUtil.stringToDateDay("2099-01-01");
+				}else if(t_eta1 == null){
+					//预达时间为空时，取计划
+					t_eta1=obj1["sta"];
+					if(t_eta1 == null){ //计划时间再为空，只能排最后啦
+						t_eta1 = DateUtil.stringToDateDay("2049-01-01");
+					}
+				}
+				
+				
+				if(mt2 == "PF"){ 
+					t_eta2 = DateUtil.stringToDateDay("2099-01-01");
+				}else if( t_eta2 == null ){
+					//预达时间为空时，取计划
+					t_eta2=obj2["sta"];
+					if(t_eta1 == null){ //计划时间再为空，只能排最后啦
+						t_eta2 = DateUtil.stringToDateDay("2049-01-01");
+					}
+				}
+				
+				return ObjectUtil.dateCompare(t_eta1,t_eta2);
+			}
+			
+			/**
+			 * 点击预达表头列的排序
+			 */ 
+			public function cdmSortFunction(obj1:Object,obj2:Object):int{
+				var cdm1:Date=obj1["cdm_out"];
+				var cdm2:Date=obj2["cdm_out"];
+				
+				var mt1:String = obj1["maintaintype"];
+				var mt2:String = obj2["maintaintype"];
+				
+				//判断维护类型,航后排最后, 如果CDM为空，使用一个大的时间
+				if(mt1 == "AF"){ 
+					cdm1 = DateUtil.stringToDateDay("2099-01-01");
+				}else if(cdm1 == null){
+					cdm1 = DateUtil.stringToDateDay("2049-01-01");
+				}
+				
+				if(mt2 == "AF"){ 
+					cdm2 = DateUtil.stringToDateDay("2099-01-01");
+				}else if( cdm2 == null ){
+					//为空只能排最后啦
+					cdm2 = DateUtil.stringToDateDay("2049-01-01");
+				}
+				
+				return ObjectUtil.dateCompare(cdm1,cdm2);
+			}
+			
+			private function isDate(str:String):Boolean{
+				var inputFormat:String= DateUtil.getDateFormat(str);
+				if(inputFormat==null){
+					return false;
+				}
+				var date:Date=DateField.stringToDate(str,inputFormat);
+				if(date!=null){
+					return true;
+				}else{
+					return false;
+				}
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%" backgroundColor="0xB4EEB4" backgroundAlpha="0.3">
+		<mx:HBox verticalAlign="middle" paddingLeft="20" paddingRight="20"  width="100%" paddingTop="2">
+			<mx:CheckBox id="cbAutoRefresh" label="自动刷新" change="onAutoRefresh_changeHandler()" selected="false" />
+			<s:Spacer width="5" />
+			<mx:Label text="{intfUpdateTime}" toolTip="{intfToolTip}" width="145"/>
+			<s:Spacer width="5" />
+			<!--
+			<mx:Image id="warnImage" source="{CoolAssetsFile.red_glowIcon}" width="22" height="22" toolTip="动态提示信息" 
+					  buttonMode="true" click="warnImage_clickHandler(event)" />
+			-->
+			<s:Label id="warnLabel" text="警示信息" buttonMode="true" color="0xffffff" fontSize="12" visible="false"
+					 click="onWarnLabel_clickHandler(event)" backgroundColor="0xff0000" />
+			<s:Spacer width="100%" />
+			<mx:Button id="loginBtn" label="登录" click="loginBtn_clickHandler(event)" icon="{AssetsFileLib.userIcon}" />
+		</mx:HBox>
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" height="35" width="100%" paddingLeft="20" paddingRight="2">
+			<mx:Button  click="self_defined(event)" enabled="{isLogin}" icon="{AssetsFileLib.editingIcon}"/>
+			<mx:Button label="过滤条件" click="onFlightFilterCondHandler()" enabled="{isLogin}" icon="{AssetsFileLib.filterIcon}" />
+			<mx:HBox id="aptBox">
+				<mx:Label text="航站"/>
+				<item:ItemRefField id="aptRef" templetItemVO="{aptItemVo}" destination="{smartxDest}" endpoint="{endpoint}"
+								   showLabel="false" realValueChange="aptChangeHandler(event)" />
+			</mx:HBox>
+			<mx:HBox horizontalGap="0">
+				<mx:Label text="航班时间" />
+				<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="1"/>
+				<mx:Label text="->" />
+				<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="1"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="onQuery(event)" enabled="{isLogin}" icon="{AssetsFileLib.quicQueryIcon}"/>
+			<mx:Button label="导出" click="onExportHandler(event)" icon="{AssetsFileLib.exportExcelIcon}" />
+			<s:Spacer width="100%"/>
+			<mx:Button label="飞机数量统计" click="onAircraftNumQuery(event)" enabled="{isLogin}" icon="{AssetsFileLib.quicQueryIcon}"/>
+		</mx:HBox>
+		<mx:VBox width="100%" height="100%" >
+			<component:AdvDataGridPanel id="flightListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+										searchCondVisible="true"
+										sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="90" id="fltdateDgc"/>
+					<!--
+					<mx:DataGridColumn headerText="公司" dataField="iata_c_name" width="50" visible="false"/>-->
+					<mx:DataGridColumn headerText="分公司" dataField="co_seq_name" width="50" visible="false"/> 
+					<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="130" id="flightnoUnionDgc"/>
+					<mx:DataGridColumn headerText="机号" dataField="acnum" width="65" id="acnumDgc"/>
+					<mx:DataGridColumn headerText="机型" dataField="acmodel" width="90" id="acmodelDgc"/>
+					<mx:DataGridColumn headerText="所属基地" dataField="baseorg" width="100" />
+					<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="140" id="aptUnionDgc" />
+					<mx:DataGridColumn headerText="维护" dataField="maintaintype" width="55" id="maintaintypeDgc"/>
+					<mx:DataGridColumn headerText="次日外站" dataField="outsidefornight" width="65" id="outsidefornightDgc" />
+					<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="120" id="stdaDgc"  sortable="true"/>
+					<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="45" id="acstopDgc"/>
+					<mx:DataGridColumn headerText="预达" dataField="t_eta" width="65" id="etaDgc" sortCompareFunction="etaSortFunction" />
+					<mx:DataGridColumn headerText="CDM" dataField="t_cdmout" width="65" id="cdmDgc" sortCompareFunction="cdmSortFunction"/>
+					
+					<mx:DataGridColumn headerText="预起" dataField="t_etd" width="65" id="etdDgc" sortCompareFunction="etdSortFunction"/> 
+					<mx:DataGridColumn headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc"/>
+					<mx:DataGridColumn headerText="工作状态" dataField="workforce_state_name" width="70" id="workstateDgc" sortCompareFunction="workStateSortFunc"/>
+					<mx:DataGridColumn headerText="起飞剩余" dataField="remain_min_dep" width="65"/>
+					<mx:DataGridColumn headerText="实际到达" dataField="t_in_time" width="65"/>
+					<mx:DataGridColumn headerText="实际起飞" dataField="t_out_time" width="55" visible="true"/>
+					<mx:DataGridColumn headerText="DD" dataField="flag_ddm" width="40" id="flagddDgc"/>
+					<mx:DataGridColumn headerText="提醒单" dataField="flag_tip" width="55" id="flagtipDgc"/>
+					<mx:DataGridColumn headerText="故障" dataField="ishavefault" width="70" id="isHaveFaults" />
+					<mx:DataGridColumn headerText="告警" dataField="ishavewarning" width="70" id="isHaveWarnings" />
+					<mx:DataGridColumn headerText="放行人" dataField="release_user" width="70" id="releaseUserDgc"/>
+					<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="70" id="maintainUserDgc" />
+					<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="70" id="dutyUserDgc" />
+					<mx:DataGridColumn headerText="接机人" dataField="guardian_user" width="70" id="guardianUserDgc" />
+					<mx:DataGridColumn headerText="出港人" dataField="handover_user" width="70" id="handoverUserDgc" />
+					<mx:DataGridColumn headerText="电源车" dataField="auto_power" width="70" id="autoPowerDgc" />
+					<mx:DataGridColumn headerText="气源车" dataField="auto_airsrc" width="70" />
+					<mx:DataGridColumn headerText="空调车" dataField="auto_aircond" width="70" />
+					<mx:DataGridColumn headerText="拖车" dataField="auto_trailer" width="70" />
+					<mx:DataGridColumn headerText="除雪车" dataField="auto_snowrm" width="70" />
+					<mx:DataGridColumn headerText="客梯车" dataField="auto_lift" width="70" />
+					<mx:DataGridColumn headerText="测量气压" dataField="airpress_user" width="70" />
+					<mx:DataGridColumn headerText="通电" dataField="poweron_user" width="70" />
+					<mx:DataGridColumn headerText="双签" dataField="sign2_user" width="70" />
+					<mx:DataGridColumn headerText="区域负责" dataField="area_user" width="70" />
+					
+					<mx:DataGridColumn headerText="接机组" dataField="pickupcrew_user" width="70" id="pickupcrewUserDgc" />
+					<mx:DataGridColumn headerText="清洁" dataField="clean_user" width="70" id="cleanUserDgc" />
+					<mx:DataGridColumn headerText="污水车" dataField="sewage_user" width="70" id="sewageUserDgc" />
+					<mx:DataGridColumn headerText="起飞剩余" dataField="remain_min_dep" width="65"/>
+					<mx:DataGridColumn headerText="维修工作" dataField="mtwork" width="80" id="mtworkDgc"/>
+					<mx:DataGridColumn headerText="OMIS备注" dataField="memo" width="180"/>
+					<mx:DataGridColumn headerText="航班备注" dataField="flightdesc" width="180"/>
+					<!--
+					<mx:DataGridColumn headerText="预达" dataField="eta" width="150" />
+					<mx:DataGridColumn headerText="航班状态" dataField="flightstate" width="80"/>
+					<mx:DataGridColumn headerText="已确认" dataField="isconfirmed_name" width="50"/>
+					<mx:DataGridColumn headerText="已锁定" dataField="islockedin_name" width="50"/>
+					-->
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</s:BorderContainer>

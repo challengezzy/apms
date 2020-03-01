@@ -1,0 +1,980 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   preinitialize="preinitializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+		<mx:SolidColor id="blueColor" color="blue"/>
+		<mx:SolidColor id="redColor" color="red"/>
+		<mx:SolidColor id="color_orange" color="0xFF9933"/>
+		<mx:SolidColor id="color_purple" color="0xC100CE"/>
+		<mx:SolidColor id="color_green" color="0x99CC33"/>
+		
+		<s:SolidColorStroke id="avgLineStroke" color="0x33CC66" weight="2" alpha="1"/>
+		<s:SolidColorStroke id="pointStroke" weight="1" alpha="1"/>
+		<s:SolidColorStroke id="slopeStroke" weight="1" alpha="1"/>
+		<s:SolidColorStroke id="lineStroke" weight="1" alpha="0.5"/>
+		<s:SolidColorStroke id="redLineStroke" color="0xFF0000" weight="2" alpha="1"/>
+		
+		<mx:DateTimeAxis id="dayXAxis" labelUnits="days" dataUnits="days" /> 
+		<mx:LinearAxis id="lineYAxis" baseAtZero="false" />
+		<mx:LinearAxis id="lineXAxis" baseAtZero="false" labelFunction="ahrsLabelFunction" />
+		<!--  parseFunction="ahrsParseFunction" parseFunction="parseToDate" -->
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.renderers.DiamondItemRenderer;
+			import mx.charts.renderers.TriangleItemRenderer;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.LineSeriesItem;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.graphics.IFill;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var formService:RemoteObject = new RemoteObject;
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var apusn:String; //apu序列号
+			private var acmodel:String;
+			[Bindable]
+			private var changePointRadius:Number = 8;
+			
+			private var markObj:Object;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			
+			[Bindable]
+			private var changList:ArrayCollection;//更换点
+			
+			[Bindable]
+			private var user1:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var a38ComputeList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var oilChangList:ArrayCollection = new ArrayCollection();//滑油冷却剂更换点
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var diagnoseExpList:ArrayCollection = new ArrayCollection();//神经网络诊断的异常点
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var warnList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var faultList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var workList:ArrayCollection = new ArrayCollection();
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				/**Flex 4.6 unable load module, if it contains a chart component 
+				 var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+				 for each(var styleObj:String in styleObjects)  {
+				 var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+				 styleManager.setStyleDeclaration(styleObj, style, true);
+				 }
+				 **/
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				formService.endpoint = endpoint;
+				formService.destination = smartxDest;
+				//远程服务添加监听
+				apmsService.getApuChartData.addEventListener(ResultEvent.RESULT,getApuChartDataHandler);
+				apmsService.getApuChartData.addEventListener(FaultEvent.FAULT,getApuChartDataErrorHandler);
+				apmsService.getA38ComputeChartData.addEventListener(ResultEvent.RESULT,getA38ComputeDataHandler);
+				apmsService.getA38ComputeChartData.addEventListener(FaultEvent.FAULT,getA38ComputeErrorHandler);				
+				
+				//				apmsService.pointMarkA23.addEventListener(ResultEvent.RESULT,pointMarkOkHandler);
+				//				apmsService.pointMarkA23.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,am.model APUMODEL#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M,b_apu_model am WHERE M.ID=A.ACMODELID and A.APU_MODELID=am.id;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+						acmodel = acRefPanel.returnVO.code;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="ACNUM";
+				apuItemVO.refdesc="SELECT A.ID ID#,M.MODEL ACMODEL#,APUSN APU序列号,M.MODEL APU型号 FROM B_APU A,B_APU_MODEL M WHERE M.ID=A.APUMODELID;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						apusn = apuRefPanel.returnVO.name;
+						acmodel = apuRefPanel.returnVO.code;
+					}else{
+						apusn = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				apuBox.addChild(apuRefPanel);
+				
+				warn_chart.plotChart.dataTipFunction = cfdTipFunc;
+				warn_chart.plotChart.height = 160;
+				warn_chart.leftChk.label = "告警";
+				warn_chart.rightChk.label = "故障";
+				warn_chart.pointChk.visible = false;
+				warn_chart.lineAxis.maximum = 55;
+				warn_chart.lineAxis.minimum = 45;
+				warn_chart.changePlot1.setStyle("fill",color_orange);
+				warn_chart.changePlot2.setStyle("fill",color_purple);
+				
+				mwork_chart.plotChart.dataTipFunction = mworkTipFunc;
+				mwork_chart.plotChart.height = 160;
+				mwork_chart.leftChk.visible = false;
+				mwork_chart.rightChk.visible = false;
+				mwork_chart.pointChk.visible = false;
+				mwork_chart.lineAxis.maximum = 3;
+				mwork_chart.lineAxis.minimum = 1;
+				mwork_chart.changePlot1.setStyle("fill",color_green);
+				
+			}
+			
+			public function mworkTipFunc(e:HitData):String{
+				var tip:String = "";
+				var item:Object = e.item;
+				var ps:PlotSeries = e.element as PlotSeries;
+				var yField:String = ps.yField;
+				var xField:String = ps.xField;
+				
+				var mttype:String = item["MTTYPE"];
+				var content:String = item["CONTEXTCN"];
+				var wsn:String = item["WORKORDERSN"];
+				var comments:String = item["COMMENTS"];
+				
+				tip += DateUtil.dateToString(item[xField],1);
+				tip += "\n生产编号："+wsn;
+				tip += "\n工作内容:" + content;
+				
+				return tip;
+			}
+			
+			public function cfdTipFunc(e:HitData):String{
+				var tip:String = "";
+				var item:Object = e.item;
+				var ps:PlotSeries = e.element as PlotSeries;
+				var yField:String = ps.yField;
+				var xField:String = ps.xField;
+				
+				var atano:String = item["ATANO"];
+				var content:String = item["CONTENT"];
+				var acnum:String = item["ACNUM"];
+				var type:String = item["TYPE"];
+				var typestr:String = "告警";
+				if(type == "F"){
+					typestr = "故障";
+				}
+				tip += typestr + "\n" + "机号："+acnum+" 章节："+atano;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+content;
+				
+				return tip;
+			}
+			
+			private function getApuChartDataHandler(event:ResultEvent):void 
+			{
+				changList = null;
+				allList = null;
+				diagnoseExpList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				changList = res["changList"];
+				
+				allList = res["allList"];
+				oilChangList = res["oilChangeList"];
+				diagnoseExpList = res["diagnoseExpList"];
+				
+				warnList = res["warnList"];
+				faultList = res["faultList"];
+				workList = res["workList"];
+			}
+			
+			private function getA38ComputeDataHandler(event:ResultEvent):void{
+				a38ComputeList=new ArrayCollection();
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Array = event.result as Array;
+				for(var i:int=0;i<res.length;i++){
+					var obj:Object=res[i];
+					a38ComputeList.addItem(obj.dataMap);
+				}
+			}
+			
+			private function getA38ComputeErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A38计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function getApuChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A13计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function ahrsParseFunction(s:String):Number{
+				var temp:Array = s.split("_");
+				
+				var ahrs:Number = new Number(temp[0]);
+				
+				return ahrs;
+			}
+			
+			private function ahrsLabelFunction(labelValue:Object, previousLabelValue:Object, axis:IAxis):String{
+				return labelValue+"h";
+			}
+			
+			
+			//用来将string型的时间换算成Date型，以便在X轴上正确显示
+			private function parseToDate(s:String):Date{
+				var newDate:Date = new Date();
+				if(s.indexOf("-") > 0){
+					//s = "2007-10-15 20:15" 
+					var temp:Array = s.split(" ");   
+					var datepart:String = temp[0];   
+					var datearray:Array = datepart.split("-");   
+					var timepart:String = temp[1];   
+					var timearray:Array = timepart.split(":");
+					newDate = new Date(datearray[0],datearray[1]-1,datearray[2],timearray[0],timearray[1]); 
+				}else{
+					//毫秒数
+					newDate.setTime(Number(s));
+				}
+				
+				return newDate;   
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( (acnum == null || acnum=="") && (apusn == null || apusn=="") ){
+					SmartXMessage.show("请选择一个飞机或APU！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				apmsService.getApuChartData(time_begin.text,time_end.text,acnum,apusn,isKChk.selected);
+				if(acmodel!=null){
+					if(acmodel == "GTCP131-9"){
+						if(ct5atpChart!=null){
+							ct5atpChart.visible=true;
+							ct5atpChart.includeInLayout=true;
+							cwfatpChart.visible=true;
+							cwfatpChart.includeInLayout=true;
+							cptatpChart2.visible=true;
+							cptatpChart2.includeInLayout=true;
+							bdtmaxChart2.visible=true;
+							bdtmaxChart2.includeInLayout=true;
+							igvatpChart.visible=true;
+							igvatpChart.includeInLayout=true;
+						}
+						if(cptatpChart!=null){
+							cptatpChart.visible=true;
+							cptatpChart.includeInLayout=true;
+							bdtmaxChart.visible=true;
+							bdtmaxChart.includeInLayout=true;
+						}
+						if(ct5atp2Chart!=null){
+							ct5atp2Chart.visible=true;
+							ct5atp2Chart.includeInLayout=true;
+							cwfatp2Chart.visible=true;
+							cwfatp2Chart.includeInLayout=true;
+						}
+						apmsService.getA38ComputeChartData(time_begin.text,time_end.text,acnum,apusn,isKChk.selected);
+					}else{
+						if(ct5atpChart!=null){
+							ct5atpChart.visible=false;
+							ct5atpChart.includeInLayout=false;
+							cwfatpChart.visible=false;
+							cwfatpChart.includeInLayout=false;
+							cptatpChart2.visible=false;
+							cptatpChart2.includeInLayout=false;
+							bdtmaxChart2.visible=false;
+							bdtmaxChart2.includeInLayout=false;
+							igvatpChart.visible=false;
+							igvatpChart.includeInLayout=false;
+						}
+						if(cptatpChart!=null){
+							cptatpChart.visible=false;
+							cptatpChart.includeInLayout=false;
+							bdtmaxChart.visible=false;
+							bdtmaxChart.includeInLayout=false;
+						}
+						if(ct5atp2Chart!=null){
+							ct5atp2Chart.visible=false;
+							ct5atp2Chart.includeInLayout=false;
+							cwfatp2Chart.visible=false;
+							cwfatp2Chart.includeInLayout=false;
+						}
+					}
+				}
+				
+				
+			}
+			//			private function selectViewParameter():void{
+			//				var apuSelectViewPanel:ApuSelectViewPanel=new ApuSelectViewPanel();
+			//				
+			//				//fileUpload.fileListDg=this.fileListDg;
+			//				PopUpManager.addPopUp(apuSelectViewPanel,desktop,true);
+			//				PopUpManager.centerPopUp(apuSelectViewPanel);
+			//				
+			//			}
+			
+			private function getFill(element:ChartItem, index:Number,outField:String):IFill {
+				var sc:SolidColor = new SolidColor(0x00CC00);
+				
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var eventType:Number = itemObj["EVENTTYPE"] as Number;
+				
+				var presrate_st_out:Number = itemObj[outField] as Number;
+				if(outField == null)
+					presrate_st_out = 0;
+				
+				if(presrate_st_out == 1){
+					sc.alpha = 0;
+				}else{
+					sc.color = ChartUtil.getPointFillColor(eventType);
+				}
+				
+				return sc;
+			}
+			
+			public function trendTipFunc(e:HitData):String {
+				var item:Object = e.item;
+				
+				var yField:String = "PDI_NEW";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					seriesName = ps.displayName;
+				}
+				
+				var tip:String = seriesName + "：" + item[yField] ;
+				tip += "\n------------------------";
+				tip += "\n日期："+ DateUtil.dateToString(item["UTCDATE"],1);
+				tip += "\n修后小时："+ item["AHRS_REPAIRED"] + ", 修后循环："+ item["ACYC_REPAIRED"];
+				tip += "\n总小时："+ item["AHRS"] + ", 总循环:" + item["ACYC"];
+				tip += "\n机号："+ item["ACNUM"] + ", APU:" + item["ASN"];
+				tip += "\n诊断："+ item["DIAGNOSETYPE"];
+				
+				return tip;
+			}
+			
+			public function trendTipStrFuncEgt(e:HitData):String{
+				return trendTipStrFuncA38(e,"°C");
+			}
+			public function trendTipStrFuncIgv(e:HitData):String{
+				return trendTipStrFuncA38(e,"");
+			}
+			
+			public function trendTipStrFuncWf(e:HitData):String{
+				return trendTipStrFuncA38(e,"磅/小时");
+			}
+			
+			public function trendTipStrFuncPsi(e:HitData):String{
+				return trendTipStrFuncA38(e,"psi");
+			}
+			
+			public function trendTipStrFuncA38(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			private function insertedFun():void{
+				allPdiOld.dataProvider.refresh();
+			}
+		
+			protected function pointItemDoubleClickHandler(event:ChartItemEvent):void
+			{
+				var hitData:HitData = event.hitData;
+				if (hitData.chartItem.element is LineSeries) 
+				{
+					var displayName:String = LineSeries(hitData.chartItem.element).displayName; 
+					if(displayName == "旧PDI"){
+						var curObj:Object = hitData.item;
+						
+						var msgno:String = curObj["MSG_NO"];
+						var pdi_old:String = curObj["PDI_OLD"];
+						var utcdate:Date = curObj["UTCDATE"];
+						var isexist:String = curObj["ISEXIST"]; 
+						var datatype:String = curObj["DATATYPE"]; 
+						var comments:String = curObj["COMMENTS"]; 
+						var apuTrainDataWindow:ApuTrainDataWindow = new ApuTrainDataWindow();
+						apuTrainDataWindow.curMsgNo = msgno;
+						apuTrainDataWindow.pdiOld = pdi_old;
+						apuTrainDataWindow.alterHour =curObj["AHRS_REPAIRED"] ;
+						apuTrainDataWindow.alterCirculation =curObj["ACYC_REPAIRED"] ;
+						apuTrainDataWindow.allhour =curObj["AHRS"] ;
+						apuTrainDataWindow.allCirculation =curObj["ACYC"] ;
+						apuTrainDataWindow.acnum =curObj["ACNUM"] ;
+						apuTrainDataWindow.apu =curObj["ASN"] ;
+						
+						apuTrainDataWindow.curObj = curObj;
+						apuTrainDataWindow.insertedFunc = insertedFun;
+						apuTrainDataWindow.utcDate =DateUtil.dateToString(utcdate,1); ;
+						if(datatype !=null ){
+							apuTrainDataWindow.datatype = datatype;
+						}
+						if(comments!= null){
+							apuTrainDataWindow.comments = comments;
+						}
+						if(isexist =="1"){
+							apuTrainDataWindow.buttonLabel = "更新";
+						}
+						
+						PopUpManager.addPopUp(apuTrainDataWindow,desktop,true);
+						PopUpManager.centerPopUp(apuTrainDataWindow);
+						
+					}	
+				}
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(apuPerformanceChart,"APU参数趋势监控");
+			}
+			
+			private function creationCompleteHandler_gasModule(event:FlexEvent):void{
+				
+			}
+			
+			private function creationCompleteHandler_turbineModule(event:FlexEvent):void{
+				
+			}
+			
+			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void
+			{
+				var index:Number=event.newIndex;
+				if(acmodel!=null){
+					if(acmodel=="GTCP131-9"){
+						switch(index){
+							case 0: 
+								ct5atpChart.visible=true;
+								ct5atpChart.includeInLayout=true;
+								cwfatpChart.visible=true;
+								cwfatpChart.includeInLayout=true;
+								cptatpChart2.visible=true;
+								cptatpChart2.includeInLayout=true;
+								bdtmaxChart2.visible=true;
+								bdtmaxChart2.includeInLayout=true;
+								igvatpChart.visible=true;
+								igvatpChart.includeInLayout=true;
+								break;
+							case 2:
+								cptatpChart.visible=true;
+								cptatpChart.includeInLayout=true;
+								bdtmaxChart.visible=true;
+								bdtmaxChart.includeInLayout=true;
+								break;
+							case 3:
+								ct5atp2Chart.visible=true;
+								ct5atp2Chart.includeInLayout=true;
+								cwfatp2Chart.visible=true;
+								cwfatp2Chart.includeInLayout=true;
+								break;
+						}
+					}else{
+						switch(index){
+							case 0: 
+								ct5atpChart.visible=false;
+								ct5atpChart.includeInLayout=false;
+								cwfatpChart.visible=false;
+								cwfatpChart.includeInLayout=false;
+								cptatpChart2.visible=false;
+								cptatpChart2.includeInLayout=false;
+								bdtmaxChart2.visible=false;
+								bdtmaxChart2.includeInLayout=false;
+								igvatpChart.visible=false;
+								igvatpChart.includeInLayout=false;
+								break;
+							case 2:
+								cptatpChart.visible=false;
+								cptatpChart.includeInLayout=false;
+								bdtmaxChart.visible=false;
+								bdtmaxChart.includeInLayout=false;
+								break;
+							case 3:
+								ct5atp2Chart.visible=false;
+								ct5atp2Chart.includeInLayout=false;
+								cwfatp2Chart.visible=false;
+								cwfatp2Chart.includeInLayout=false;
+								break;
+						}
+					}
+				}
+			}
+			
+			private function fillByType2(item:ChartItem,index:Number):IFill {
+
+				var sc:SolidColor;
+				var curItem:LineSeriesItem = LineSeriesItem(item);
+				
+				var itemObj:Object = curItem.item;
+				var isexist:String = itemObj["ISEXIST"] as String; 				
+				if(isexist == "1"){ 
+					sc = new SolidColor(0xFF0000);//red					
+				}else{
+					sc = new SolidColor(0x00EE00);//					
+				}
+				return sc;
+
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="apuPerformanceChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU"/>
+			</mx:HBox>
+			<!--<mx:Button label="选择显示参数" click="selectViewParameter()" />-->
+			<mx:CheckBox id="isKChk" label="斜率计算" enabled="false" visible="false" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:TabNavigator width="100%"  height="100%" creationPolicy="auto" resizeToContent="true" change="tabnavigator1_changeHandler(event)">
+			<mx:VBox id="basicBox" label="性能基本参数" width="100%" height="100%" >
+				<mx:HBox>
+					<mx:Label text="指标项：PDI、EGTA_COR(排气温度修正)、PT_COR(引气压力修正)、 IGV(IGV角度)、 STA(自启动时间) " />
+				</mx:HBox>
+				<mx:HBox height="100%" width="100%"  verticalAlign="top">
+					<component:ReportTrendDualChart id="warn_chart" chartName="CFD故障和告警" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="false"
+													valField1="YVAL" point1Name="CFD故障"
+													valField2="YVAL" point2Name="CFD告警"
+													changList1="{warnList}" changList2="{faultList}"
+													chartTitle_left="" chartTitle_right="">
+					</component:ReportTrendDualChart>
+					<component:ReportTrendDualChart id="mwork_chart" chartName="APU维修记录" height="100%" width="100%"
+													xField="UTCDATE" colorTipVisible="false"
+													valField1="YVAL" 
+													changList1="{workList}"
+													chartTitle_left="" >
+					</component:ReportTrendDualChart>
+				</mx:HBox>
+				<mx:VBox height="100%" width="100%">
+					<mx:HBox  height="20" width="100%"  paddingRight="10">
+						<mx:Label text="PDI性能参数"/>
+						<mx:Spacer width="100%"/>
+					</mx:HBox>
+					<mx:PlotChart id="pdiChart" width="98%" height="240" showDataTips="true" doubleClickEnabled="true"
+								  itemDoubleClick ="pointItemDoubleClickHandler(event)" dataTipFunction="trendTipFunc"
+								  horizontalAxis="{dayXAxis}">
+						<mx:verticalAxis>
+							<mx:LinearAxis maximum="2"/>
+						</mx:verticalAxis>
+						<mx:series>
+							<mx:LineSeries  id="allPdiNew" displayName="新PDI" dataProvider="{allList}"  				
+											yField="PDI_NEW" xField="UTCDATE" radius="3" lineStroke="{lineStroke}" 
+											itemRenderer="mx.charts.renderers.CircleItemRenderer"/>
+							<mx:LineSeries  id="allPdiOld" displayName="旧PDI" dataProvider="{allList}" 
+											fillFunction="fillByType2"
+											yField="PDI_OLD" xField="UTCDATE" radius="3" lineStroke="{lineStroke}"
+											itemRenderer="mx.charts.renderers.CircleItemRenderer"/>
+							<mx:PlotSeries  id="diagnosePs" dataProvider="{diagnoseExpList}" yField="PDI_NEW"   
+											xField="UTCDATE" displayName="异常点"
+											fill="{redColor}" radius="5"                                     
+											itemRenderer="mx.charts.renderers.TriangleItemRenderer"/>
+							<mx:PlotSeries  id="changePdiNew" dataProvider="{changList}"   
+											yField="PDI_NEW" xField="UTCDATE" displayName="新PDI"
+											fill="{blueColor}" radius="{changePointRadius}"                                     
+											itemRenderer="mx.charts.renderers.DiamondItemRenderer"/>
+							<mx:PlotSeries  id="changePdiOld" dataProvider="{changList}"   
+											yField="PDI_OLD" xField="UTCDATE" displayName="旧PDI"
+											fill="{blueColor}" radius="{changePointRadius}"                                     
+											itemRenderer="mx.charts.renderers.DiamondItemRenderer"/> 
+						</mx:series>
+					</mx:PlotChart>
+				</mx:VBox>
+				<component:ReportTrendChart id="egtaChart" chartName="EGTA_COR(排气温度修正)" height="100%" width="100%"
+											xField="UTCDATE" valField="EGTA_MAX_COR" isAvg5="true" avg5Field="EGTA_ROLL5"
+											pointTypeField="EGTA_POINTTYPE" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_EGT_COR" tipFunction="trendTipFunc" rptno="A13"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="ct5atpChart" chartName="CT5ATP(修正后的EGT温度)" height="100%" width="100%"
+											xField="utcdate" valField="ct5atp" isAvg5="true" avg5Field="ct5atp_roll5"
+											pointTypeField="ct5atp_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_egt_atp" tipFunction="trendTipStrFuncEgt"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="cwfatpChart" chartName="CWFATP(修正后的燃油流量)" height="100%" width="100%"
+											xField="utcdate" valField="cwfatp" isAvg5="true" avg5Field="cwfatp_roll5"
+											pointTypeField="cwfatp_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_wf_atp" tipFunction="trendTipStrFuncWf"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="ptcorChart" chartName="PT_COR(引气压力修正)" height="100%" width="100%"
+											xField="UTCDATE" valField="PT_MAX_COR" isAvg5="true" avg5Field="PT_ROLL5"
+											pointTypeField="PT_POINTTYPE" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_PT_COR" tipFunction="trendTipFunc" rptno="A13"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="cptatpChart2" chartName="CPTATP(修正后的PT压力)" height="100%" width="100%"
+											xField="utcdate" valField="cptatp" isAvg5="true" avg5Field="cptatp_roll5"
+											pointTypeField="cptatp_pointtype" colorAttribute="alarmnum" rptno="A38" 
+											isRedLine="true" redlineField="rl_pt_atp" tipFunction="trendTipStrFuncPsi"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="bdtmaxChart2" chartName="BDTMAX(引气启动最大温度)" height="100%" width="100%"
+											xField="utcdate" valField="bdtmax" isAvg5="true" avg5Field="bdtmax_roll5"
+											pointTypeField="bdtmax_pointtype" colorAttribute="alarmnum"  rptno="A38"
+											isRedLine="true" redlineField="rl_bdt_atp" tipFunction="trendTipStrFuncEgt"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="igvchart" chartName="IGV(IGV角度)" height="100%" width="100%"
+											xField="UTCDATE" valField="IGV_MAX" isAvg5="true" avg5Field="IGV_ROLL5"
+											pointTypeField="IGV_POINTTYPE" rptno="A13" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_IGV" tipFunction="trendTipFunc"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="igvatpChart" chartName="IGVATP(修正后的IGV角度)" height="100%" width="100%"
+											xField="utcdate" valField="igvatp" isAvg5="true" avg5Field="igvatp_roll5"
+											pointTypeField="igvatp_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_igv_atp" tipFunction="trendTipStrFuncIgv"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="staChart" chartName="APU自启动时间" height="100%" width="100%"
+											xField="UTCDATE" valField="STA_V1" isAvg5="true" avg5Field="STA_ROLL5"
+											pointTypeField="STA_POINTTYPE" rptno="A13" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_STA" tipFunction="trendTipFunc"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				
+			</mx:VBox >
+			<mx:VBox id="oilBox" label="滑油系统" width="100%"  height="100%" >
+				<mx:HBox>
+					<mx:Label text="指标项:OTA(滑油温度),(OT)OTA-LCIT温度,LCIT(自启动进气口温度) " />
+				</mx:HBox>
+				<component:ReportTrendChart id="otaChart" chartName="OTA(滑油温度)" height="100%" width="100%"
+											xField="UTCDATE" valField="OTA_MAX" isRedLine="true" redlineField="RL_OTA" 
+											tipFunction="trendTipFunc" rptno="A13" insertedFunc = "insertedFun"
+											changList="{oilChangList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="otChart" chartName="(OT)OTA-LCIT温度" height="100%" width="100%"
+											xField="UTCDATE" valField="OT_MAX" isAvg5="true" avg5Field="OT_ROLL5"  
+											tipFunction="trendTipFunc" rptno="A13" insertedFunc = "insertedFun"
+											pointTypeField="OT_POINTTYPE" isRedLine="true" redlineField="RL_OT"
+											changList="{oilChangList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="lcitChart" chartName="LCIT_MAX(压气机进口温度)" height="100%" width="100%"
+											xField="UTCDATE" valField="LCIT_MAX" tipFunction="trendTipFunc" rptno="A13"
+											insertedFunc = "insertedFun"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				
+			</mx:VBox>
+			
+			<mx:VBox id="gasBox" label="气路模块" width="100%" height="100%" creationComplete="creationCompleteHandler_gasModule(event)">
+				<mx:HBox>
+					<mx:Label text="指标项:PT_COR,IGV,P2A_COR,WB_COR,APR_COR" />
+				</mx:HBox>
+				<component:ReportTrendChart id="ptChart" chartName="PT_COR(引气压力修正)" height="100%" width="100%"
+											xField="UTCDATE" valField="PT_MAX_COR" isAvg5="true" avg5Field="PT_ROLL5" 
+											tipFunction="trendTipFunc" rptno="A13"
+											pointTypeField="PT_POINTTYPE" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_PT_COR"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="igvChart" chartName="IGV(IGV角度)" height="100%" width="100%"
+											xField="UTCDATE" valField="IGV_MAX" isAvg5="true" avg5Field="IGV_ROLL5"
+											pointTypeField="IGV_POINTTYPE" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_IGV" tipFunction="trendTipFunc" rptno="A13"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="p2aChart" chartName="P2A_COR(压气机进口压力修正)" height="100%" width="100%"
+											pointTypeField="p2A_POINTTYPE"
+											xField="UTCDATE" valField="p2A_MAX_COR" isAvg5="true" avg5Field="p2A_ROLL5" 
+											tipFunction="trendTipFunc" rptno="A13" insertedFunc = "insertedFun"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="cptatpChart" chartName="CPTATP(修正后的PT压力)" height="100%" width="100%"
+											xField="utcdate" valField="cptatp" isAvg5="true" avg5Field="cptatp_roll5"
+											pointTypeField="cptatp_pointtype"  colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_pt_atp" tipFunction="trendTipStrFuncPsi"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="bdtmaxChart" chartName="BDTMAX(引气启动最大温度)" height="100%" width="100%"
+											xField="utcdate" valField="bdtmax" isAvg5="true" avg5Field="bdtmax_roll5"
+											pointTypeField="bdtmax_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_bdt_atp" tipFunction="trendTipStrFuncEgt"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="wbChart" chartName="WB_COR(引气流量kg/sec修正)" height="100%" width="100%"
+											xField="UTCDATE" valField="WB_MAX_COR" isAvg5="true" avg5Field="WB_ROLL5"
+											pointTypeField="WB_POINTTYPE" insertedFunc = "insertedFun" rptno="A13"
+											isRedLine="true" redlineField="RL_WB_COR" tipFunction="trendTipFunc"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="aprChart" chartName="APR_COR(引气出口与进口的增压比修正)" height="100%" width="100%"
+											xField="UTCDATE" valField="APR_MAX" isAvg5="true" avg5Field="APR_ROLL5"
+											pointTypeField="APR_POINTTYPE" insertedFunc = "insertedFun" rptno="A13"
+											isRedLine="true" redlineField="RL_APR_COR" tipFunction="trendTipFunc"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+			</mx:VBox>
+			
+			<mx:VBox id="turbineBox" label="涡轮模块" width="100%" height="100%" creationComplete="creationCompleteHandler_turbineModule(event)">
+				<mx:HBox>
+					<mx:Label text="指标项:EGTP_COR,NPA_COR,STA_V1,EGTP,NPA,TAT,ALT" />
+				</mx:HBox>
+				<component:ReportTrendChart id="egtpCorChart" chartName="EGTP_COR(APU自启动EGT峰值修正)" height="100%" width="100%" tipFunction="trendTipFunc"
+											xField="UTCDATE" valField="EGTP_V1_COR" isRedLine="true"  rptno="A13"
+											redlineField="RL_EGTP_COR" isAvg5="true" avg5Field="EGTP_V1_COR_ROLL5"
+											changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="ct5atp2Chart" chartName="CT5ATP(修正后的EGT温度)" height="100%" width="100%"
+											xField="utcdate" valField="ct5atp" isAvg5="true" avg5Field="ct5atp_roll5"
+											pointTypeField="ct5atp_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_egt_atp" tipFunction="trendTipStrFuncEgt"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="cwfatp2Chart" chartName="CWFATP(修正后的燃油流量)" height="100%" width="100%"
+											xField="utcdate" valField="cwfatp" isAvg5="true" avg5Field="cwfatp_roll5"
+											pointTypeField="cwfatp_pointtype" colorAttribute="alarmnum" rptno="A38"
+											isRedLine="true" redlineField="rl_wf_atp" tipFunction="trendTipStrFuncWf"
+											allList="{a38ComputeList}" >
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="mpaCorChart" chartName="NPA_COR(APU自启动EGT峰值的转速%修正)" height="100%" width="100%" tipFunction="trendTipFunc"
+											xField="UTCDATE" valField="NPA_V1_COR" isRedLine="true" redlineField="RL_NPA_COR" 
+											isAvg5="true" avg5Field="NPA_V1_COR_ROLL5"  rptno="A13" insertedFunc = "insertedFun"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="apuStchart" chartName="APU自启动时间" height="100%" width="100%"
+											xField="UTCDATE" valField="STA_V1" isAvg5="true" avg5Field="STA_ROLL5"
+											pointTypeField="STA_POINTTYPE"  rptno="A13" insertedFunc = "insertedFun"
+											isRedLine="true" redlineField="RL_STA" tipFunction="trendTipFunc"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="egtp2chart" chartName="EGTP(APU自启动EGT峰值)" height="100%" width="100%"
+											xField="UTCDATE" valField="EGTP_V1" isRedLine="true" redlineField="RL_EGTP" 
+											tipFunction="trendTipFunc"  rptno="A13" insertedFunc = "insertedFun"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<component:ReportTrendChart id="npa2chart" chartName="NPA(APU自启动EGT峰值的转速%)" height="100%" width="100%"
+											rptno="A13" insertedFunc = "insertedFun"
+											xField="UTCDATE" valField="NPA_V1" isRedLine="true" redlineField="RL_NPA"
+											changList="{changList}" allList="{allList}">
+				</component:ReportTrendChart>
+				<mx:HBox width="100%">
+					<!--
+					<component:ReportTrendChart chartName="TAT(外界温度)" height="100%" width="100%"
+					xField="UTCDATE" valField="TAT" tipFunction="trendTipFunc"
+					changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+					-->
+					<component:ReportTrendChart id="lcitchart" chartName="LCIT_MAX(压气机进口温度)" height="100%" width="100%"
+												xField="UTCDATE" valField="LCIT_MAX" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="alt2chart" chartName="ALT(气压海拔)" height="100%" width="100%" rptno="A13"
+												xField="UTCDATE" valField="ALT" tipFunction="trendTipFunc"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox label="传感器模块" width="100%" height="100%">
+				<mx:HBox>
+					<mx:Label text="指标项:TAT,ALT,LCIT_MAX,GLA_MAX,EGTA_MAX,EGTA_COR,PT_MAX,PT_COR,P2A_MAX,P2A_COR,WB_MAX,WB_COR" />
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<component:ReportTrendChart id="tatChart" chartName="TAT(外界温度)" height="100%" width="100%"
+												xField="UTCDATE" valField="TAT" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="altChart" chartName="ALT(气压海拔)" height="100%" width="100%"
+												xField="UTCDATE" valField="ALT" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<component:ReportTrendChart id="lict2Chart" chartName="LCIT_MAX(压气机进口温度)" height="100%" width="100%"
+												xField="UTCDATE" valField="LCIT_MAX" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="glaChart" chartName="GLA_MAX(发电机负载%)" height="100%" width="100%"
+												xField="UTCDATE" valField="GLA_MAX" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}" insertedFunc = "insertedFun">
+					</component:ReportTrendChart>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<component:ReportTrendChart id="egta1Chart" chartName="EGTA(排气温度)" height="100%" width="100%"
+												xField="UTCDATE" valField="EGTA_MAX" tipFunction="trendTipFunc"  rptno="A13"
+												isRedLine="true" redlineField="RL_EGTA" insertedFunc = "insertedFun"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="egta2chart"  chartName="EGTA_COR(排气温度修正)" height="100%" width="100%"
+												tipFunction="trendTipFunc"  rptno="A13"
+												xField="UTCDATE" valField="EGTA_MAX_COR" isAvg5="true" avg5Field="EGTA_ROLL5"
+												pointTypeField="EGTA_POINTTYPE" insertedFunc = "insertedFun"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<component:ReportTrendChart id="pt1chart" chartName="PT_MAX(压气机进口温度)" height="100%" width="100%"
+												xField="UTCDATE" valField="PT_MAX" tipFunction="trendTipFunc" rptno="A13"
+												insertedFunc = "insertedFun"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="pt2chart" chartName="PT_COR(引气压力修正)" height="100%" width="100%"
+												tipFunction="trendTipFunc" rptno="A13"
+												xField="UTCDATE" valField="PT_MAX_COR" isAvg5="true" avg5Field="PT_ROLL5"
+												pointTypeField="PT_POINTTYPE" insertedFunc = "insertedFun"
+												isRedLine="true" redlineField="RL_PT_COR"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+				</mx:HBox>
+				<mx:HBox width="100%">	
+					<component:ReportTrendChart id="p2aChart1" chartName="P2A_MAX(压气机进口压力)" height="100%" width="100%"
+												xField="UTCDATE" valField="p2A_MAX" tipFunction="trendTipFunc" rptno="A13"
+												insertedFunc = "insertedFun"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="p2a1Chart1" chartName="P2A_COR(压气机进口压力修正)" height="100%" width="100%"
+												xField="UTCDATE" valField="p2A_MAX_COR" isAvg5="true" avg5Field="p2A_ROLL5"
+												pointTypeField="p2A_POINTTYPE" insertedFunc = "insertedFun"
+												tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<component:ReportTrendChart id="wbChart1" chartName="WB_MAX(引气流量kg/sec)" height="100%" width="100%"
+												xField="UTCDATE" valField="WB_MAX" tipFunction="trendTipFunc" rptno="A13"
+												insertedFunc = "insertedFun"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+					<component:ReportTrendChart id="wbChart2" chartName="WB_COR(引气流量kg/sec修正)" height="100%" width="100%"
+												xField="UTCDATE" valField="WB_MAX_COR" isAvg5="true" avg5Field="WB_ROLL5"
+												pointTypeField="WB_POINTTYPE" insertedFunc = "insertedFun"
+												isRedLine="true" redlineField="RL_WB_COR" tipFunction="trendTipFunc" rptno="A13"
+												changList="{changList}" allList="{allList}">
+					</component:ReportTrendChart>
+				</mx:HBox>
+			</mx:VBox>
+			
+		</mx:TabNavigator>
+	</mx:VBox>
+</mx:Module>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="600" height="360" 
+					   title="机位详情" allowDrag="true" allowClose="true" 
+					   >
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.basic.AirPositionTipViewWindow;
+			import com.apms.flex.modules.basic.FlightStopedForAirPositionWindow;
+			import com.apms.flex.modules.basic.WorkladderForAirPositionWindow;
+			import com.apms.flex.modules.map.AirportMapCache;
+			import com.apms.flex.modules.map.vo.AcstopVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.openscales.geometry.basetypes.Location;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			[Bindable]
+			public var popupParent:UIComponent;
+			private var airPositionTipViewWindow:AirPositionTipViewWindow;
+			private var workladderForAirPositionWindow:WorkladderForAirPositionWindow;
+			private var flightStopedForAirPositionWindow:FlightStopedForAirPositionWindow;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			[Bindable]
+			public var aptName:String;//机场
+			[Bindable]
+			public var aptCode:String;//机场三字码
+//			public var code:String; //编号            
+//			[Bindable]
+//			public var terminalno:String; //航站楼编号(t1/t2) 
+//			[Bindable]
+//			public var isbridge:String; //是否靠桥,非靠桥机位需要摆渡车 
+//			[Bindable]
+//			public var linkcode:String; //机场+机位      
+//			[Bindable]
+//			public var positiondesc:String; //位置描述      
+//			[Bindable]
+//			public var longitude:String; //经度            
+//			[Bindable]
+//			public var latitude:String; //纬度      
+			[Bindable]
+			public var xStop:String; //x坐标   
+			[Bindable]
+			public var yStop:String; //y坐标      
+//			[Bindable]
+//			public var comments:String; //备注       
+//			[Bindable]
+//			public var updatetime:String; //更新时间
+			[Bindable]
+			public var acstopVo:AcstopVo;
+			protected function creationCompleteHandler(event:FlexEvent):void{
+				airport.text=aptName;
+				terminalno.text=acstopVo.terminalno;
+				var isbridgeText:String=acstopVo.isbridge;
+				if(isbridgeText=="0"){
+					isbridge.text="否";
+				}else{
+					isbridge.text="是";
+				}
+				linkcode.text=acstopVo.linkcode;
+				positiondesc.text=acstopVo.positiondesc;
+				longitude.text=acstopVo.longitude;
+				latitude.text=acstopVo.latitude;
+				xStop=acstopVo.x+"";
+				xstop.text=xStop;
+				yStop=acstopVo.y+"";
+				ystop.text=yStop;
+			}
+			/**
+			 * 机位提醒信息
+			 */ 
+			private function viewAirportPositionTipInfo():void{
+				airPositionTipViewWindow=new AirPositionTipViewWindow();
+				airPositionTipViewWindow.ap_positionid=acstopVo.id;
+				airPositionTipViewWindow.airport_name=aptName;
+				airPositionTipViewWindow.ap_name=acstopVo.code;
+				PopUpManager.addPopUp(airPositionTipViewWindow,popupParent);
+				PopUpManager.centerPopUp(airPositionTipViewWindow);
+			}
+			/**
+			 *工作梯查看
+			 */ 
+			private function viewWorkladderInfo():void{
+				workladderForAirPositionWindow=new WorkladderForAirPositionWindow();
+				workladderForAirPositionWindow.ap_positionid=acstopVo.id;
+				PopUpManager.addPopUp(workladderForAirPositionWindow,popupParent);
+				PopUpManager.centerPopUp(workladderForAirPositionWindow);
+			}
+			/**
+			 *停靠航班
+			 */ 
+			private function viewStopFlight():void{
+				flightStopedForAirPositionWindow=new FlightStopedForAirPositionWindow();
+				flightStopedForAirPositionWindow.ap_positioncode=acstopVo.code;
+				flightStopedForAirPositionWindow.ap_code=aptCode;
+				PopUpManager.addPopUp(flightStopedForAirPositionWindow,popupParent);
+				PopUpManager.centerPopUp(flightStopedForAirPositionWindow);
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingTop="20" paddingLeft="20" paddingRight="20" paddingBottom="10">
+		<mx:HBox>
+			<mx:Label textAlign="right" text="机场:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="airport" editable="false"/>
+			<mx:Label textAlign="right" text="是否靠桥:" width="{fivewordsWidth.width}" horizontalCenter="0"/>
+			<mx:TextInput id="isbridge"  editable="false"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label textAlign="right" text="机位:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="linkcode" editable="false"/>
+			<mx:Label textAlign="right" text="航站楼编号:" id="fivewordsWidth"/>
+			<mx:TextInput id="terminalno" editable="false"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label textAlign="right" text="纬度:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="longitude" editable="false"/>
+			<mx:Label textAlign="right" text="经度:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="latitude" editable="false"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label textAlign="right" text="X坐标:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="xstop" editable="false"/>
+			<mx:Label textAlign="right" text="y坐标:" width="{fivewordsWidth.width}"/>
+			<mx:TextInput id="ystop" editable="false"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label textAlign="right" text="位置描述:" width="{fivewordsWidth.width}"/>
+			<mx:TextArea id="positiondesc" width="90%" editable="false"/>
+		</mx:HBox>
+		<s:Spacer height="10"/>
+		<mx:HBox width="100%" horizontalAlign="center">
+			<mx:Button label="机位提醒信息"  width="110" click="viewAirportPositionTipInfo()"/>
+			<mx:Button label="工作梯信息"  width="110" click="viewWorkladderInfo()"/>
+			<mx:Button label="停靠航班"  width="110" click="viewStopFlight()"/>
+		</mx:HBox>
+		<s:Spacer height="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28" paddingBottom="5">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,205 @@
+<ReportSettings version="1.2">
+  <PageWidth>29.7</PageWidth>
+  <PageHeight>21</PageHeight>
+  <LeftMargin>0.45</LeftMargin>
+  <RightMargin>0.45</RightMargin>
+  <TopMargin>0.5</TopMargin>
+  <BottomMargin>0.5</BottomMargin>
+  <PageHeaderRepeat>false</PageHeaderRepeat>
+  <TableHeaderRepeat>true</TableHeaderRepeat>
+  <ShowPageNumber>true</ShowPageNumber>
+  <PageNumberFormat>{0}/{1}</PageNumberFormat>
+  <AdjustPrintDirection>true</AdjustPrintDirection>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting">
+      <Width>9.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>7</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.75</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.75</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>6.1</Width>
+    </ItemSetting>
+  </TableColumnSettings>
+  <TableHeaderSettings>
+    <ItemSetting type="TableRowSetting">
+      <Height>1.2</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@工卡名称</Value>
+          <Style>
+            <Leading>5</Leading>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@互检</Value>
+          <Style>
+            <LeftBorder>false</LeftBorder>
+            <RightBorder>false</RightBorder>
+          </Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">互检</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#必检</Value>
+          <Style>
+            <LeftBorder>false</LeftBorder>
+            <RightBorder>false</RightBorder>
+          </Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">必检</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@适用性</Value>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableHeaderSettings>
+  <TableDetailSettings>
+    <ItemSetting type="TableRowSetting">
+      <Height>1.8</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#风险点名称</Value>
+          <Style>
+            <Leading>5</Leading>
+          </Style>
+          <CanGrow>false</CanGrow>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#互检</Value>
+          <Style>
+            <LeftBorder>false</LeftBorder>
+            <RightBorder>false</RightBorder>
+          </Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">互检</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#必检</Value>
+          <Style>
+            <LeftBorder>false</LeftBorder>
+            <RightBorder>false</RightBorder>
+          </Style>
+          <Control type="CheckLabel">
+            <Set name="eHorizontalAlign">center</Set>
+            <Set name="sLabel">必检</Set>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Style>
+            <VerticalAlign>top</VerticalAlign>
+            <LeftBorder>false</LeftBorder>
+            <Leading>5</Leading>
+          </Style>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <Height>9.2</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#风险点图1</Value>
+          <CanGrow>false</CanGrow>
+          <Control type="Image">
+            <Set name="nPaddingLeft">1</Set>
+            <Set name="nPaddingRight">1</Set>
+            <Set name="nPaddingTop">1</Set>
+            <Set name="nPaddingBotom">1</Set>
+            <Set name="sWidth"/>
+            <Set name="sHeight"/>
+          </Control>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#风险点图2</Value>
+          <Control type="Image">
+            <Set name="nPaddingLeft">1</Set>
+            <Set name="nPaddingRight">1</Set>
+            <Set name="nPaddingTop">1</Set>
+            <Set name="nPaddingBotom">1</Set>
+            <Set name="sWidth"/>
+            <Set name="sHeight"/>
+          </Control>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#风险点图3</Value>
+          <Control type="Image"/>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#风险点图3</Value>
+          <Control type="Image">
+            <Set name="nPaddingLeft">1</Set>
+            <Set name="nPaddingRight">1</Set>
+            <Set name="nPaddingTop">1</Set>
+            <Set name="nPaddingBotom">1</Set>
+            <Set name="sWidth"/>
+            <Set name="sHeight"/>
+          </Control>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <Height>6.8</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#差错历史</Value>
+          <Style>
+            <Leading>5</Leading>
+          </Style>
+          <CanGrow>false</CanGrow>
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>6</ColSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableDetailSettings>
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting"/>
+  </TableGroupSettings>
+</ReportSettings>

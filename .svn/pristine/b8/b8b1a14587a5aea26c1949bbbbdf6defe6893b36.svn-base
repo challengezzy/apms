@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var endDate:Date= new Date();
+			[Bindable]
+			private var startDate:Date ;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var maintainArr:ArrayCollection;
+			[Bindable]
+			public var lineArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				startDate=DateUtil.moveDay(endDate,-3);
+				codeArr=new ArrayCollection([{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				flightWorkReportListPanel.simpleQueryPanel.height=0;
+
+			}
+			
+			protected function onQuery(event:MouseEvent):void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql ="";
+				querySql +=" select acnum,acmodel,apt_union,maintaintype,stda,T_ETD, t_eta,flightno_union,ac_stop,";
+				querySql +=" (select org.name from b_aircraft air,b_organization org where t.ACNUM=air.aircraftsn and air.baseorgid=org.id) orgname,";
+				querySql +=" (select bem.model from b_aircraft air,b_engine_model bem  where t.acnum=air.aircraftsn and air.engine_mode=bem.id ) engine_mode,";
+				querySql +=" duty_user,maintain_user,release_user,guardian_user,handover_user";
+				querySql +=" from v_flightsch_join_report t";
+				querySql +=" where t.apt = '"+dep_aptOrArr_apt.textInput.text+"'";
+				if(hours.text!=""){
+					querySql +=" and ((maintaintype in ('AF', 'PF', 'TR', 'AF+PF') and t.timefilter >= sysdate - 30 / (24 * 60) and";
+					querySql +=" t.timefilter <= sysdate + "+hours.text+" / 24) or (t.ACPORTSTATE = any('落地', '靠桥', '开舱', '关舱', '推出') and";
+					querySql +=" t.FLT_DATE = trunc(sysdate))) order by t.timefilter";
+				}else{
+					querySql +=" and ((maintaintype in ('AF', 'PF', 'TR', 'AF+PF') and t.timefilter >= sysdate - 30 / (24 * 60) and";
+					querySql +=" t.timefilter <= sysdate + 2 / 24) or (t.ACPORTSTATE = any('落地', '靠桥', '开舱', '关舱', '推出') and";
+					querySql +=" t.FLT_DATE = trunc(sysdate))) order by t.timefilter";
+				}
+				flightWorkReportListPanel.sql = querySql;
+				flightWorkReportListPanel.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightWorkReportListPanel.dataListGrid as DataGrid,"在港飞机列表");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" selectedIndex="0" labelField="val" width="80"/>
+			<mx:Label text="未来时间(默认2小时):"/>  
+			<s:TextInput id="hours" text="2"/>
+			<s:Spacer width="100%"/>
+			<mx:Button label="查询" width="100" click="onQuery(event)" />
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightWorkReportListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false" 
+									sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="飞机号" dataField="acnum"  width="55" />
+				<mx:DataGridColumn headerText="所属基地" dataField="orgname" width="140" />
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="50" />
+				<mx:DataGridColumn headerText="发动机型号" dataField="engine_mode" width="80" />
+				<mx:DataGridColumn headerText="执飞航班" dataField="flightno_union" width="120" />
+				<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="150" />
+				<mx:DataGridColumn headerText="维护类型" dataField="maintaintype" width="70"/>
+				<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="50"/>
+				<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="120" />
+				<mx:DataGridColumn headerText="预达" dataField="t_eta" width="80"/>
+				<mx:DataGridColumn headerText="预起" dataField="t_etd" width="80"/>
+				<mx:DataGridColumn headerText="放行人" dataField="release_user" width="70" />
+				<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="70" />
+				<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="70" />
+				<mx:DataGridColumn headerText="接机人" dataField="guardian_user" width="70" />
+				<mx:DataGridColumn headerText="出港人" dataField="handover_user" width="70" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

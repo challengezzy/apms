@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   creationComplete="creationCompleteHandler(event)" width="1000" height="100%"
+			   xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" />
+	</s:layout>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			
+			import mx.collections.XMLListCollection;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			
+			[Bindable]
+			public var contentXml:XML = <root>
+							<login>
+								<!-- 记录登录用户的信息，便于自动登录 -->
+								<username value=""/>
+								<password value=""/>
+							</login>
+							<datagrid_set>
+								<columns>
+									<!-- 记录每个列的顺序、宽度、和是否显示  -->
+									<column headerText="分公司" dataField="co_seq_name" width="50" visible="false" />
+									<column headerText="航班日期" dataField="flt_date_str" width="90" visible="true"/>
+									<column headerText="航班号" dataField="flightno_union" width="130" visible="true"/>
+									<column headerText="机号" dataField="acnum" width="65" visible="true"/>
+									<column headerText="机型" dataField="acmodel" width="50"  visible="true"/>
+									<column headerText="经停航站" dataField="apt_union" width="140"  visible="true"/>
+									<column headerText="维护" dataField="maintaintype" width="55"  visible="true"/>
+									<column headerText="计划到达/起飞" dataField="stda" width="120"  visible="true"/>
+									<column headerText="机位" dataField="ac_stop" width="45"  visible="true"/>
+									<column headerText="预达" dataField="t_eta" width="65"  visible="true"/>
+									<column headerText="预起" dataField="t_etd" width="65"  visible="true"/>
+									<column headerText="到达剩余" dataField="remain_min_arr" width="55" visible="true"/>
+									<column headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc" visible="true"/>
+									<column headerText="工作状态" dataField="workforce_state_name" width="70"  visible="true"/>
+									<column headerText="DD" dataField="flag_ddm" width="40"  visible="true"/>
+									<column headerText="提醒单" dataField="flag_tip" width="55"  visible="true"/>
+									<column headerText="故障" dataField="ishavefault" width="70"   visible="true"/>
+									<column headerText="告警" dataField="ishavewarning" width="70"  visible="true"/>
+									<column headerText="放行人" dataField="release_user" width="70"  visible="true"/>
+									<column headerText="维修人" dataField="maintain_user" width="70"  visible="true"/>
+									<column headerText="勤务人" dataField="duty_user" width="70"  visible="true"/>
+									<column headerText="接机人" dataField="guardian_user" width="70"  visible="true"/>
+									<column headerText="出港人" dataField="handover_user" width="70"  visible="true"/>
+									<column headerText="起飞剩余" dataField="remain_min_dep" width="55" visible="true"/>
+									<column headerText="OMIS备注" dataField="memo" width="180" visible="true"/>
+									<column headerText="航班备注" dataField="flightdesc" width="180" visible="true"/>
+								</columns>
+							</datagrid_set>
+							</root>;
+			
+			[Bindable]
+			private var columnList:XMLListCollection = new XMLListCollection();
+			
+			[Bindable]
+			private var content:String = "初始内容";
+			
+			private var so:SharedObject;
+			
+			private var initDgColumns:Array;
+			private var isFirstSet:Boolean = true;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				
+				so = SharedObject.getLocal("flightColumnSet");
+				
+				if(so.data.ContentXml == null){
+					columnList.source = contentXml.datagrid_set.columns.column;
+				}else{
+					contentXml = so.data.ContentXml as XML;
+					columnList.source = contentXml.datagrid_set.columns.column;
+					refreshFlightDatagrid();
+				}
+			}
+			
+			private function refreshFlightDatagrid():void{
+				//动态设置显示列
+				var newDgcolumns:Array = new Array();
+				
+				if( isFirstSet == true){
+					//获取原始最全的列记录
+					initDgColumns = flightDg.columns;
+					isFirstSet = false;
+				}
+				
+				flightDg.columns = initDgColumns;
+				var datagridWidth:Number = 10;
+				
+				for each(var column:XML in columnList){
+					var df:String = column.@dataField;
+					for each( var dgc:DataGridColumn in initDgColumns){
+						var dgcField:String = dgc.dataField;
+						if(df == dgcField && column.@visible=="true" ){
+							//添加到显示列
+							newDgcolumns.push(dgc);
+							
+							dgc.headerText = column.@headerText;
+							var colwidth:Number = new Number(column.@width);
+							dgc.width = colwidth;
+							dgc.visible = column.@visible=="true"?true:false;
+							
+							datagridWidth += colwidth;
+							break;
+						}
+					}
+				}
+				flightDg.columns = newDgcolumns;
+				flightDg.width = datagridWidth;
+			}
+			
+			protected function saveBtn_clickHandler(event:MouseEvent):void
+			{
+				refreshBtn_clickHandler(event);
+				
+				so.data.ContentXml = contentXml;
+				so.flush();
+				
+				refreshFlightDatagrid();
+				flightDg.validateNow();
+			}
+			
+			protected function clearBtn_clickHandler(event:MouseEvent):void
+			{
+				so.clear();
+				so.flush();
+			}
+			
+			protected function refreshBtn_clickHandler(event:MouseEvent):void
+			{
+				content = columnList.toString();
+				refreshFlightDatagrid();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:DataGrid width="800" height="300" editable="true" dataProvider="{columnList}"
+				 dragEnabled="true" dropEnabled="true" dragMoveEnabled="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="数据字段" editable="false" dataField="@dataField" width="120" />
+			<mx:DataGridColumn headerText="显示名称" editable="true" dataField="@headerText" width="60" />
+			<mx:DataGridColumn headerText="宽度" editable="true" dataField="@width" width="60"/>
+			<mx:DataGridColumn headerText="是否显示" editable="true" dataField="@visible" width="80"
+							   rendererIsEditor="true" editorDataField="value" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:HBox horizontalAlign="center" width="100%" 
+								 horizontalScrollPolicy="off" verticalScrollPolicy="off">
+							<fx:Script>
+								<![CDATA[
+									public function get value():String
+									{
+										return String( data.@visible );
+									}
+								]]>
+							</fx:Script>
+							
+							<mx:CheckBox id="isShowCheckBox" selected="{String(data.@visible)=='TRUE'||String(data.@visible)=='true'}"
+										 change="{data.@visible=isShowCheckBox.selected?'true':'false'}"/>
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="特殊效果" editable="true" dataField="@itemRenderer" width="120" visible="false"
+							   rendererIsEditor="true" editorDataField="value" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:HBox width="100%">
+							<fx:Script>
+								<![CDATA[
+									import mx.events.ListEvent;
+									import mx.managers.PopUpManager;
+									
+									import smartx.flex.components.util.TextAreaWindow;
+									public function get value():String{
+										return String( data.@itemRenderer );
+									}
+									
+									override public function set data(obj:Object):void{
+										super.data = obj;
+										if(itemRendererComboBox == null)
+											return;
+										if(String(obj.@itemRenderer) == ""){
+											itemRendererComboBox.selectedIndex = 0;
+											return;
+										}
+										for each (var item:Object in itemRendererArray){
+											if(String(obj.@itemRenderer) == item.value){
+												itemRendererComboBox.selectedItem = item;
+												return;
+											}
+										}
+										
+										itemRendererComboBox.selectedIndex = 1;
+									}
+									
+									private function itemRendererComboBox_changeHandler(event:ListEvent):void{
+										if(itemRendererComboBox.selectedItem.label != "自定义"){ 
+											data.@itemRenderer=itemRendererComboBox.selectedItem.value;
+										}
+										else{
+											var window:TextAreaWindow = new TextAreaWindow();
+											window.width = 300;
+											window.height = 300;
+											window.title = "输入自定义的数据项渲染器类名";
+											window.confirmFunc = function():void{
+												data.@itemRenderer=window.text;
+												PopUpManager.removePopUp(window);
+											};
+											PopUpManager.addPopUp(window,this,true);
+											PopUpManager.centerPopUp(window);
+											
+										}
+									}
+									
+								]]>
+							</fx:Script>
+							<mx:ComboBox id="itemRendererComboBox" 
+										 labelField="label" toolTip="一些特殊效果要求数据集中必须包括名为capacity的字段，特别的，双条柱还要求有used和free的字段"
+										 change="itemRendererComboBox_changeHandler(event)">
+								<mx:dataProvider>
+									<fx:Array id="itemRendererArray">
+										<fx:Object label="默认" value=""/>
+										<fx:Object label="自定义"/>
+										<fx:Object label="饼图" value="smartx.flex.components.util.render.PieRenderer"/>
+										<fx:Object label="五星" value="smartx.flex.components.util.render.StarRenderer"/>
+										<fx:Object label="圆圈" value="smartx.flex.components.util.render.CircleRenderer"/>
+										<fx:Object label="方块" value="smartx.flex.components.util.render.SquareRenderer"/>
+										<fx:Object label="条柱" value="smartx.flex.components.util.render.BarRenderer_Animated"/>
+										<fx:Object label="双条柱" value="smartx.flex.components.util.render.DoubleBarRenderer"/>
+									</fx:Array>
+								</mx:dataProvider>
+							</mx:ComboBox>
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:HBox width="100%" horizontalAlign="center">
+		<mx:Button label="刷新" id="refreshBtn" click="refreshBtn_clickHandler(event)" />
+		<mx:Button label="保存" id="saveBtn" click="saveBtn_clickHandler(event)" />
+		<mx:Button label="清除缓存" id="clearBtn" click="clearBtn_clickHandler(event)" />
+		<mx:Button label="设置" id="setBtn" icon="{smartx.flex.components.assets.AssetsFileLib.setIcon}" />
+	</mx:HBox>
+	<mx:HBox height="100%" width="100%" horizontalAlign="center">
+		<mx:TextArea width="800" height="100" text="{content}">
+			
+		</mx:TextArea>
+		
+	</mx:HBox>
+	<mx:VBox width="100%" height="100%" paddingBottom="5" paddingRight="20" paddingLeft="20">
+		<mx:DataGrid id="flightDg" width="100%" height="100">
+			<mx:columns>
+				<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="90" id="fltdateDgc"/>
+				<mx:DataGridColumn headerText="公司" dataField="iata_c_name" width="50" visible="false"/>
+				<mx:DataGridColumn headerText="分公司" dataField="co_seq_name" width="50" visible="false"/> 
+				<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="130" id="flightnoUnionDgc"/>
+				<mx:DataGridColumn headerText="机号" dataField="acnum" width="65"/>
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="50" />
+				<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="140" id="aptUnionDgc" />
+				<mx:DataGridColumn headerText="维护" dataField="maintaintype" width="55" id="maintaintypeDgc"/>
+				<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="120" id="stdaDgc"/>
+				<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="45" id="acstopDgc"/>
+				<mx:DataGridColumn headerText="预达" dataField="t_eta" width="65" id="etaDgc"/>
+				<mx:DataGridColumn headerText="预起" dataField="t_etd" width="65" id="etdDgc"/>
+				<mx:DataGridColumn headerText="到达剩余" dataField="remain_min_arr" width="55" visible="true"/>
+				<mx:DataGridColumn headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc"/>
+				<mx:DataGridColumn headerText="工作状态" dataField="workforce_state_name" width="70" id="workstateDgc"/>
+				<mx:DataGridColumn headerText="DD" dataField="flag_ddm" width="40" id="flagddDgc"/>
+				<mx:DataGridColumn headerText="提醒单" dataField="flag_tip" width="55" id="flagtipDgc"/>
+				<mx:DataGridColumn headerText="故障" dataField="ishavefault" width="70" id="isHaveFaults" />
+				<mx:DataGridColumn headerText="告警" dataField="ishavewarning" width="70" id="isHaveWarnings" />
+				<mx:DataGridColumn headerText="放行人" dataField="release_user" width="70" id="releaseUserDgc"/>
+				<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="70" id="maintainUserDgc" />
+				<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="70" id="dutyUserDgc" />
+				<mx:DataGridColumn headerText="接机人" dataField="guardian_user" width="70" id="guardianUserDgc" />
+				<mx:DataGridColumn headerText="出港人" dataField="handover_user" width="70" id="handoverUserDgc" />
+				<mx:DataGridColumn headerText="起飞剩余" dataField="remain_min_dep" width="55" visible="true"/>
+				<mx:DataGridColumn headerText="OMIS备注" dataField="memo" width="180"/>
+				<mx:DataGridColumn headerText="航班备注" dataField="flightdesc" width="180"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+</s:Application>

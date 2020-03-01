@@ -1,0 +1,639 @@
+<ReportSettings version="1.2">
+  <PageWidth>19.9</PageWidth>
+  <PageHeight>27.7</PageHeight>
+  <LeftMargin>0.5</LeftMargin>
+  <RightMargin>0.5</RightMargin>
+  <TopMargin>1</TopMargin>
+  <BottomMargin>1</BottomMargin>
+  <PageHeaderRepeat>false</PageHeaderRepeat>
+  <ShowPageNumber>true</ShowPageNumber>
+  <PageNumberFormat>{0}/{1}</PageNumberFormat>
+  <PageHeaderSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@工卡号</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+            <FontSize>18</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <Width>9</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>航材工具列表</Value>
+          <Style>
+            <FontSize>18</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <Width>9</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageHeaderSettings>
+  <PageFooterSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>打印时间：</Value>
+          <Width>2.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@打印时间</Value>
+          <Format>yyyy-MM-dd HH:mm:ss</Format>
+          <Width>12.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>打印人:</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+          </Style>
+          <Width>1.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@打印人</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+          </Style>
+          <Width>2.3</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageFooterSettings>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.7</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.4</Width>
+    </ItemSetting>
+  </TableColumnSettings>
+  <TableDetailSettings>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#名称</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#件号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#规格</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#数量</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#备注</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableDetailSettings>
+  <TableFooterSettings>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@通用工具参数</SubReportParameters>
+      <SubReportTable>=@通用工具表格</SubReportTable>
+      <TableHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Style>
+                <FontSize>10</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>通用工具：</Value>
+              <Style>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>规格</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>数量</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>备注</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#规格</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#数量</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#备注</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@化工件参数</SubReportParameters>
+      <SubReportTable>=@化工件表格</SubReportTable>
+      <TableHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Style>
+                <FontSize>10</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>化工件：</Value>
+              <Style>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>SAP物料号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>替代号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>备注</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#物料号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#替代号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#备注</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@航材表格参数</SubReportParameters>
+      <SubReportTable>=@航材表格</SubReportTable>
+      <GroupEnabled>true</GroupEnabled>
+      <TableHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Style>
+                <FontSize>10</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>航材：</Value>
+              <Style>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>件号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>SAP物料号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>数量</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>IPC</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#件号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#物料号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#数量</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#手册名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+  </TableFooterSettings>
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting">
+      <GroupSize>50</GroupSize>
+      <Enabled>true</Enabled>
+      <TableGroupHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <Height>1</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>特殊工具：</Value>
+              <Style>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <LeftBorder>false</LeftBorder>
+                <RightBorder>false</RightBorder>
+                <TopBorder>false</TopBorder>
+              </Style>
+              <ColSpan>10</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>名称</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>件号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>规格</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting">
+              <Value>数量</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>备注</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableGroupHeaderSettings>
+    </ItemSetting>
+  </TableGroupSettings>
+</ReportSettings>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   initialize="initHandler(event)"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="920" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A05CFM报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			//绑定表格用的数据    
+			[Bindable]  
+			private var arr0:ArrayCollection;
+			[Bindable]  
+			private var arr1:ArrayCollection;
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a05cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a05cData:Object;//译后报文内容
+			
+			
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ert_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ert_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ap_2:String;
+			
+			[Bindable]
+			private var ecw2_n1:String;
+			[Bindable]
+			private var ecw5_n1:String;
+			[Bindable]
+			private var evm_n1:String;
+			[Bindable]
+			private var ecw2_n2:String;
+			[Bindable]
+			private var ecw5_n2:String;
+			[Bindable]
+			private var evm_n2:String;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+
+			[Bindable]
+			private var initCondition:String;
+			[Bindable]
+			private var a05cArr:ArrayCollection = new ArrayCollection();
+						
+			private function creationComplete():void
+			{
+				a05cData = a05cvo.dataMap;
+				
+				esn_1 = a05cData['esn_1'];
+				ehrs_1 = a05cData['ehrs_1'];
+				ert_1 = a05cData['ert_1'];
+				ecyc_1 = a05cData['ecyc_1'];
+				ap_1 = a05cData['ap_1'];
+				esn_2 = a05cData['esn_2'];
+				ehrs_2 = a05cData['ehrs_2'];
+				ert_2 = a05cData['ert_2'];
+				ecyc_2 = a05cData['ecyc_2'];
+				ap_2 = a05cData['ap_2'];
+				
+				ecw2_n1 = a05cData['ecw2_n1'];
+				ecw5_n1 = a05cData['ecw5_n1'];
+				evm_n1 = a05cData['evm_n1'];
+				ecw2_n2 = a05cData['ecw2_n2'];
+				ecw5_n2 = a05cData['ecw5_n2'];
+				evm_n2 = a05cData['evm_n2'];
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				a05cData = a05cvo.dataMap;
+				var msg_no:String = a05cData['msg_no'];
+				
+				initCondition = " MSG_NO = " + msg_no;
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A05 CFM报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" >
+		<mx:HDividedBox width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文  ENGINE REPORT O/R(05)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片"/>	
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE REPORT O/R(05)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a05cvo}" height="190"/>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ERT" color="red" width="60"/><mx:Label text="ECYC" color="red" width="60"/>
+					<mx:Label text="AP" color="red" width="60"/>					
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="发动机序号" color="blue" width="60"/><mx:Label text="发动机小时" color="blue" width="60"/>
+					<mx:Label text="ERT" color="blue" width="60"/><mx:Label text="ECYC" color="blue" width="60"/>
+					<mx:Label text="AP" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ert_1}" width="60"/><mx:Label text="{ecyc_1}" width="60"/>
+					<mx:Label text="{ap_1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ert_2}" width="60"/><mx:Label text="{ecyc_2}" width="60"/>
+					<mx:Label text="{ap_2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ECW2" color="red" width="60"/><mx:Label text="ECW5" color="red" width="60"/>
+					<mx:Label text="EVM" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ECW2" color="blue" width="60"/><mx:Label text="ECW5" color="blue" width="60"/>
+					<mx:Label text="EVM" color="blue" width="60"/>
+				</mx:HBox>			
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="PRE EVENT, 1 SEC INTERVAL" fontWeight="bold" />
+				</mx:HBox>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="100%" id="listPanel" 
+									templetCode="T_A_DFD_A05C_LIST_DATA" debugMode="false"
+									initQueryCondition="{initCondition}"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+							
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

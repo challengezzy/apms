@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   initialize="initializeHandler(event)"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="450" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="航班计划生成" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightCreate" result="result4flightCreate(event)" 
+					   fault="fault4flightCreate(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleComboxItemVO;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var typeArr:ArrayCollection = new ArrayCollection([
+				{value:"TR",desc:"TR"},{value:"AF",desc:"AF"},{value:"PF",desc:"PF"},
+				{value:"AF+PF",desc:"AF+PF"}		]);
+			
+			public var templateObj:Object; //航班计划模板对象
+			
+			[Bindable]
+			public var acnum:String = "";
+			[Bindable]
+			public var acmodel:String = "";
+			[Bindable]
+			public var flightno:String = "";
+			
+			[Bindable]
+			private var dateBegin:Date; //航班日期
+			
+			[Bindable]
+			private var dateEnd:Date; //航班日期
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				dateBegin = DateUtil.moveDay(new Date(),+1);
+				dateEnd = DateUtil.moveDay(new Date(),+6);
+			}
+			
+			private function creationComplete():void
+			{
+				cmbMainTypeDep.selectedIndex = 0 ;
+				cmbMainTypeArr.selectedIndex = 0 ;
+				
+			}
+			
+			protected function cardPanel_initCompleteHandler(event:BillCardPanelEvent):void
+			{
+				fltCardPanel.setDataValue(templateObj);
+			}
+			
+			protected function onOkClickHandler(event:MouseEvent):void
+			{
+				//先验证数据是否正确
+				dateBegin = fltdate_begin.nowTime;
+				dateEnd = fltdate_end.nowTime;
+				
+				if(dateBegin.getTime() > dateEnd.getTime()){
+					SmartXMessage.show("开始日期不能大于结束日期 !");
+				}
+				
+				if( fltCardPanel.validateData() == false){
+					return;
+				}
+				
+				if( DateUtil.isHourMinute(templateObj["STD"]) == false ){
+					SmartXMessage.show("起飞时间数据格式不正确，应为HH24:MM60 !");
+					return;
+				}
+				if( DateUtil.isHourMinute(templateObj["STA"]) == false ){
+					SmartXMessage.show("到达时间数据格式不正确，应为HH24:MM60 !");
+					return;
+				}
+				
+				if(cmbMainTypeDep.selectedItem == null || cmbMainTypeDep.selectedItem.value == ""){
+					SmartXMessage.show("起飞前维护类型不能为空!");
+					return
+				}
+				
+				//检验数据结束
+				templateObj = fltCardPanel.getDataValue();
+				
+				if( templateObj["ACNUM"] != null ){
+					var acnumRef:SimpleRefItemVO = templateObj["ACNUM"] as SimpleRefItemVO;
+					acmodel = acnumRef.code;
+					acnum = acnumRef.id;
+				}
+				
+				
+				flightno = templateObj["FLIGHTNO"];
+				
+				var iataRef:SimpleRefItemVO = templateObj["IATA_C"] as SimpleRefItemVO;
+				var coseqCmb :SimpleComboxItemVO = templateObj["CO_SEQ"]  as SimpleComboxItemVO;
+				var flttaskCmb :SimpleComboxItemVO = templateObj["FLT_TASK"]  as SimpleComboxItemVO;
+				var looptypeCmb :SimpleComboxItemVO = templateObj["LOOPTYPE"]  as SimpleComboxItemVO;
+				var depRef:SimpleRefItemVO = templateObj["DEP_APT"] as SimpleRefItemVO;
+				var arrRef:SimpleRefItemVO = templateObj["ARR_APT"] as SimpleRefItemVO;
+				
+				var fltTempObj:Object = new Object();
+				fltTempObj["DATEBEGIN"] = dateBegin;
+				fltTempObj["DATEEND"] = dateEnd;
+				fltTempObj["ACNUM"] = acnum;
+				fltTempObj["ACMODEL"] = acmodel;
+				fltTempObj["IATA_C"] = iataRef.id ;
+				fltTempObj["CO_SEQ"] = coseqCmb.id;
+				fltTempObj["FLT_TASK"] = flttaskCmb.id;
+				fltTempObj["FLT_SEQ"] = templateObj["FLT_SEQ"];
+				
+				fltTempObj["DEP_APT"] = depRef.id;
+				fltTempObj["ARR_APT"] = arrRef.id;
+				fltTempObj["FLIGHTNO"] =  flightno;
+				fltTempObj["STD"] = templateObj["STD"] ;
+				fltTempObj["STA"] = templateObj["STA"] ;
+				fltTempObj["LOOPINTERVAL"] = templateObj["LOOPINTERVAL"] ;
+				fltTempObj["LOOPTYPE"] = looptypeCmb.id;
+				fltTempObj["FLIGHTDESC"] = textFltDesc.text;
+				fltTempObj["FLTTYPE_DEP"] = cmbMainTypeDep.selectedItem.value;
+				fltTempObj["FLTTYPE_ARR"] = cmbMainTypeArr.selectedItem.value;
+				
+				if(templateObj["WEEKDAY_0"] != null) 
+					fltTempObj["WEEKDAY_0"] = templateObj["WEEKDAY_0"].id; 
+				
+				if(templateObj["WEEKDAY_1"] != null) 
+					fltTempObj["WEEKDAY_1"] = templateObj["WEEKDAY_1"].id; 
+				
+				if(templateObj["WEEKDAY_2"] != null) 
+					fltTempObj["WEEKDAY_2"] = templateObj["WEEKDAY_2"].id; 
+				
+				if(templateObj["WEEKDAY_3"] != null) 
+					fltTempObj["WEEKDAY_3"] = templateObj["WEEKDAY_3"].id; 
+				
+				if(templateObj["WEEKDAY_4"] != null) 
+					fltTempObj["WEEKDAY_4"] = templateObj["WEEKDAY_4"].id;
+				
+				if(templateObj["WEEKDAY_5"] != null) 
+					fltTempObj["WEEKDAY_5"] = templateObj["WEEKDAY_5"].id;
+				
+				if(templateObj["WEEKDAY_6"] != null) 
+					fltTempObj["WEEKDAY_6"] = templateObj["WEEKDAY_6"].id; 
+
+				
+				srvFlight.flightCreate(user, fltTempObj);
+				OperatingTipUtil.startOperat("正在生成!");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightCreate(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("生成航班["+flightno+"],日期["+fltdate_begin.text+"]->["+fltdate_end.text+"]数据失败！"
+					,SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4flightCreate(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("生成航班["+flightno+"],日期["+fltdate_begin.text+"]->["+fltdate_end.text+"]数据成功！");
+				PopUpManager.removePopUp(this);
+				
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="5">
+		<mx:HBox width="100%" verticalAlign="middle" height="28">
+			<mx:Label text="计划时间段" fontWeight="bold" />
+			<mx:Label text="开始日期" width="60"/>
+			<component:DateTimeChooser id="fltdate_begin" nowTime="{dateBegin}" editable="true" formatterType="2" />
+			<mx:Label text="->" />
+			<mx:Label text="结束日期"  width="60"/>
+			<component:DateTimeChooser id="fltdate_end" nowTime="{dateEnd}" editable="true" formatterType="2" />
+		</mx:HBox>
+		<mx:HBox width="100%" verticalAlign="middle" height="28">
+			<s:Spacer width="10" />
+			<mx:Label text="起飞维护"  width="60"/>
+			<mx:ComboBox id="cmbMainTypeDep" dataProvider="{typeArr}" labelField="desc" color="red" />
+			<s:Spacer width="15" />
+			<mx:Label text="落地维护"  width="60"/>
+			<mx:ComboBox id="cmbMainTypeArr" dataProvider="{typeArr}" labelField="desc" color="red" />
+			<s:Spacer width="15" />
+			<mx:Label text="航班备注"  width="60"/>
+			<mx:TextInput id="textFltDesc"  width="200"/>
+			
+		</mx:HBox>
+		<s:Spacer height="5" />
+		<core:BillCardPanel id="fltCardPanel" width="100%" height="100%" editable="true" insertMode="false"
+							endpoint="{endpoint}" templetCode="T_FLIGHTSCH_TEMPLATE_CREATE"
+							initComplete="cardPanel_initCompleteHandler(event)" defaultItemUIComponentLabelWidth="60"
+							layoutType="{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}"
+							>
+		</core:BillCardPanel>
+		
+		<mx:HBox width="100%" height="30" horizontalAlign="center" verticalAlign="middle">
+			<mx:Button label="生成航班计划" click="onOkClickHandler(event)" />
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

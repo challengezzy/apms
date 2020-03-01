@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+//			[Bindable]
+//			private var endTime:Date = new Date();
+//			[Bindable]
+//			private var beginTime:Date = new Date();
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var lineArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				lineArr=new ArrayCollection([{val:""},{val:"航线虹桥维修车间"},{val:"航线浦东维修车间"},{val:"宽体机维修车间"}]);
+				workerListPanel.simpleQueryPanel.height=0;
+				
+//				beginTime = DateUtil.moveDay(new Date(),-7);
+				dep_aptOrArr_apt.selectedIndex=0;
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql ="";
+				querySql +=" select  ";
+				querySql +=" (select min(apt.code_3) from b_airport apt ,b_user u where f.release_user=u.name and u.airportid=apt.id) apt_code_3,";
+				querySql +=" (select min(org.name) from b_user u,b_organization org where f.release_user=u.name and u.orgid_line=org.id) orgline,";
+				querySql +=" f.release_user name,";
+				querySql +=" (select am.modelcode from b_aircraft air, b_aircraft_model am where air.aircraftsn = f.acnum and air.acmodelid = am.id) acmodel,";
+				querySql +=" f.FLT_DATE_STR,f.FLIGHTNO_UNION,acnum,f.MAINTAINTYPE";
+				querySql +=" from v_flightsch_join_report f";
+				querySql +=" where f.release_user is not null";
+				querySql +=" and not exists (select 1 from B_USER_CAPACITY uc,b_user u where uc.userid = u.id";
+				querySql +=" and f.release_user=u.name and uc.acmodel_capacity=(select am.modelcapacity";
+				querySql +="  from b_aircraft air, b_aircraft_model am where air.aircraftsn = f.acnum";
+				querySql +="  and air.acmodelid = am.id) and uc. LEVEL_CAPACITY>=40)";
+				if(dep_aptOrArr_apt.textInput.text!=""){
+					querySql +=" and 0<(select count(1) from b_user u,b_airport apt where f.release_user=u.name and u.airportid=apt.id and  apt.CODE_3='"+dep_aptOrArr_apt.textInput.text+"')";
+				}
+				if(orgline.textInput.text!=""){
+					querySql +=" and 0<(select count(1) from b_user u,b_organization org where f.release_user=u.name and u.orgid_line=org.id and org.name='"+orgline.textInput.text+"')";
+				}
+				querySql +=" order by f.FLT_DATE desc";
+				workerListPanel.sql = querySql;
+				workerListPanel.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(workerListPanel.dataListGrid as DataGrid,"放行但无权限列表");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="车间:"/>  
+			<s:ComboBox id="orgline" dataProvider="{lineArr}" labelField="val" width="120"/>
+			<s:Spacer width="20"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="workerListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="机场" dataField="apt_code_3"  width="150"/>
+				<mx:DataGridColumn headerText="航线车间" dataField="orgline" width="150"/>
+				<mx:DataGridColumn headerText="姓名" dataField="name" width="100"/>
+				<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="150"/>
+				<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="150"/>
+				<mx:DataGridColumn headerText="机号" dataField="acnum" width="100"/>
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="100"/>
+				<mx:DataGridColumn headerText="维护类型" dataField="maintaintype"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

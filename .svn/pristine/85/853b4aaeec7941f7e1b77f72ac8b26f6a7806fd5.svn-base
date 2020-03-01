@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   initialize="initializeHandler(event)"
+			   showCloseButton="true"
+			   title="告警信息"
+			   width="750" height="450" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.fdimu.ApuFdimuFileUpload;
+			import com.apms.flex.modules.fdimu.FileDownloadWindow;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var destination:String = ApmsUIConst.APMS_SERVICE;
+			private var formService:RemoteObject=new RemoteObject;
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			private var flrQuerySql:String = "";
+			[Bindable]
+			private var mpfQuerySql:String = "";
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var listPanel:AdvDataGridPanel;
+			private var wid:Number;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				flrQuerySql = " select acw.warn_content,to_char(acw.reporttime,'yyyy-mm-dd hh24:mi:ss') reporttimestr" +
+					" from a_cfd_head ach,a_cfd_warning acw  " +
+					" where (ach.flightid="+selObj["flt_pk_a"]+" or ach.flightid="+selObj["flt_pk_d"]+") and ach.msg_no=acw.msg_no   order  by acw.reporttime";
+				warnListDg.refresh();
+			}
+		]]>
+	</fx:Script>
+		
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	<mx:VBox id="faultVB"  label="CFD故障内容" width="100%" height="100%" >
+		
+		<component:AdvDataGridPanel id="warnListDg" width="100%" height="100%" sql="{flrQuerySql}" dataSource="{apmsDs}" >
+			<component:columns>			
+				<mx:DataGridColumn dataField="warn_content" headerText="告警内容" width="500"/>
+				<mx:DataGridColumn dataField="reporttimestr" headerText="报文时间" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:TitleWindow>

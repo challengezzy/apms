@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="100%" height="100%"
+					   initialize="init()"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:bill="com.cool.components.bill.*" 
+					   xmlns:component="com.apms.flex.component.*"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var condStr:String = " 1=2 ";
+			
+			private var nowDate:Date = new Date();
+			[Bindable]
+			public var first_dateToDate:Date;
+			[Bindable]
+			public var end_dateToDate:Date;
+			public function set acnum(_acnum:String):void{
+				this.acid = _acnum;
+				condStr = " FLT_DATE>=sysdate-7 AND FLT_DATE<=sysdate+7 AND ACNUM='"+acid+"' ";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					
+					//查询未关闭和延期的DD单
+					listPanel.query(false,false,true);
+				}
+			}
+			/**
+			 *点击查询
+			 */
+			private function selectedQuery():void{
+				var first_dateToDateStr:String;
+				var end_dateToDateStr:String;
+				if(first_date.text==null){
+					SmartXMessage.show("开始日期不能为空！");
+				}else{
+					first_dateToDateStr=first_date.text;
+				}
+				if(end_date.text==null){
+					SmartXMessage.show("结束日期不能为空！");
+				}else{
+					end_dateToDateStr=end_date.text;
+				}
+				
+				condStr="FLT_DATE>=to_date('"+first_dateToDateStr+"','YYYY-MM-DD HH24:MI:SS') AND FLT_DATE<=to_date('"+
+					end_dateToDateStr+"','YYYY-MM-DD HH24:MI:SS') AND ACNUM='"+acid+"' ";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					//查询未关闭和延期的DD单
+					listPanel.query(false,false,true);
+				}
+				cardPanel.setDataValue(null);
+			}
+			private function init():void{
+				first_dateToDate=DateUtil.moveDay(nowDate,-7);
+				end_dateToDate=DateUtil.moveDay(nowDate,7);
+				listPanel.addEventListener(BillListPanelEvent.INITCOMPLETE,onBillListInitCompleteHandler);
+			}
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListPanelItemClickHandler(event:ListEvent):void{
+				var selectedObj:Object = listPanel.getSelectedRowValue();
+				cardPanel.setDataValue(selectedObj);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="开始日期：" />
+			<component:DateTimeChooser id="first_date" nowTime="{first_dateToDate}" />
+			<mx:Label text="结束日期："/>
+			<component:DateTimeChooser id="end_date" nowTime="{end_dateToDate}" />
+			<s:Button label="查询" click="selectedQuery()"/>
+		</mx:HBox>
+		
+		<mx:VDividedBox width="100%" height="100%">
+			<bill:BillListPanel id="listPanel" height="140" width="100%" initQueryCondition="{condStr}" showDataAfterInit="true"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" 
+								showQuickQueryPanel="false" showLoadingWindow="true" showPageBox="false"
+								endpoint="{endpoint}" templetCode="T_FLIGHTSCH_MONITOR_CARD"
+								>
+				
+			</bill:BillListPanel>
+			<core:BillCardPanel id="cardPanel" width="100%" height="100%" editable="false" insertMode="false"
+								endpoint="{endpoint}" templetCode="T_FLIGHTSCH_MONITOR_CARD"
+								layoutType="{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}" defaultItemUIComponentLabelWidth="80"
+								>
+				
+			</core:BillCardPanel>
+		</mx:VDividedBox>
+	</mx:VBox>
+</mx:VBox>

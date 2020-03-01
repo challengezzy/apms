@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="creationCompleteHandler(event)"
+		 width="800" height="400" 
+		 xmlns:component="com.apms.flex.component.*"
+		 xmlns:datagrid="com.cool.components.datagrid.*"
+		 xmlns:containers="net.brandonmeyer.containers.*"
+		 xmlns:item="com.cool.components.item.*"
+		 close="PopUpManager.removePopUp(this)"
+		 allowDrag="true" allowClose="true"  title="停靠航班"
+		 allowMaximize="true" allowMinimize="true" allowResize="true">
+	
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="flightService" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.vo.GlobalConst;
+
+			
+			[Bindable] 
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			public var ap_positioncode:String;
+			[Bindable]
+			public var ap_code:String;
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var querySql:String = "";
+			
+			private var queryFilter:String = "1=1";
+			
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			
+			public function creationCompleteHandler(event:FlexEvent):void
+			{
+				flightListPanel.simpleQueryPanel.height=0;
+				querySql = " select datatype, flt_date, flt_date_str, iata_c, iata_c_name, co_seq, co_seq_name, acnum, acmodel,acmodelid ";
+				querySql += "   , apt, maintaintype, workforce_state, workforce_state_name ";
+				querySql += "   , ac_stop,isconfirmed, isconfirmed_name,islockedin,islockedin_name ";
+				querySql += "   ,memo,flightdesc, flt_pk_a, flt_pk_d, flightno_union,flightno_a,flightno_d, apt_union ";
+				querySql += "   , stda, sta, std, cta, ctd,eta,etd,t_eta, t_etd ,remain_min_arr,remain_min_dep ";
+				querySql += " ,duty_user,maintain_user,release_user,guardian_user,handover_user ";
+				querySql += " , ac_state_a, ac_state_name_a, ac_state_d, ac_state_name_d, acportstate"
+				querySql += ", dd_flag, m_flag ,dd_flag||m_flag flag_dd ";
+				querySql += " ,s_tip,j_tip,g_tip,c_tip,uc_tip ,s_tip||j_tip||g_tip||c_tip flag_tip ";
+				querySql += "   , chgalternum,chglognum,timefilter ";
+				querySql += " from v_flightsch_join t ";
+				querySql += " where t.apt = '"+ap_code+"' and t.ac_stop='"+ap_positioncode+"'  and t.cancel_flag=0 ";
+				querySql += "   AND timefilter >= sysdate-1/24 and timefilter <=sysdate + 1  ";
+				querySql += " and " + queryFilter;
+				
+				querySql += " order by chgalternum,datatype,timefilter asc";
+				
+				flightListPanel.sql = querySql;
+				flightListPanel.refresh();
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10">
+		<component:AdvDataGridPanel id="flightListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+			<component:columns>
+				<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="115" id="flightnoUnionDgc"/>
+				<mx:DataGridColumn headerText="机号" dataField="acnum" width="55	"/>
+				<mx:DataGridColumn headerText="机位" dataField="ac_stop" width="40" id="acstopDgc"/>
+				<mx:DataGridColumn headerText="预达" dataField="t_eta" width="55" id="etaDgc"/>
+				<mx:DataGridColumn headerText="计划到达/起飞" dataField="stda" width="110" id="stdaDgc"/>
+				<mx:DataGridColumn headerText="预起" dataField="t_etd" width="55" id="etdDgc"/>
+				<mx:DataGridColumn headerText="维护" dataField="maintaintype" width="45"/>
+				<mx:DataGridColumn headerText="机型" dataField="acmodel" width="45" />
+				<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="110" id="aptUnionDgc" />
+				<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="85" id="fltdateDgc"/>
+				<mx:DataGridColumn headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc"/>
+				<mx:DataGridColumn headerText="工作状态" dataField="workforce_state_name" width="70" id="workstateDgc"/>
+				<mx:DataGridColumn headerText="DD" dataField="flag_ddm" width="40" id="flagddDgc"/>
+				<mx:DataGridColumn headerText="提醒单" dataField="flag_tip" width="55" id="flagtipDgc"/>
+				<mx:DataGridColumn headerText="放行人" dataField="release_user" width="70" id="releaseUserDgc"/>
+				<mx:DataGridColumn headerText="维修人" dataField="maintain_user" width="70" id="maintainUserDgc" />
+				<mx:DataGridColumn headerText="勤务人" dataField="duty_user" width="70" id="dutyUserDgc" />
+				<mx:DataGridColumn headerText="OMIS备注" dataField="memo" width="120"/>
+				<mx:DataGridColumn headerText="航班备注" dataField="flightdesc" width="120"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+	<s:Spacer height="5" />
+	<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28" paddingBottom="5">
+		<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+	</mx:HBox>
+</containers:SuperPanel>

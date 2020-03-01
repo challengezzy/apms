@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" width="100%" height="100%" xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.component.CellColorRender;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			
+			private var baseOrgId:String ;//所属基地id
+			private var arrApCode3:String; //落地机场三字代码
+			
+			private var oxyMinPress:Number;//氧气瓶更换时最小压力
+			private var maxChgNum:Number;//每天最大更换数据
+			private var preDayNum:Number;//预测天数
+			private var minPresFilter:Number;//参与计算的氧气瓶压力过滤
+			private var estimateTemp:Number;//估计落地机场温度
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//远程服务添加监听
+				apmsService.getOxyBottlePreChangeData.addEventListener(ResultEvent.RESULT,oxyBottleChangleOkHandler);
+				apmsService.getOxyBottlePreChangeData.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				//添加参照控件
+				var orgItemVO:TempletItemVO = new TempletItemVO();
+				orgItemVO.itemtype="参照";
+				orgItemVO.itemname="选择飞机属性基地";
+				orgItemVO.itemkey="ACNUM";
+				orgItemVO.refdesc="SELECT ID ID#,CODE CODE#,NAME FROM B_ORGANIZATION WHERE ORGLEVEL=1;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(orgItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取组织ID
+						baseOrgId = acRefPanel.returnVO.id;
+					}else{
+						baseOrgId = null;
+					}
+				});	
+				
+				var apItemVo:TempletItemVO = new TempletItemVO();
+				apItemVo.itemtype="参照";
+				apItemVo.itemname="选择落地机场";
+				apItemVo.itemkey="ARRIVE_AIRPORT";
+				apItemVo.refdesc="SELECT ID ID#,NAME 机场名,CODE_3 三字代码 FROM B_AIRPORT;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apItemVo,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取机场的3字代码
+						arrApCode3 = apuRefPanel.returnVO.name;
+					}else{
+						arrApCode3 = null;
+					}
+				});	
+				
+				baseBox.addChild(acRefPanel);
+				apBox.addChild(apuRefPanel);
+				
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				oxyMinPress = new Number(oxyMinPresText.text);
+				maxChgNum = new Number(maxChgNumText.text);
+				preDayNum = new Number(preDaysText.text);
+				minPresFilter = new Number(minPresFilterText.text);
+				estimateTemp = new Number(estimateTempText.text);
+					
+				if( (baseOrgId == null || baseOrgId=="") && ( arrApCode3 == null || arrApCode3 =="") ){
+					SmartXMessage.show("必须选择所属基地或者落地机场！");
+					return;
+				}
+				
+				var condObj:Object = new Object();
+				condObj["OXYMINPRESS"] = oxyMinPress;
+				condObj["MAXCHGNUM"] = maxChgNum;
+				condObj["PREDAYNUM"] = preDayNum;
+				condObj["BASEORGID"] = baseOrgId;
+				condObj["ARRAPCODE3"] = arrApCode3;
+				condObj["MINPRESFILTER"] = minPresFilter;
+				condObj["ESTIMATETEMP"] = estimateTemp;
+				
+				var colArr:Array = new Array();
+				
+				var gridColumn:DataGridColumn = new DataGridColumn();
+				gridColumn.headerText = "所属基地";
+				gridColumn.dataField = "ORGNAME";
+				gridColumn.width = 100;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "机号";
+				gridColumn.dataField = "ACNUM";
+				gridColumn.width = 70;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "最新报文压力";
+				gridColumn.dataField = "LASTPRESS46";
+				gridColumn.width = 75;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "最新报文时间";
+				gridColumn.dataField = "LASTUTCDATE";
+				gridColumn.width = 145;
+				colArr = colArr.concat(gridColumn);
+				
+				var today:Date = new Date();
+				for(var i:int=0;i<preDayNum;i++) {
+					
+					var dayField:String = DateUtil.dateToString( DateUtil.moveDay(today,i) ,2);
+					var colorField:String = "CHG"+dayField;
+					var dataTipField:String = "TIP"+dayField;
+					
+					var dayColumn:DataGridColumn= new DataGridColumn();
+					dayColumn.dataField = dayField;
+					dayColumn.headerText = dayField;
+					dayColumn.width = 100;
+					
+					var render:ClassFactory = new ClassFactory(CellColorRender);
+					render.properties = {dataField:dayField,dataTipField:dataTipField ,colorField:colorField,colorFunc:getColor};					
+					dayColumn.itemRenderer = render;
+					
+					colArr = colArr.concat(dayColumn);
+				}
+				listPanel.columns = colArr;;
+				
+				var dataArr:ArrayCollection = new ArrayCollection();
+				listPanel.dataArray = dataArr;
+				
+				apmsService.getOxyBottlePreChangeData(condObj);
+				OperatingTipUtil.startOperat("正在进行拆换预测计算....",this);
+			}
+			
+			//获取染色值
+			private function getColor(dataField:String,value:Object,colorField:String):String{
+				if( value[colorField]== "1" ){
+					return "0xFF0000";//红色
+				}else{
+					return "0xFFFFFF";//白色
+				}
+			}
+			
+			private function oxyBottleChangleOkHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				var exitflag:String = res["EXITFLAG"];
+				
+				if(exitflag != "1"){
+					var outputmsg:String = res["OUTPUTMSG"];
+					SmartXMessage.show("规划求解失败，可能无解，请调整预测参数,EXITFLAG="+ exitflag ,SmartXMessage.MESSAGE_WARN,outputmsg);
+					
+				}
+				
+				var dataArr:ArrayCollection = res["DATALIST"];
+				listPanel.dataArray = dataArr;
+				listPanel.refresh();
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("拆换预测计算时异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				listPanel.exportAllData("氧气瓶未来压力更换预测");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" horizontalGap="1" width="100%" height="30" paddingLeft="1">
+			<mx:HBox id="baseBox">
+				<mx:Label text="所属基地"/>
+			</mx:HBox>
+			<mx:HBox id="apBox">
+				<mx:Label text="落地机场"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="预测天数:"/>
+				<mx:TextInput id="preDaysText" restrict="0-9\-\." width="30" text="7"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="每天拆换限制:"/>
+				<mx:TextInput id="maxChgNumText" restrict="0-9\-\." width="30" text="2"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="更换压力阀值:"/>
+				<mx:TextInput id="oxyMinPresText" restrict="0-9\-\." width="48" text="1600" toolTip="氧气瓶的最低压力值"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="最低压力过滤:"/>
+				<mx:TextInput id="minPresFilterText" restrict="0-9\-\." width="48" text="1700" toolTip="目前氧气瓶压力大于些值的不参与计算"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="估计温度℃:"/>
+				<mx:TextInput id="estimateTempText" restrict="0-9\-\." width="32" text="20" toolTip="落地机场未来的温度估计"/>
+			</mx:HBox>
+			<mx:Button label="预测计算" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<mx:VBox label="APU小时循环统计" width="100%" height="100%">
+			<component:AdvDataGridPanel id="listPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" 
+										dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn headerText="所属基地" dataField="ORGNAME" width="100"/>
+					<mx:DataGridColumn headerText="机号" dataField="ACNUM" width="100"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

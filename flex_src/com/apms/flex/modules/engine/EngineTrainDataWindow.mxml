@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="creationComplete()"
+				initialize="init()"
+				showCloseButton="true"
+				title="发动机样本数据新增"
+				width="400" height="380" verticalGap="2"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var curMsgNo:String;
+			
+			[Bindable]
+			public var utcDate:String;
+			
+			[Bindable]
+			public var position:String;
+			[Bindable]
+			public var number:String;
+			[Bindable]
+			public var value:String;
+			
+			[Bindable]
+			public var acnum:String;
+			
+			public var chartName:String;
+			public var curObj:Object;
+			public var insertedFunc:Function;
+			
+			[Bindable]
+			public var datatype:String;
+			[Bindable]
+			public var comments:String;
+			[Bindable]
+			public var buttonLabel:String;
+		
+			[Bindable]
+			public var rptNo:String;
+			[Bindable]
+			public var engineType:String;
+			
+			[Bindable]
+			private var engineDataType:ArrayCollection = new ArrayCollection();
+//			[
+//				{value:"1",desc:"正常"},
+//				{value:"2",desc:"性能衰退"},
+//				{value:"3",desc:"滑油冷却器"},
+//				{value:"4",desc:"散热器"}]
+		
+			
+
+			
+			[Bindable]
+			public var exixt:Boolean;
+			private var formService:RemoteObject;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+
+			private var destination:String = ApmsUIConst.NEURALNETSERVICE;
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+
+
+			private function init():void{
+				formService = new RemoteObject(GlobalConst.SERVICE_FORM);
+				formService.endpoint = endpoint_Global;
+				formService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,SimpleHashVoArrayByDSHandler);					
+				formService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,function(event:FaultEvent):void{
+					SmartXMessage.show("获取样本数据分类失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				});
+				var realQuerySql:String = "select d.value, d.valuecn from b_dictionary d where d.classname = 'L_ENGINE_TRAINDATA' and d.attributename = 'DATATYPE'";
+				formService.getSimpleHashVoArrayByDS(apmsDs,realQuerySql);
+			}
+			
+			private function SimpleHashVoArrayByDSHandler(event:ResultEvent):void{
+				var dateTypeArray:Array = event.result as Array;
+				for(var i:int = 0;i<dateTypeArray.length;i++){
+					var dateTypeHashVo:SimpleHashVO = dateTypeArray[i];
+					var dateTypeMap:Object = dateTypeHashVo.dataMap;
+					engineDataType.addItemAt({value:dateTypeMap["value"],desc:dateTypeMap["valuecn"]},i);  
+				}
+				if(datatype!= null){
+					for each(var obj:Object in engineDataType){
+						if(datatype == obj.value){
+							dataTypeCmb.selectedItem  = obj;
+						}
+					}
+				}
+				trace("............");
+			}
+			private function creationComplete():void
+			{	
+				position_t.text = position;
+				number_t.text = number;
+				date.text = utcDate;
+				value_t.text = value;
+				if(comments!=null){
+					explain.text = comments;
+				}
+				if(buttonLabel!=null){
+					cardSaveButton.label = buttonLabel; 
+				}
+				if(cardSaveButton.label == "添加"){
+				
+					cardSaveButton.addEventListener(MouseEvent.CLICK, insertTrainData);
+				}else{
+					cardSaveButton.addEventListener(MouseEvent.CLICK, updateTrainData);
+				}
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				//远程服务添加监听
+				formService.insertEngineTraindata.addEventListener(ResultEvent.RESULT,insertEngineTraindataHandler);
+				formService.insertEngineTraindata.addEventListener(FaultEvent.FAULT,insertEngineTraindataErrorHandler);	
+				formService.updateEngineTraindata.addEventListener(ResultEvent.RESULT,updateEngineTraindataHandler);
+				formService.updateEngineTraindata.addEventListener(FaultEvent.FAULT,updateEngineTraindataErrorHandler);
+				
+			}
+			
+			
+			private function insertEngineTraindataHandler(event:ResultEvent):void 
+			{
+				var res:Object = event.result;
+
+				if(res == true){
+					SmartXMessage.show("该点已存在样本数据 请勿重复添加！");
+					return;
+				}
+				
+				if( dataTypeCmb.selectedItem.value != "0")
+			    if(position == "1"){
+					curObj["LEXIST"] = "1";
+					
+					curObj["LDATATYPE"] = dataTypeCmb.selectedItem.value; 
+					curObj["LCOMMENTS"] = explain.text; 
+				}else{
+					curObj["REXIST"] = "1";
+					
+					curObj["RDATATYPE"] = dataTypeCmb.selectedItem.value; 
+					curObj["RCOMMENTS"] = explain.text; 
+				}
+				
+				SmartXMessage.show("添加成功！");
+				PopUpManager.removePopUp(this);	
+				insertedFunc();
+			}
+			
+			private function updateEngineTraindataHandler(event:ResultEvent):void 
+			{
+				var res:Object = event.result;
+				
+				curObj["ISEXIST"] = "1";
+				curObj["DATATYPE"] = dataTypeCmb.selectedItem.value; 
+				curObj["COMMENTS"] = explain.text; 
+				if(position == "1"){
+					curObj["LEXIST"] = "1";
+					
+					curObj["LDATATYPE"] = dataTypeCmb.selectedItem.value; 
+					curObj["LCOMMENTS"] = explain.text; 
+				}else{
+					curObj["REXIST"] = "1";
+					
+					curObj["RDATATYPE"] = dataTypeCmb.selectedItem.value; 
+					curObj["RCOMMENTS"] = explain.text; 
+				}
+				SmartXMessage.show("更新成功！");
+				PopUpManager.removePopUp(this);
+				
+			}
+			
+			private function insertEngineTraindataErrorHandler(event:FaultEvent):void
+			{
+				SmartXMessage.show("插入样本数据失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function updateEngineTraindataErrorHandler(event:FaultEvent):void
+			{
+				SmartXMessage.show("更新失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			
+			protected function insertTrainData(event:MouseEvent):void
+			{
+				
+				formService.insertEngineTraindata(curMsgNo,dataTypeCmb.selectedItem.value,explain.text,user,position,rptNo,engineType);			
+			}
+			
+			protected function updateTrainData(event:MouseEvent):void
+			{
+				formService.updateEngineTraindata(curMsgNo,dataTypeCmb.selectedItem.value,explain.text,user,position);			
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="位置:" width = "60" textAlign="right" />
+			<mx:Text id="position_t" width = "100"/>
+			<mx:Label text="序号:" width = "60" textAlign="right" />
+			<mx:Text id="number_t" /> 
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="日期:" width = "60" textAlign="right"/>
+			<mx:Text id="date" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="值：" width = "60" textAlign="right" />
+			<mx:Text id="value_t"  width = "100" />
+			
+		</mx:HBox>
+	
+		<mx:HBox width="100%" paddingLeft="10">
+			<mx:Label text="数据类型:" textAlign="left"/>
+			<mx:ComboBox id="dataTypeCmb" dataProvider="{engineDataType}" labelField="desc" />
+		</mx:HBox>
+		<mx:VBox horizontalAlign="left" verticalAlign="top" width="100%" paddingLeft="10" paddingBottom="1">
+			<mx:Label text="说明:" width = "60" textAlign="right" />
+			<mx:TextArea width="350" height="100" id="explain" ></mx:TextArea>
+		</mx:VBox>
+		<mx:HBox width="100%" id="cardButtonBox"  horizontalAlign="center" verticalAlign="middle">
+			<mx:Button id="cardSaveButton" label="添加" toolTip="保存至样本库" icon="{AssetsFileLib.saveIcon}"/>
+			<mx:Button id="cardCancelButton" label="关闭" toolTip="关闭窗口" click="PopUpManager.removePopUp(this)" icon="{AssetsFileLib.closeIcon}"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+</mx:TitleWindow>
+
+

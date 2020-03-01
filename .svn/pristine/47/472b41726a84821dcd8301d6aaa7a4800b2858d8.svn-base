@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var lineArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				lineArr=new ArrayCollection([{val:""},{val:"航线虹桥维修车间"},{val:"航线浦东维修车间"},{val:"宽体机维修车间"}]);
+				sectionArr=new ArrayCollection([{val:""},{val:"向量班组"},{val:"朝阳班组"},{val:"大海班组"},{val:"天宇班组"},{val:"啮合班组"},{val:"深蓝班组"},{val:"启航班组"},{val:"Raying班组"},{val:"天空之城 "},{val:"翼家班组"},{val:"耕耘班组"},{val:"腾龙班组"},{val:"翔光班组"},{val:"护航班组"}]);
+				flightWorkReportListPanel.simpleQueryPanel.height=0;
+				endTime = DateUtil.moveHour(new Date(),12);
+				beginTime = DateUtil.moveHour(new Date(),-12);
+				dep_aptOrArr_apt.selectedIndex=1;
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				//航前
+				querySql ="";
+				querySql +=" select u.name,";
+				querySql +=" (select sum(1) from v_flightsch_join_report f where f.TIMEFILTER >= to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')" +
+					" and f.TIMEFILTER <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.DUTY_USER)  dutyFlightNum,";
+				querySql +=" (select sum(1) from v_flightsch_join_report f where f.TIMEFILTER >= to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')" +
+					" and f.TIMEFILTER <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.MAINTAIN_USER)  maintainFlightNum,";
+				querySql +=" (select sum(1) from v_flightsch_join_report f where f.TIMEFILTER >= to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')" +
+					" and f.TIMEFILTER <= to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss') and u.name = f.RELEASE_USER)  releaseFlightNum";
+				querySql +=" from  b_user u, b_organization org";
+				querySql +=" where u.orgid_group = org.id";
+				if(dep_aptOrArr_apt.textInput.text!=""){
+					querySql +=" and  u.airportid=(select air.id from b_airport air where air.CODE_3='"+dep_aptOrArr_apt.textInput.text+"')";
+				}
+				if(orgline.textInput.text!=""){
+					querySql +=" and org.name='"+orgline.textInput.text+"'";
+				}
+				if(orgsection.textInput.text!=""){
+					querySql +=" and org.name='"+orgsection.textInput.text+"'";
+				}
+				flightWorkReportListPanel.sql = querySql;
+				flightWorkReportListPanel.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(flightWorkReportListPanel.dataListGrid as DataGrid,"人员航班工作统计");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="车间:"/>  
+			<s:ComboBox id="orgline" dataProvider="{lineArr}" labelField="val" width="120"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="班组:"/>  
+			<s:ComboBox id="orgsection" dataProvider="{sectionArr}" labelField="val" width="90"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="航班时间" />
+			<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="1"/>
+			<mx:Label text="->" />
+			<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="1"/>
+			<s:Spacer width="20"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="flightWorkReportListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="姓名" dataField="name"  width="300"/>
+				<mx:DataGridColumn headerText="勤务航班数" dataField="dutyflightnum" width="300"/>
+				<mx:DataGridColumn headerText="维修航班数" dataField="maintainflightnum" width="300"/>
+				<mx:DataGridColumn headerText="放行航班数" dataField="releaseflightnum"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

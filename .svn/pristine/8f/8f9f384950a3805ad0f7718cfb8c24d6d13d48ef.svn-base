@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   initialize="initializeHandler(event)"
+					   close="PopUpManager.removePopUp(this)" 
+					   allowClose="true" allowDrag="true" allowMaximize="true" title="飞机数量统计"
+					   allowMinimize="true" allowResize="true" width="900" height="550">
+	<fx:Declarations>
+		<s:SolidColorStroke id="redLineStroke" color="0x990033" weight="2" alpha="1"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.series.items.LineSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import mx.managers.PopUpManager;
+			
+			private var apmsService:RemoteObject ;
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			[Bindable]
+			public var codeSelected:String="PVG";
+			[Bindable]
+			public var acnumChartArr:ArrayCollection=new ArrayCollection();
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			protected function initializeHandler(event:FlexEvent):void{
+				apmsService=new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				
+				apmsService.queryForAcnum.addEventListener(ResultEvent.RESULT,acnumHandler);
+				apmsService.queryForAcnum.addEventListener(FaultEvent.FAULT,acnumFaultHandler);
+				
+				if(codeSelected=="PVG"){
+					pvg.selected=true;
+				}
+				if(codeSelected=="SHA"){
+					sha.selected=true;
+				}
+				if(codeSelected=="HGH"){
+					hgh.selected=true;
+				}
+			}
+			private function queryForAcnum():void{
+				var code_3:String;
+				if(pvg.selected){
+					code_3="PVG";
+				}
+				if(sha.selected){
+					code_3="SHA";
+				}
+				if(hgh.selected){
+					code_3="HGH";
+				}
+				apmsService.queryForAcnum(code_3);
+				OperatingTipUtil.startOperat("正在查询...");
+				
+			}
+			private function acnumHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				acnumChartArr=null;
+				var arr:Array=event.result as Array;
+				if(arr!=null){
+					acnumChartArr=new ArrayCollection();
+					for(var i:int=0;i<arr.length;i++){
+						acnumChartArr.addItem(arr[i].dataMap);
+					}
+				}
+			}
+			
+			private function nowTimeFlagColumn(element:ChartItem,index:Number):IFill{
+				if(index==7){
+					return new SolidColor(0x6699CC);
+				}else{
+					return new SolidColor(0x3399cc,0);
+				}
+				
+			}
+			
+			
+			private function acnumFaultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询失败！");
+				return;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%">
+		<mx:HBox width="100%">
+			<mx:RadioButton label="浦东" selected="true" id="pvg"/><mx:RadioButton label="虹桥" id="sha"/><mx:RadioButton label="杭州" id="hgh"/>
+			<mx:Button  label="查询" click="queryForAcnum()"/>
+			<s:Spacer width="100%"/>
+			<mx:CheckBox selected="true" id="lineChartVisible" label="曲线图"/>
+			<mx:CheckBox selected="true" id="columnChartVisible" label="柱状图"/>
+		</mx:HBox>
+		<mx:ColumnChart id="acnumChart" dataProvider="{acnumChartArr}" color="green" height="100%" width="100%" showDataTips="true">
+			<mx:horizontalAxis>
+				<mx:CategoryAxis dataProvider="{acnumChartArr}" categoryField="time" title="-8小时~+16小时"/>
+			</mx:horizontalAxis>
+			<mx:series>
+				<mx:ColumnSeries id="columnChartNowTime" visible="{columnChartVisible.selected}" fillFunction="nowTimeFlagColumn" xField="time" yField="totalacnum" displayName="飞机数量（柱状图）"  />
+				<mx:LineSeries id="lineChartNowTime" visible="{lineChartVisible.selected}"   xField="time" yField="totalacnum" displayName="飞机总数量（曲线图）"/>
+				<mx:LineSeries id="zhailineChartNowTime" visible="{lineChartVisible.selected}"   xField="time" yField="zhaiacnum" displayName="窄飞机数量（曲线图）"/>
+				<mx:LineSeries id="kuanlineChartNowTime" visible="{lineChartVisible.selected}"   xField="time" yField="kuanacnum" displayName="宽飞机数量（曲线图）" lineStroke="{redLineStroke}"/>
+				<mx:LineSeries id="qitalineChartNowTime" visible="{lineChartVisible.selected}"   xField="time" yField="qita" displayName="未知飞机数量（曲线图）"/>
+			</mx:series>
+		</mx:ColumnChart>
+		<mx:Legend dataProvider="{acnumChart}"  x="314" y="0" height="54" width="86"/>
+	</mx:VBox>
+</containers:SuperPanel>

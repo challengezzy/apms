@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   initialize="initHandler(event)"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="950" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A24报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import com.apms.flex.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a24vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a24Data:Object;//译后报文内容
+			
+		
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var y1_1:String;
+			[Bindable]
+			private var nl_1:String;
+			[Bindable]
+			private var lim_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ap_2:String;
+			[Bindable]
+			private var y1_2:String;
+			[Bindable]
+			private var lim_2:String;
+			
+			[Bindable]
+			private var n1_e1:String;
+			[Bindable]
+			private var n2_e1:String;
+			[Bindable]
+			private var pf_e1:String;
+			[Bindable]
+			private var cot_e1:String;
+			[Bindable]
+			private var ri_e1:String;
+			[Bindable]
+			private var ro_e1:String;
+			[Bindable]
+			private var pbv_e1:String;
+			[Bindable]
+			private var fcv_e1:String;
+			[Bindable]
+			private var n1_n1:String;
+			[Bindable]
+			private var n2_n1:String;
+			[Bindable]
+			private var pf_n1:String;
+			[Bindable]
+			private var cot_n1:String;
+			[Bindable]
+			private var ri_n1:String;
+			[Bindable]
+			private var ro_n1:String;
+			[Bindable]
+			private var pbv_n1:String;
+			[Bindable]
+			private var fcv_n1:String;
+			
+			[Bindable]
+			private var p3_s1:String;
+			[Bindable]
+			private var t3_s1:String;
+			[Bindable]
+			private var tw_s1:String;
+			[Bindable]
+			private var tp_s1:String;
+			[Bindable]
+			private var tpo_s1:String;
+			[Bindable]
+			private var pd_s1:String;
+			[Bindable]
+			private var alt_s1:String;
+			[Bindable]
+			private var ps_s1:String;
+			[Bindable]
+			private var p3_t1:String;
+			[Bindable]
+			private var t3_t1:String;
+			[Bindable]
+			private var tw_t1:String;
+			[Bindable]
+			private var tp_t1:String;
+			[Bindable]
+			private var tpo_t1:String;
+			[Bindable]
+			private var pd_t1:String;
+			[Bindable]
+			private var alt_t1:String;
+			[Bindable]
+			private var ps_t1:String;
+			
+			[Bindable]
+			private var tat_v1:String;
+			[Bindable]
+			private var sat_v1:String;
+			[Bindable]
+			private var zcb_v1:String;
+			[Bindable]
+			private var zld_v1:String;
+			[Bindable]
+			private var sc1_v1:String;
+			[Bindable]
+			private var sc2_v1:String;
+			[Bindable]
+			private var sc3_v1:String;
+			[Bindable]
+			private var rv_v1:String;
+			
+			[Bindable]
+			private var pcsw_x1:String;
+			[Bindable]
+			private var vscb_x1:String;
+			[Bindable]
+			private var pdc_x1:String;
+			[Bindable]
+			private var vf_x1:String;
+			[Bindable]
+			private var vw_x1:String;
+			[Bindable]
+			private var va_x1:String;
+			[Bindable]
+			private var ovp_x1:String;
+			[Bindable]
+			private var cpc_x1:String;
+			
+
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var initCondition:String;
+
+
+			
+			private function creationComplete():void
+			{
+				a24Data = a24vo.dataMap;
+				
+			
+				
+				esn_1 = a24Data.esn_1;
+				ehrs_1 = a24Data.ehrs_1;
+				ecyc_1 = a24Data.ecyc_1;
+				ap_1 = a24Data.ap_1;
+				y1_1 = a24Data.y1_1;
+				nl_1 = a24Data.nl_1;
+				lim_1 = a24Data.lim_1;
+				esn_2 = a24Data.esn_2;
+				ehrs_2 = a24Data.ehrs_2;
+				ecyc_2 = a24Data.ecyc_2;
+				ap_2 = a24Data.ap_2;
+				y1_2 = a24Data.y1_2;
+				lim_2 = a24Data.lim_2;
+				
+				n1_e1 = a24Data.n1_e1;
+				n2_e1 = a24Data.n2_e1;
+				pf_e1 = a24Data.pf_e1;
+				cot_e1 = a24Data.cot_e1;
+				ri_e1 = a24Data.ri_e1;
+				ro_e1 = a24Data.ro_e1;
+				pbv_e1 = a24Data.pbv_e1;
+				fcv_e1 = a24Data.fcv_e1;
+				n1_n1 = a24Data.n1_n1;
+				n2_n1 = a24Data.n2_n1;
+				pf_n1 = a24Data.pf_n1;
+				cot_n1 = a24Data.cot_n1;
+				ri_n1 = a24Data.ri_n1;
+				ro_n1 = a24Data.ro_n1;
+				pbv_n1 = a24Data.pbv_n1;
+				fcv_n1 = a24Data.fcv_n1;
+				
+				p3_s1 = a24Data.p3_s1;
+				t3_s1 = a24Data.t3_s1;
+				tw_s1 = a24Data.tw_s1;
+				tp_s1 = a24Data.tp_s1;
+				tpo_s1 = a24Data.tpo_s1;
+				pd_s1 = a24Data.pd_s1;
+				alt_s1 = a24Data.alt_s1;
+				ps_s1 = a24Data.ps_s1;
+				p3_t1 = a24Data.p3_t1;
+				t3_t1 = a24Data.t3_t1;
+				tw_t1 = a24Data.tw_t1;
+				tp_t1 = a24Data.tp_t1;
+				tpo_t1 = a24Data.tpo_t1;
+				pd_t1 = a24Data.pd_t1;
+				alt_t1 = a24Data.alt_t1;
+				ps_t1 = a24Data.ps_t1;
+				
+				tat_v1 = a24Data.tat_v1;
+				sat_v1 = a24Data.sat_v1;
+				zcb_v1 = a24Data.zcb_v1;
+				zld_v1 = a24Data.zld_v1;
+				sc1_v1 = a24Data.sc1_v1;
+				sc2_v1 = a24Data.sc2_v1;
+				sc3_v1 = a24Data.sc3_v1;
+				rv_v1 = a24Data.rv_v1;
+				
+				pcsw_x1 = a24Data.pcsw_x1;
+				vscb_x1 = a24Data.vscb_x1;
+				pdc_x1 = a24Data.pdc_x1;
+				vf_x1 = a24Data.vf_x1;
+				vw_x1 = a24Data.vw_x1;
+				va_x1 = a24Data.va_x1;
+				ovp_x1 = a24Data.ovp_x1;
+				cpc_x1 = a24Data.cpc_x1;
+				
+				
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				a24Data = a24vo.dataMap;
+				var msg_no:String = a24Data.msg_no;
+				
+				initCondition = " MSG_NO = " + msg_no;
+				
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A24 空调报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox  height="100%" width="100%" >
+		<mx:HDividedBox id="contentBox" width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="25%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="75%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT 24" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text=" REPORT (24)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a24vo}" height="200" />
+			
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/><mx:Label text="AP" color="red" width="60"/><mx:Label text="Y1" color="red" width="60"/>
+					<mx:Label text="NL" color="red" width="80"/><mx:Label text="LIM" color="red" width="60"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="小时" color="blue" width="60"/>
+	                <mx:Label text="循环" color="blue" width="60"/><mx:Label text="自动驾驶" color="blue" width="60"/><mx:Label text="采样间隔" color="blue" width="60"/>
+					<mx:Label text="采集数据行数" color="blue" width="80"/><mx:Label text="限制值" color="blue" width="60"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ecyc_1}" width="60"/><mx:Label text="{ap_1}" width="60"/><mx:Label text="{y1_1}" width="60"/>
+					<mx:Label text="{nl_1}" width="80"/><mx:Label text="{lim_1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ecyc_2}" width="60"/><mx:Label text="{ap_2}" width="60"/><mx:Label text="{y1_2}" width="60"/>
+					<mx:Label text=" " width="80"/><mx:Label text="{lim_2}" width="60"/>
+				</mx:HBox>	
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="AT EVENT" fontWeight="bold" />
+				</mx:HBox>		
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="N1" color="red" width="60"/><mx:Label text="N2" color="red" width="60"/>
+					<mx:Label text="PF" color="red" width="60"/><mx:Label text="COT" color="red" width="60"/><mx:Label text="RI" color="red" width="60"/>
+					<mx:Label text="RO" color="red" width="60"/><mx:Label text="BPV" color="red" width="80"/><mx:Label text="FCV" color="red" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="N1转速" color="blue" width="60"/><mx:Label text="N2转速" color="blue" width="60"/>
+					<mx:Label text="流量" color="blue" width="60"/><mx:Label text="出口温度" color="blue" width="60"/><mx:Label text="冲压进口" color="blue" width="60"/>
+					<mx:Label text="冲压出口" color="blue" width="60"/><mx:Label text="旁通活门比例" color="blue" width="80"/><mx:Label text="流量控制活门状态" color="blue" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text=" " color="blue" width="60"/><mx:Label text=" " color="blue" width="60"/>
+					<mx:Label text="" color="blue" width="60"/><mx:Label text=" " color="blue" width="60"/><mx:Label text="开口角度" color="blue" width="60"/>
+					<mx:Label text="开口角度" color="blue" width="60"/><mx:Label text=" " color="blue" width="80"/><mx:Label text=" " color="blue" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="E1" width="30"/><mx:Label text="{n1_e1}" width="60"/><mx:Label text="{n2_e1}" width="60"/>
+					<mx:Label text="{pf_e1}" width="60"/><mx:Label text="{cot_e1}" width="60"/><mx:Label text="{ri_e1}" width="60"/>
+					<mx:Label text="{ro_e1}" width="60"/><mx:Label text="{pbv_e1}" width="80"/><mx:Label text="{fcv_e1}" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="N1" width="30"/><mx:Label text="{n1_n1}" width="60"/><mx:Label text="{n2_n1}" width="60"/>
+					<mx:Label text="{pf_n1}" width="60"/><mx:Label text="{cot_n1}" width="60"/><mx:Label text="{ri_n1}" width="60"/>
+					<mx:Label text="{ro_n1}" width="60"/><mx:Label text="{pbv_n1}" width="80"/><mx:Label text="{fcv_n1}" width="105"/>
+				</mx:HBox>	
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="P3" color="red" width="60"/><mx:Label text="T3" color="red" width="60"/>
+					<mx:Label text="TW" color="red" width="80"/><mx:Label text="TP" color="red" width="60"/><mx:Label text="TPO" color="red" width="90"/>
+					<mx:Label text="PD" color="red" width="90"/><mx:Label text="ALT" color="red" width="60"/><mx:Label text="PS" color="red" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="P3压力" color="blue" width="60"/><mx:Label text="T3温度" color="blue" width="60"/>
+					<mx:Label text="水分离器温度" color="blue" width="80"/><mx:Label text="出口温度" color="blue" width="60"/><mx:Label text="预冷器出口温度" color="blue" width="90"/>
+					<mx:Label text="预冷器进口压力" color="blue" width="90"/><mx:Label text="海拔" color="blue" width="60"/><mx:Label text="主副系统故障" color="blue" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{p3_s1}" width="60"/><mx:Label text="{t3_s1}" width="60"/>
+					<mx:Label text="{tw_s1}" width="80"/><mx:Label text="{tp_s1}" width="60"/><mx:Label text="{tpo_s1}" width="90"/>
+					<mx:Label text="{pd_s1}" width="90"/><mx:Label text="{alt_s1}" width="60"/><mx:Label text="{ps_s1}" width="80"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T1" width="30"/><mx:Label text="{p3_t1}" width="60"/><mx:Label text="{t3_t1}" width="60"/>
+					<mx:Label text="{tw_t1}" width="80"/><mx:Label text="{tp_t1}" width="60"/><mx:Label text="{tpo_t1}" width="90"/>
+					<mx:Label text="{pd_t1}" width="90"/><mx:Label text="{alt_t1}" width="60"/><mx:Label text="{ps_t1}" width="80"/>
+				</mx:HBox>	
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="TAT" color="red" width="60"/><mx:Label text="SAT" color="red" width="60"/>
+					<mx:Label text="ZCB" color="red" width="60"/><mx:Label text="ZLD" color="red" width="60"/><mx:Label text="SC1" color="red" width="70"/>
+					<mx:Label text="SC2" color="red" width="70"/><mx:Label text="SC3" color="red" width="70"/><mx:Label text="RV" color="red" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="总温" color="blue" width="60"/><mx:Label text="静温" color="blue" width="60"/>
+					<mx:Label text="客舱高度" color="blue" width="60"/><mx:Label text="升降速度" color="blue" width="60"/><mx:Label text="驾驶舱预选" color="blue" width="70"/>
+					<mx:Label text="前客舱预选" color="blue" width="70"/><mx:Label text="后客舱预选" color="blue" width="70"/><mx:Label text="活门状态(TAPRV)" color="blue" width="105"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V1" width="30"/><mx:Label text="{tat_v1}" width="60"/><mx:Label text="{sat_v1}" width="60"/>
+					<mx:Label text="{zcb_v1}" width="60"/><mx:Label text="{zld_v1}" width="60"/><mx:Label text="{sc1_v1}" width="70"/>
+					<mx:Label text="{sc2_v1}" width="70"/><mx:Label text="{sc3_v1}" width="70"/><mx:Label text="{rv_v1}" width="105"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="PCSW" color="red" width="90"/><mx:Label text="VSCB" color="red" width="70"/>
+					<mx:Label text="PDC" color="red" width="60"/><mx:Label text="VF" color="red" width="70"/><mx:Label text="VW" color="red" width="70"/>
+					<mx:Label text="VA" color="red" width="70"/><mx:Label text="OVP" color="red" width="80"/><mx:Label text="CPC" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="压力控制状态字" color="blue" width="90"/><mx:Label text="客舱升降率" color="blue" width="70"/>
+					<mx:Label text="客舱压差" color="blue" width="60"/><mx:Label text="驾驶舱温度" color="blue" width="70"/><mx:Label text="前客舱温度" color="blue" width="70"/>
+					<mx:Label text="后客舱温度" color="blue" width="70"/><mx:Label text="外流活门位置" color="blue" width="80"/><mx:Label text="系统控制" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text=" " color="blue" width="90"/><mx:Label text=" " color="blue" width="70"/>
+					<mx:Label text=" " color="blue" width="60"/><mx:Label text="调节活门" color="blue" width="70"/><mx:Label text="调节活门" color="blue" width="70"/>
+					<mx:Label text="调节活门" color="blue" width="70"/><mx:Label text=" " color="blue" width="60"/><mx:Label text=" " color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="X1" width="30"/><mx:Label text="{pcsw_x1}" width="90"/><mx:Label text="{vscb_x1}" width="70"/>
+					<mx:Label text="{pdc_x1}" width="60"/><mx:Label text="{vf_x1}" width="70"/><mx:Label text="{vw_x1}" width="70"/>
+					<mx:Label text="{va_x1}" width="70"/><mx:Label text="{ovp_x1}" width="60"/><mx:Label text="{cpc_x1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  name2ToVisible="true"   valToVisible="false" rightVal="D1" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="PDMT_L" name2ToVisible="true"     valToVisible="false" rightVal="{a24Data.pdmt_l_d1}" chineseName1="左侧PACK" chineseName2="需求温度" boxWidth="65"/>
+					<report:TwoValuesReportPanel englishName="PDMT_R" name2ToVisible="true"    valToVisible="false" rightVal="{a24Data.pdmt_r_d1}" chineseName1="右侧PACK" chineseName2="需求温度" boxWidth="65"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel name2ToVisible="true"   valToVisible="false" rightVal="F1" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="CKT" name2ToVisible="true"    valToVisible="false" rightVal="{a24Data.ckt_f1}" chineseName1="驾驶舱" chineseName2="区域温度" />
+					<report:TwoValuesReportPanel englishName="FWDT"  name2ToVisible="true"  valToVisible="false" rightVal="{a24Data.fwdt_f1}" chineseName1="前客舱" chineseName2="区域温度"/>
+					<report:TwoValuesReportPanel englishName="AFTT"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.aftt_f1}" chineseName1="后客舱" chineseName2="区域温度"/>
+					<report:TwoValuesReportPanel englishName="HOTAIRPB" name2ToVisible="true"    valToVisible="false" rightVal="{a24Data.hotairpb_f1}" boxWidth="75" chineseName1="热空气" chineseName2="电门状态"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  name2ToVisible="true"  valToVisible="false" rightVal="G1" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="CKDUCT"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.ckduct_g1}" chineseName1="驾驶舱区域" chineseName2="管路温度" boxWidth="65"/>
+					<report:TwoValuesReportPanel englishName="FWDUCT" name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.fwduct_g1}" chineseName1="前客舱区域" chineseName2="管路温度" boxWidth="65"/>
+					<report:TwoValuesReportPanel englishName="AFTDUCT"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.aftduct_g1}" chineseName1="后客舱区域" chineseName2="管路温度" boxWidth="65"/>
+					<report:TwoValuesReportPanel englishName="MIXF"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.mixf_g1}" chineseName1="混合总管" chineseName2="驾驶舱温度" boxWidth="65"/>
+					<report:TwoValuesReportPanel englishName="MIXCAB" name2ToVisible="true"    valToVisible="false" rightVal="{a24Data.mixcab_g1}" chineseName1="混合总管" chineseName2="客舱温度"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel name2ToVisible="true"   valToVisible="false" rightVal="H1" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="TAPRV"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.taprv_h1}" chineseName1="热空气压力" chineseName2="调节活门不一致" boxWidth="90"/>
+					<report:TwoValuesReportPanel englishName="TAV" name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.tav_h1}" chineseName1="热空气配平" chineseName2="系统不工作" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="MAINCTL" name2ToVisible="true"    valToVisible="false" rightVal="{a24Data.mainctl_h1}" chineseName1="区域控制控制器" chineseName2="主通道不工作" boxWidth="90"/>
+					<report:TwoValuesReportPanel englishName="SECDCTL"  name2ToVisible="true"   valToVisible="false" rightVal="{a24Data.secdctl_h1}"  chineseName1="区域控制控制器" chineseName2="副通道不工作"  boxWidth="90"/>
+				</mx:HBox>	
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

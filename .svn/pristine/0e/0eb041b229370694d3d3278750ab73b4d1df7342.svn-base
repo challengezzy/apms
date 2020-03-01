@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="950" height="580" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A40报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   initialize="initializeHandler()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.charts.HitData;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a39vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a39Data:Object;//译后报文内容
+					
+			[Bindable]
+			public var allA39List:ArrayCollection=new ArrayCollection();//译后s2内容
+			
+			public var msg_no:String="";
+			
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var formService:RemoteObject;
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private function creationComplete():void
+			{
+				a39Data = a39vo.dataMap;
+				telegraphContent=a39Data.tel_content;
+				
+				var sql:String="select a.RPTDATE,s.MSG_NO,s.ROW_SEQ,s.STARTTIME,s.FF1,s.FF2,s.N21,s.N22,s.PD1,s.PD2"
+					+ " from a_dfd_a40_list_s2 s,a_dfd_a40_list a where s.msg_no=a.msg_no and  a.msg_no="+msg_no;
+				formService.getSimpleHashVoArrayByDS(ApmsUIConst.DATASOURCE_APMS,sql);
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A40报文查看");
+			}
+			
+			protected function initializeHandler():void
+			{
+				formService = new RemoteObject(destination);
+				if(endpoint != null){
+					formService.endpoint = endpoint;
+				}
+				
+				formService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,getA39ListHashVoHandler);
+				formService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,faultHandler);	
+				
+				
+			}
+			private function getA39ListHashVoHandler(event:ResultEvent):void{
+				var a39Arr:Array = event.result as Array;
+				if(a39Arr.length>0){
+					aircond_chart01.colorTipVisible=true;
+					aircond_chart01.plotChart.dataTipFunction=trendTipStrFunc0;
+
+					aircond_chart02.colorTipVisible=true;
+					aircond_chart02.plotChart.dataTipFunction=trendTipStrFunc1;
+					
+					aircond_chart03.colorTipVisible=true;
+					aircond_chart03.plotChart.dataTipFunction=trendTipStrFunc2;
+				}
+				for(var i:int=0;i<a39Arr.length;i++){
+					var obj:Object=a39Arr[i].dataMap;
+					allA39List.addItem(obj);
+				}
+			}
+			
+			public function trendTipStrFunc0(e:HitData):String{
+				return trendTipStrFunc(e,"kg/h");
+			}
+			public function trendTipStrFunc1(e:HitData):String{
+				return trendTipStrFunc(e,"");
+			}
+			public function trendTipStrFunc2(e:HitData):String{
+				return trendTipStrFunc(e,"psi");
+			}
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			private function faultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("报文查询失败!",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox id="contentBox" width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+		<mx:VBox width="30%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="70%" height="100%" verticalGap="1">
+			<mx:HBox width="100%">
+				<mx:Label text=" BLEED SYS PERF REPORT (40)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>				
+			<report:ReportHeaderPanel headHashVo="{a39vo}" height="190"/>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号" leftVal="{a39Data.esn_ec}" rightVal="{a39Data.esn_ee}"/>
+				<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a39Data.ehrs_ec}" rightVal="{a39Data.ehrs_ee}"/>
+				<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a39Data.ecyc_ec}" rightVal="{a39Data.ecyc_ee}"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="BLEED PRESSURE VARY DURING CRUISE" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="S1" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="START TIME" chineseName1="数据采集时间" leftVal="{a39Data.starttime_s1}" boxWidth="200"/>
+				<report:TwoValuesReportPanel englishName="END TIME" chineseName1="采集结束时间" leftVal="{a39Data.endtime_s1}" boxWidth="200"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="S2" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="FF1" chineseName1="FF1均值" leftVal="{a39Data.ff1_avg}" boxWidth="80"/>
+				<report:TwoValuesReportPanel englishName="FF2" chineseName1="FF2均值" leftVal="{a39Data.ff2_avg}" boxWidth="80"/>
+				<report:TwoValuesReportPanel englishName="N21" chineseName1="N21均值" leftVal="{a39Data.n21_avg}" boxWidth="80"/>
+				<report:TwoValuesReportPanel englishName="N22" chineseName1="N22均值" leftVal="{a39Data.n22_avg}" boxWidth="80"/>
+				<report:TwoValuesReportPanel englishName="PD1" chineseName1="PD1均值" leftVal="{a39Data.pd1_avg}" boxWidth="80"/>
+				<report:TwoValuesReportPanel englishName="PD2" chineseName1="PD2均值" leftVal="{a39Data.pd2_avg}" boxWidth="80"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="S2" boxWidth="30"/>
+				
+			</mx:HBox>
+			
+			<component:ReportTrendDualChart id="aircond_chart01" chartName="燃油流量" height="100%" width="100%"
+											xField="starttime"   
+											valField1="ff1" point1Name="左发燃油流量"
+											valField2="ff2" point2Name="右发燃油流量"
+											allList1="{allA39List}"   allList2="{allA39List}" 
+											chartTitle_left="左发燃油流量" chartTitle_right="右发燃油流量">
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="aircond_chart02" chartName="N2转速" height="100%" width="100%"
+											xField="starttime"  point2Name="右发N2转速"
+											valField1="n21" point1Name="左发N2转速"
+											valField2="n22" chartTitle_left="左发N2转速" chartTitle_right="右发N2转速"
+											allList1="{allA39List}"  allList2="{allA39List}" 
+											>
+			</component:ReportTrendDualChart>
+			
+			<component:ReportTrendDualChart id="aircond_chart03" chartName="引气压力" height="100%" width="100%"
+											xField="starttime"  point1Name="左发引气压力"
+											valField1="pd1"     point2Name="右发引气压力"
+											valField2="pd2" chartTitle_left="左发引气压力" chartTitle_right="右发引气压力"
+											allList1="{allA39List}"  allList2="{allA39List}"  
+											>
+			</component:ReportTrendDualChart>
+		</mx:VBox>
+	</mx:HDividedBox>
+</containers:SuperPanel>

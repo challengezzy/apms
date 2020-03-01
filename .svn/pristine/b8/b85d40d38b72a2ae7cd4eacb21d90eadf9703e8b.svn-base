@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  xmlns:component="com.apms.flex.component.*"
+		  xmlns:core="smartx.flex.components.core.*"
+		  initialize="initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import myreport.ReportViewer;
+			import myreport.export.ExportEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+
+			[Bindable]
+			private var startDate:Date;
+			[Bindable]
+			private var endDate:Date;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			public var isrelated:ArrayCollection;
+			private var flightService:RemoteObject = new RemoteObject;
+			private var apmsDsst:String = ApmsUIConst.FLIGHT_SERVICE;
+			private var faultArraycollection:ArrayCollection;
+			private var warningArraycollection:ArrayCollection;
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				
+				flightService.endpoint = endpoint;
+				flightService.destination = apmsDsst;
+				
+				ReportViewer.Instance.addEventListener(ExportEvent.EXPORT, OnExport);
+				flightService.getFaultCFDInfoByFlightPk.addEventListener(ResultEvent.RESULT,setFaultListInfo);
+				flightService.getFaultCFDInfoByFlightPk.addEventListener(FaultEvent.FAULT,faultHandlerForCFD);	
+				
+				flightService.getWarningCFDInfoByFlightPk.addEventListener(ResultEvent.RESULT,setWarningListInfo);
+				flightService.getWarningCFDInfoByFlightPk.addEventListener(FaultEvent.FAULT,WarningHandlerForCFD);	
+				
+				var today:Date=new Date();
+				startDate=DateUtil.moveDay(today,-2);
+				endDate=today;
+				isrelated=new ArrayCollection([{val:""},{val:"是"},{val:"否"}]);
+			}
+			
+			private function setFaultListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				faultArraycollection=new ArrayCollection();
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						faultArraycollection.addItem(res[i].dataMap);
+					}
+				}
+			}
+			
+			private function setWarningListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				warningArraycollection=new ArrayCollection();
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						warningArraycollection.addItem(res[i].dataMap);
+					}
+				}
+				HandleReport(1);
+				myreport.ReportViewer.Instance.width = 900;
+				PopUpManager.centerPopUp(myreport.ReportViewer.Instance);
+			}
+			
+			private function faultHandlerForCFD(event:FaultEvent):void{
+				SmartXMessage.show("查询CFD故障信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function WarningHandlerForCFD(event:FaultEvent):void{
+				SmartXMessage.show("查询CFD告警信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function onArrFlightQuery():void{
+				
+				var chgFilter:String =" REPORTTIME>=TO_DATE('"+start_date.text+"','YYYY-MM-DD hh24:mi:ss') AND REPORTTIME<=TO_DATE('"+end_date.text+"','YYYY-MM-DD hh24:mi:ss')";
+				if(StringUtil.StringReplaceAll(baseord.text," ","")!=""){
+					chgFilter=chgFilter+" and baseorg like '%"+baseord.text+"%'";
+				}
+				if(StringUtil.StringReplaceAll(airline.text," ","")!=""){
+					chgFilter=chgFilter+" and airline like '%"+airline.text+"%'";
+				}
+				if(StringUtil.StringReplaceAll(flightno.text," ","")!=""){
+					chgFilter=chgFilter+" and flightno='"+flightno.text+"'";
+				}
+				if(StringUtil.StringReplaceAll(acnum.text," ","")!=""){
+					chgFilter=chgFilter+" and acnum='"+acnum.text+"'";
+				}
+				if(isrelate.textInput.text!=""){
+					if(isrelate.textInput.text=="是"){
+						chgFilter=chgFilter+" and isrelated=1";
+					}else{
+						chgFilter=chgFilter+" and isrelated=0";
+					}
+				}
+				if(iswarning.textInput.text!=""){
+					if(iswarning.textInput.text=="是"){
+						chgFilter=chgFilter+" and iswarning=1";
+					}else{
+						chgFilter=chgFilter+" and iswarning=0";
+					}
+				}
+				if(isfault.textInput.text!=""){
+					if(isfault.textInput.text=="是"){
+						chgFilter=chgFilter+" and isfault=1";
+					}else{
+						chgFilter=chgFilter+" and isfault=0";
+					}
+				}
+				mpfListPanel.initQueryCondition = chgFilter;
+				mpfListPanel.query(false,false);
+			}
+			
+			
+			private function test():void{
+				
+				var data:Object=mpfListPanel.getSelectedRowValue();
+				if(data==null){
+					
+				}
+			}
+			
+			
+			private function selectFaultAndWarning():void{
+				var data:Object=mpfListPanel.getSelectedRowValue();
+				var flight_pk:String="";
+				if(data!=null){
+					flight_pk=data["FLIGHTID"];
+					if(flight_pk!=null&&flight_pk!=""){
+						flightService.getFaultCFDInfoByFlightPk(flight_pk);
+						flightService.getWarningCFDInfoByFlightPk(flight_pk);
+					}else{
+						SmartXMessage.show("该航后报文未关联航班，请选择一条有效报文打印！");
+					}
+				}else{
+					SmartXMessage.show("请选择一条航后报文！");
+				}
+			}
+			
+			/**
+			 * @param cmd: 0编辑, 1预览, 2直接打印
+			 */
+			private function HandleReport(mode:int):void
+			{
+				var url:String = "com/apms/flex/reportxml/XmlMpfReport.xml";
+				var table:* = null;
+				var params:* = GetParameterData();
+				
+				switch(mode)
+				{
+					case 0://编辑
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportDesigner.Instance.Show(url, table, params);
+						myreport.ReportViewer.Instance.width = 900;
+						PopUpManager.centerPopUp(myreport.ReportViewer.Instance)
+						break;
+					case 1://预览
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportViewer.Instance.Show(url, table, params);
+						myreport.ReportViewer.Instance.width = 900;
+						PopUpManager.centerPopUp(myreport.ReportViewer.Instance)
+						break;
+					case 2://直接打印
+						myreport.ReportEngine.LoadAndPrintAsync(url, table, params);
+						myreport.ReportViewer.Instance.width = 900;
+						PopUpManager.centerPopUp(myreport.ReportViewer.Instance)
+						break;
+				}
+			}
+			
+			
+			private function GetTableData():ArrayCollection
+			{
+				
+				return null;
+			}
+			
+			private function GetParameterData():Dictionary
+			{
+				var data:Object=mpfListPanel.getSelectedRowValue();
+				var dict:Dictionary = new Dictionary();
+				dict["机号"] = data["ACNUM"]!=null?data["ACNUM"]:"";
+				dict["日期"] = data["HEADTIME"]!=null?data["HEADTIME"]:"";
+				dict["时间"] = data["HEADTIME"]!=null?data["HEADTIME"]:"";
+				dict["航班号"] = data["FLIGHTNO"]!=null? data["FLIGHTNO"]:"";
+				dict["离港四字码"] =data["APTCODE4_DEP"]!=null?data["APTCODE4_DEP"]:"";
+				dict["到港四字码"] =data["APTCODE4_ARR"]!=null?data["APTCODE4_ARR"]:"";
+				
+				dict["子报表1表格"] = GetSubReportTableData1();
+				dict["子报表1参数"] = GetSubReportParameterData1();
+				dict["子报表2表格"] = GetSubReportTableData2();
+				dict["子报表2参数"] = GetSubReportParameterData2();
+				return dict;
+			}
+			
+			/** 准备子报表1表格数据 */ 
+			private function GetSubReportTableData1():ArrayCollection
+			{
+				var listARR:ArrayCollection = new ArrayCollection();
+				
+				if(warningArraycollection.length>0){
+					for(var i:int=0;i<warningArraycollection.length;i++){  
+						var obj:Object = warningArraycollection.getItemAt(i);  
+						listARR.addItem({
+							时间: obj.gmt!=null?obj.gmt:"",
+							序号: obj.ph!=null?obj.ph:"",
+							章节号: obj.ata!=null?obj.ata:"",
+							告警内容:obj.warn_content!=null?obj.warn_content:""
+						});
+					} 
+				}
+				if(warningArraycollection.length<=0){
+					listARR.addItem({
+						时间: "",
+						序号: "",
+						章节号: "",
+						告警内容:""
+					});
+				}
+				return listARR;
+			}
+			
+			/** 准备子报表1参数数据 */ 
+			private function GetSubReportParameterData1():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "WARNING/MAINT.STATUS MESSAGES";
+				
+				return dict;
+			}
+			/** 准备子报表2表格数据 */ 
+			private function GetSubReportTableData2():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				
+				if(faultArraycollection.length>0){
+					for(var i:int=0;i<faultArraycollection.length;i++){  
+						var obj:Object = faultArraycollection.getItemAt(i);  
+						list.addItem({
+							时间: obj.gmt!=null?obj.gmt:"",
+							序号: obj.ph!=null?obj.ph:"",
+							章节号: obj.ata!=null?obj.ata:"",
+							故障内容:obj.fault_content!=null?obj.fault_content:"",
+							故障源:obj.fault_source!=null?obj.fault_source:""
+						});
+					} 
+				}
+				if(faultArraycollection.length<=0){
+					list.addItem({
+						时间: "",
+						序号: "",
+						章节号: "",
+						故障内容:"",
+						故障源:""
+					});
+				}
+				return list;
+			}
+			
+			/** 准备子报表2参数数据 */ 
+			private function GetSubReportParameterData2():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "FAILURE MESSAGES";
+				
+				return dict;
+			}
+			
+			private function OnExport(event:ExportEvent):void
+			{
+				var file:FileReference;
+				if(event.FileType == ExportEvent.FILE_TYPE_PDF)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "CFD航后报文.pdf");
+				}
+				else if(event.FileType == ExportEvent.FILE_TYPE_XLS)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "CFD航后报文.xls");
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+	</fx:Declarations>
+	<mx:VBox height="100%" width="100%">
+		<mx:HBox width="100%" verticalAlign="middle" >
+			<mx:Label text="所属基地:" width="{sixWordsWidth.width}"   />
+			<s:TextInput id="baseord"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="所属航空公司:"  id="sixWordsWidth"   />
+			<s:TextInput id="airline"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="航班号:"   />
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机号:"   />
+			<s:TextInput id="acnum"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="是否关联航班ID"/>
+			<s:ComboBox id="isrelate" dataProvider="{isrelated}" labelField="val" width="50"/>
+			
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="开始报文时间:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="1"/>
+			<s:Spacer width="25"/>	
+			<mx:Label text="结束报文时间:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="1"/>
+			<s:Spacer width="114"/>
+			<mx:Label text="是否有告警:"/>
+			<s:ComboBox id="iswarning" dataProvider="{isrelated}" labelField="val" width="50"/>
+			<s:Spacer width="52"/>
+			<mx:Label text="是否有故障:"/>
+			<s:ComboBox id="isfault" dataProvider="{isrelated}" labelField="val" width="50"/>
+			<s:Spacer width="80"/>
+			<mx:Button label="查询"  click="onArrFlightQuery()" />
+			<!--<mx:Button label="打印预览"  click="HandleReport(1)" />-->
+			<mx:Button label="打印预览"  click="selectFaultAndWarning()" />
+		</mx:HBox>
+		<core:BillListPanel id="mpfListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+							templetCode="T_V_A_CFD_MPF" debugMode="{debugMode}" showQuickQueryPanel="false"
+							cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+		</core:BillListPanel>
+		
+	</mx:VBox>
+</mx:Module>

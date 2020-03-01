@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="1000" height="600" allowClose="true"
+					   close="PopUpManager.removePopUp(this);"
+					   allowDrag="true" title="延误原因查询表"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   creationComplete="creationComplete()"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var ddQuerySql:String="";
+			[Bindable]
+			private var defectremindQuerysql:String="";
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var acPoTipQuerysql:String="";
+			[Bindable]
+			private var reportQuerysql:String="";
+			[Bindable]
+			public var flightObj:Object;
+			[Bindable]
+			private var cfdQuerysql:String="";
+			private var flightno_a:String;
+			private var flightno_d:String;
+			private var flightid_a:String;
+			private var flightid_d:String;
+			private var apcode:String;
+			private var code_3:String;
+			public function setFlightid(flightid_A:String,flightid_D:String):void{
+				this.flightid_a = flightid_A;
+				this.flightid_d = flightid_D;
+			}
+			
+			private function creationComplete():void{
+				
+				defectremindQuerysql="select decode(wd.TIPTYPE,0,'生产运行类',1,'技术提醒类',2,'管理要求类',3,'提醒确认类') tiptype,wd.reminddesc,wd.feedback "
+					+" from w_defectremind_ins wdi,W_DEFECTREMIND wd where wdi.REMINDID=wd.id and wdi.STATUS=0  and wdi.FLIGHTID=any("+flightid_a+","+flightid_d+")";
+				defectremindListPanel.simpleQueryPanel.height=0;
+				defectremindListPanel.showPageBox=false;
+				defectremindListPanel.refresh();
+				
+				reportQuerysql =" select fr.type,fr.REPORTER,fr.RECIPIENT,fr.REPORTTIME,fr.REPORTCONTENT,fr.COMMENTS"
+					+" from  V_FLIGHTREPORT fr where fr.FLT_PK=any("+flightid_a+","+flightid_d+")";
+				reportListPanel.simpleQueryPanel.height=0;
+				reportListPanel.showPageBox=false;
+				reportListPanel.refresh();
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%" id="runningAirInfoWindow">
+		<mx:HBox paddingLeft="10">
+			<mx:Label text="航班日期：" id="fourWordsWidth"/><mx:Text text="{flightObj.flt_date_str}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="航班号：" width="{sixWordsWidth.width}"/><mx:Text text="{flightObj.flightno_union}" width="110"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机号："/><mx:Text text="{flightObj.acnum}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机型："/><mx:Text text="{flightObj.acmodel}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="经停航站："/><mx:Text text="{flightObj.apt_union}" width="100"/>
+		</mx:HBox>
+		<mx:HBox paddingLeft="10">
+			<mx:Label text="维护：" width="{fourWordsWidth.width}"/><mx:Text text="{flightObj.maintaintype}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="计划到达/起飞：" id="sixWordsWidth"/><mx:Text text="{flightObj.stda}" width="110"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机位："/><mx:Text text="{flightObj.ac_stop}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="预达："/><mx:Text text="{flightObj.t_eta}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="预起：" width="{fourWordsWidth.width}"/><mx:Text text="{flightObj.t_etd}" width="100"/>
+		</mx:HBox>
+		<mx:Label text="通报记录" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="reportListPanel" width="100%"  minColumnWidth="100" pageSize="100" 
+									searchCondVisible="false"   horizontalAlign="center" paddingTop="0"
+									sql="{reportQuerysql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="通报类型" dataField="type" />
+				<mx:DataGridColumn headerText="通报内容" dataField="reportcontent" width="470"/>
+				<mx:DataGridColumn headerText="备注" dataField="comments" />
+				<mx:DataGridColumn headerText="报告时间" dataField="reporttime" />
+				<mx:DataGridColumn headerText="报告人" dataField="reporter" />
+				<mx:DataGridColumn headerText="接收人" dataField="recipient" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<s:Spacer height="0"/>
+		<mx:Label text="提醒单信息" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="defectremindListPanel" width="100%"  minColumnWidth="100" pageSize="100" 
+									searchCondVisible="false"   horizontalAlign="center" paddingTop="0"
+									sql="{defectremindQuerysql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="提示类型" dataField="tiptype" />
+				<mx:DataGridColumn headerText="提示信息" dataField="reminddesc" width="450"/>
+				<mx:DataGridColumn headerText="反馈结果" dataField="feedback" />
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</containers:SuperPanel>

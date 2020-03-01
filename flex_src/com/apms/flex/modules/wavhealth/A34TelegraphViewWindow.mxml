@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="850" height="600"  xmlns:core="smartx.flex.components.core.*"
+			   title="A34报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a34vo:SimpleHashVO;
+
+			[Bindable]
+			public var a34Data:Object;//译后报文内容
+							
+			
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			
+			[Bindable]
+			private var pd_s1:String;
+			[Bindable]
+			private var tpo_s1:String;
+			[Bindable]
+			private var wav_s1:String;
+			[Bindable]
+			private var date_s1:String;
+			[Bindable]
+			private var pd_s2:String;
+			[Bindable]
+			private var tpo_s2:String;
+			[Bindable]
+			private var wav_s2:String;
+			
+			[Bindable]
+			private var pd_s3:String;
+			[Bindable]
+			private var tpo_s3:String;
+			[Bindable]
+			private var wav_s3:String;
+			[Bindable]
+			private var date_s3:String;
+			[Bindable]
+			private var pd_s4:String;
+			[Bindable]
+			private var tpo_s4:String;
+			[Bindable]
+			private var wav_s4:String;
+			
+			[Bindable]
+			private var pd_s5:String;
+			[Bindable]
+			private var tpo_s5:String;
+			[Bindable]
+			private var wav_s5:String;
+			[Bindable]
+			private var date_s5:String;
+			[Bindable]
+			private var pd_s6:String;
+			[Bindable]
+			private var tpo_s6:String;
+			[Bindable]
+			private var wav_s6:String;
+			
+			[Bindable]
+			private var wav1_tmr_s7:String;
+			[Bindable]
+			private var wav2_tmr_s7:String;
+			[Bindable]
+			private var date_s7:String;
+			
+
+			
+			private function creationComplete():void
+			{
+			
+				a34Data = a34vo.dataMap;
+				
+				
+				esn_1 = a34Data['esn_1'];
+				ehrs_1 = a34Data['ehrs_1'];
+				ecyc_1 = a34Data['ecyc_1'];
+				esn_2 = a34Data['esn_2'];
+				ehrs_2 = a34Data['ehrs_2'];
+				ecyc_2 = a34Data['ecyc_2'];
+				
+				pd_s1 = a34Data['pd_s1'];
+				tpo_s1 = a34Data['tpo_s1'];
+				wav_s1 = a34Data['wav_s1'];
+				var dtUtc_s1:Date = a34Data['date_s1'] as Date;
+				date_s1 = DateUtil.dateToString(dtUtc_s1,1);
+				pd_s2 = a34Data['pd_s2'];
+				tpo_s2 = a34Data['tpo_s2'];
+				wav_s2 = a34Data['wav_s2'];
+				
+				pd_s3 = a34Data['pd_s3'];
+				tpo_s3 = a34Data['tpo_s3'];
+				wav_s3 = a34Data['wav_s3'];
+				var dtUtc_s3:Date = a34Data['date_s3'] as Date;
+				date_s3 = DateUtil.dateToString(dtUtc_s3,1);
+				pd_s4 = a34Data['pd_s4'];
+				tpo_s4 = a34Data['tpo_s4'];
+				wav_s4 = a34Data['wav_s4'];
+				
+				pd_s5 = a34Data['pd_s5'];
+				tpo_s5 = a34Data['tpo_s5'];
+				wav_s5 = a34Data['wav_s5'];
+				var dtUtc_s5:Date = a34Data['date_s5'] as Date;
+				date_s5 = DateUtil.dateToString(dtUtc_s5,1);
+				pd_s6 = a34Data['pd_s6'];
+				tpo_s6 = a34Data['tpo_s6'];
+				wav_s6 = a34Data['wav_s6'];
+				
+				wav1_tmr_s7 = a34Data['wav1_tmr_s7'];
+				wav2_tmr_s7 = a34Data['wav2_tmr_s7'];
+				var dtUtc_s7:Date = a34Data['date_s7'] as Date;
+				date_s7 = DateUtil.dateToString(dtUtc_s7,1);
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A34 大翼防冰报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" verticalGap="1">
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT(34)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a34vo}" width="100%" height="190"/>
+
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="80"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="80"/><mx:Label text="小时" color="blue" width="60"/>
+					<mx:Label text="循环" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="80"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ecyc_1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="80"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ecyc_2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="5S PER WAV P/B PUSHED IN" fontWeight="bold" />
+				</mx:HBox>
+								
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="PD" color="red" width="105"/><mx:Label text="TPO" color="red" width="105"/>
+					<mx:Label text="WAV" color="red" width="80"/><mx:Label text="DATE TIME" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="防冰活门引气压力" color="blue" width="105"/><mx:Label text="防冰活门引气温度" color="blue" width="105"/>
+					<mx:Label text="防冰活门状态" color="blue" width="80"/><mx:Label text="防冰活门按入时间" color="blue" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{pd_s1}" width="105"/><mx:Label text="{tpo_s1}" width="105"/>
+					<mx:Label text="{wav_s1}" width="80"/><mx:Label text="{date_s1}" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S2" width="30"/><mx:Label text="{pd_s2}" width="105"/><mx:Label text="{tpo_s2}" width="105"/>
+					<mx:Label text="{wav_s2}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="5S POST WAV P/B PUSHED IN" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="PD" color="red" width="105"/><mx:Label text="TPO" color="red" width="105"/>
+					<mx:Label text="WAV" color="red" width="80"/><mx:Label text="DATE TIME" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S3" width="30"/><mx:Label text="{pd_s3}" width="105"/><mx:Label text="{tpo_s3}" width="105"/>
+					<mx:Label text="{wav_s3}" width="80"/><mx:Label text="{date_s3}" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S4" width="30"/><mx:Label text="{pd_s4}" width="105"/><mx:Label text="{tpo_s4}" width="105"/>
+					<mx:Label text="{wav_s4}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="EVENT WAV P/B PUSHED OFF" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="PD" color="red" width="105"/><mx:Label text="TPO" color="red" width="105"/>
+					<mx:Label text="WAV" color="red" width="80"/><mx:Label text="DATE TIME" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S5" width="30"/><mx:Label text="{pd_s5}" width="105"/><mx:Label text="{tpo_s5}" width="105"/>
+					<mx:Label text="{wav_s5}" width="80"/><mx:Label text="{date_s5}" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S6" width="30"/><mx:Label text="{pd_s6}" width="105"/><mx:Label text="{tpo_s6}" width="105"/>
+					<mx:Label text="{wav_s6}" width="80"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="TIME WAV FROM OPEN TO CLOSE" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="WAV1_TMR" color="red" width="150"/><mx:Label text="WAV2_TMR" color="red" width="120"/>
+					<mx:Label text="DATE TIME" color="red" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左活门关闭时间" color="blue" width="150"/><mx:Label text="左活门关闭时间" color="blue" width="120"/>
+					<mx:Label text="获取活门关闭时的时间" color="blue" width="150"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S7" width="30"/><mx:Label text="{wav1_tmr_s7}" width="150"/><mx:Label text="{wav2_tmr_s7}" width="120"/>
+					<mx:Label text="{date_s7}" width="150"/>
+				</mx:HBox>
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

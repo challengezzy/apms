@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var fuelDest:String = ApmsUIConst.APUFUEL_SERVICE;
+			private var fuelService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var asn:String;
+			
+			[Bindable]
+			private var fuelCostList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var repairCostList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var contractCostList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-12);
+				
+				fuelService.endpoint = endpoint;
+				fuelService.destination = fuelDest;
+				//远程服务添加监听
+				fuelService.getFuelOilCostData.addEventListener(ResultEvent.RESULT,getFuelOilCostDataHandler);
+				fuelService.getFuelOilCostData.addEventListener(FaultEvent.FAULT,getFuelOilCostDataErrorHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM" +
+					" B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+				//添加参照控件
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="APU";
+				apuItemVO.refdesc="SELECT A.ID ID#,A.APUSN ASN#,A.APUSN APU序号,T.AIRCRAFTSN 机号 FROM B_APU A,B_AIRCRAFT T WHERE A.AIRCRAFTID=T.ID(+)";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						asn = apuRefPanel.returnVO.name;
+					}else{
+						asn = null;
+					}
+				});	
+				
+				apuBox.addChild(apuRefPanel);
+			}
+			
+			
+			private function getFuelOilCostDataHandler(event:ResultEvent):void 
+			{
+				fuelCostList = null;
+				repairCostList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				fuelCostList = res["fuelCostList"];
+				repairCostList = res["repairCostList"];
+				contractCostList = res["contractCostList"];
+			}
+			
+			private function getFuelOilCostDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( (acnum == null || acnum=="") && (asn == null || asn =="") ){
+					SmartXMessage.show("请选择一个飞机号或APU序号！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				fuelService.getFuelOilCostData(time_begin.text,time_end.text,acnum, asn, isInstalled.selected );
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"APU_"+acnum+"_"+asn+"_运行成本");
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id ="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU序号"/>
+			</mx:HBox>
+			<mx:CheckBox id="isInstalled" label="安装后小时" enabled="false" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:VBox width="100%" height="400">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="APU成本统计图(100小时)-总成本" />
+			</mx:HBox>
+			<mx:ColumnChart id="apuCostChart" height="100%" width="100%" 
+							dataProvider="{contractCostList}" type="stacked"	showDataTips="true">
+				<mx:horizontalAxis>
+					<mx:CategoryAxis categoryField="NAME"/>
+				</mx:horizontalAxis>
+				<mx:series>
+					<mx:ColumnSeries  xField="NAME" yField="CONTRACT_COST" dataProvider="{contractCostList}" 
+									  displayName="包修成本" labelPosition="outside"/>
+					
+					<mx:ColumnSeries xField="NAME" yField="FUELOIL_COST" dataProvider="{fuelCostList}" 
+									 displayName="燃油成本" labelPosition="outside"/>
+					
+					<mx:ColumnSeries  xField="NAME" yField="SUM_TOTALCOST" dataProvider="{repairCostList}" 
+									  displayName="小修成本" labelPosition="outside"/>
+				</mx:series>
+			</mx:ColumnChart>
+			<mx:Legend dataProvider="{apuCostChart}" direction="horizontal"/>
+		</mx:VBox >
+		
+		<mx:VBox width="100%" height="300">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="APU成本统计图(100小时)-分类" />
+			</mx:HBox>
+			<mx:LineChart id="costLineChart" height="100%" width="100%" 
+							dataProvider="{contractCostList}" showDataTips="true">
+				<mx:horizontalAxis>
+					<mx:CategoryAxis categoryField="NAME"/>
+				</mx:horizontalAxis>
+				<mx:series>
+					<mx:LineSeries xField="NAME" yField="CONTRACT_COST" dataProvider="{contractCostList}" 
+								form="curve" radius="1" displayName="包修成本" />
+					
+					<mx:LineSeries xField="NAME" yField="FUELOIL_COST" dataProvider="{fuelCostList}" 
+								   form="curve" radius="1" displayName="燃油成本" />
+					
+					<mx:LineSeries xField="NAME" yField="SUM_TOTALCOST" dataProvider="{repairCostList}" 
+								   form="curve" radius="1" displayName="小修成本" />
+					
+					<mx:PlotSeries xField="NAME" yField="FUELOIL_COST" dataProvider="{fuelCostList}" 
+								   itemRenderer="mx.charts.renderers.TriangleItemRenderer"
+								   displayName="燃油成本" />
+					
+					<mx:PlotSeries xField="NAME" yField="SUM_TOTALCOST" dataProvider="{repairCostList}" 
+								   itemRenderer="mx.charts.renderers.DiamondItemRenderer"
+								   displayName="小修成本" />
+				</mx:series>
+			</mx:LineChart>
+			<mx:Legend dataProvider="{costLineChart}" direction="horizontal"/>
+		</mx:VBox >
+		
+		<mx:VBox width="100%" height="300">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="APU成本统计图(100小时)-分类" />
+			</mx:HBox>
+			<mx:ColumnChart id="apuCostChart2" height="100%" width="100%" 
+							dataProvider="{contractCostList}" showDataTips="true">
+				<mx:horizontalAxis>
+					<mx:CategoryAxis categoryField="NAME"/>
+				</mx:horizontalAxis>
+				<mx:series>
+					<mx:ColumnSeries xField="NAME" yField="CONTRACT_COST" dataProvider="{contractCostList}"  
+									  displayName="包修成本" labelPosition="outside"/>
+					
+					<mx:ColumnSeries xField="NAME" yField="FUELOIL_COST" dataProvider="{fuelCostList}" 
+									 displayName="燃油成本" labelPosition="outside"/>
+					
+					<mx:ColumnSeries  xField="NAME" yField="SUM_TOTALCOST" dataProvider="{repairCostList}" 
+									  displayName="小修成本" labelPosition="outside"/>
+				</mx:series>
+			</mx:ColumnChart>
+			<mx:Legend dataProvider="{apuCostChart2}" direction="horizontal"/>
+		</mx:VBox >
+		
+	</mx:VBox>
+</mx:Module>

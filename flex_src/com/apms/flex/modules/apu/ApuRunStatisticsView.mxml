@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var apusn:String; //apu序列号
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+//				//远程服务添加监听
+//				apmsService.getApuRunStatisInfo.addEventListener(ResultEvent.RESULT,getApuRunStatisInfoHandler);
+//				apmsService.getApuRunStatisInfo.addEventListener(FaultEvent.FAULT,getApuRunStatisInfoErrorHandler);
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="ACNUM";
+				apuItemVO.refdesc="SELECT A.ID ID#,AIRCRAFTID ACID#,APUSN APU序列号,M.MODEL APU型号 FROM B_APU A,B_APU_MODEL M WHERE M.ID=A.APUMODELID;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						apusn = apuRefPanel.returnVO.name;
+					}else{
+						apusn = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				apuBox.addChild(apuRefPanel);
+				
+				queryColumns.push("acnum");
+				queryColumns.push("asn");
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql = "SELECT A.ACNUM,A.TOTALTIME / 60 TOTALHOUR,A.TOTALCYCLE,T.HOUR_SUM,T.CYCLE_SUM,";
+				querySql += " to_char(A.DATATIME,'YYYY-MM-DD HH24:MI:SS') DATATIME,";
+				querySql += "(SELECT APU.PREFIX||APU.APUSN FROM B_APU APU WHERE APU.APUSN=A.ASN) ASN,";
+				querySql += "(SELECT O.NAME FROM B_ORGANIZATION O,B_APU APU WHERE O.ID=APU.BASEORGID AND APU.APUSN=A.ASN) BASEORG,";
+				querySql += "(SELECT AM.MODEL FROM B_APU_MODEL AM WHERE AM.ID=A.APU_MODELID) APUMODEL,";
+				querySql += "ROUND((A.TOTALTIME - A.TIME_ONREPAIRED) / 60, 2) REPAIREDHOUR,(A.TOTALCYCLE - A.CYCLE_ONREPAIRED) REPAIREDCYCLE,";
+				querySql += " to_char(A.INSTALL_TIME,'YYYY-MM-DD') INSTALL_TIME";
+				querySql += " FROM (SELECT L.ACNUM,L.ASN,SUM(L.ADD_TIME) / 60 HOUR_SUM,SUM(L.ADD_CYCLE) CYCLE_SUM FROM L_APU_RUNLOG L";
+				querySql += " WHERE L.DATATIME >= TO_DATE('" + time_begin.text + "', 'YYYY-MM-DD HH24:MI:SS')";
+				
+				if(apusn != null && apusn != "")
+					querySql += " AND L.ASN='"+apusn+"'";
+				
+				if(acnum != null && acnum != "")
+					querySql += " AND L.ACNUM='"+acnum+"'";
+				
+				querySql += " AND L.DATATIME <= TO_DATE('" + time_end.text + "', 'YYYY-MM-DD HH24:MI:SS') GROUP BY L.ACNUM,L.ASN ) T,";
+				querySql += " (SELECT * FROM L_APU_RUNLOG L2 WHERE L2.ID IN ( SELECT MAX(ID) FROM L_APU_RUNLOG L3 WHERE 1=1";
+				
+				if(apusn != null && apusn != "")
+					querySql += " AND L3.ASN='"+apusn+"'";
+				
+				if(acnum != null && acnum != "")
+					querySql += " AND L3.ACNUM='"+acnum+"'";
+				
+				querySql += "   AND L3.DATATIME< TO_DATE('" + time_end.text + "', 'YYYY-MM-DD HH24:MI:SS') GROUP BY L3.ACNUM,L3.ASN)) A";
+				querySql += " WHERE T.ASN=A.ASN AND T.ACNUM=A.ACNUM";
+				querySql += " ORDER BY BASEORG,APUMODEL,ACNUM ";
+				querySql += "";
+				
+				runlogListPanel.sql = querySql;
+				runlogListPanel.refresh();
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				runlogListPanel.exportAllData("APU小时循环统计");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<mx:VBox label="APU小时循环统计" width="100%" height="100%">
+			<component:AdvDataGridPanel id="runlogListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" 
+										sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn headerText="机号" dataField="acnum" width="100"/>
+					<mx:DataGridColumn headerText="APU型号" dataField="apumodel" width="100"/>
+					<mx:DataGridColumn headerText="APU号" dataField="asn" width="100" />
+					<mx:DataGridColumn headerText="基地" dataField="baseorg" width="100"/>
+					<mx:DataGridColumn headerText="运行小时" dataField="hour_sum" width="100"/>
+					<mx:DataGridColumn headerText="运行循环" dataField="cycle_sum" width="100"/>
+					<mx:DataGridColumn headerText="总小时" dataField="totalhour" width="100"/>
+					<mx:DataGridColumn headerText="总循环" dataField="totalcycle" width="100"/>
+					<mx:DataGridColumn headerText="修后小时" dataField="repairedhour" width="100"/>
+					<mx:DataGridColumn headerText="修后循环" dataField="repairedcycle" width="100"/>
+					<mx:DataGridColumn headerText="数据日期" dataField="datatime" width="100"/>
+					<mx:DataGridColumn headerText="安装时间" dataField="install_time" width="100"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

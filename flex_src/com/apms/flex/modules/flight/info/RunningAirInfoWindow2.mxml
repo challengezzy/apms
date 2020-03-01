@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="1000" height="100%" allowClose="true"
+					   close="PopUpManager.removePopUp(this);"
+					   allowDrag="true" title="接机信息列表"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   initialize="initializeHandler(event)"
+					   creationComplete="creationComplete()" visible="false"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import myreport.ReportDesigner;
+			import myreport.ReportEngine;
+			import myreport.ReportViewer;
+			import myreport.export.ExportEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private var flightService:RemoteObject = new RemoteObject;
+			private var apmsDsst:String = ApmsUIConst.FLIGHT_SERVICE;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var ddQuerySql:String="";
+			[Bindable]
+			private var defectremindQuerysql:String="";
+			[Bindable]
+			private var acPoTipQuerysql:String="";
+			[Bindable]
+			public var flightObj:Object; 
+			[Bindable]
+			private var cfdQuerysql:String="";
+			[Bindable]
+			public var user:String="";
+			private var flightno_a:String;
+			private var flightno_d:String;
+			private var flightid_a:String;
+			private var flightid_d:String;
+			private var apcode:String;
+			private var code_3:String;
+			
+			private var ddArraycollection:ArrayCollection=new ArrayCollection();
+			private var RemindArraycollection:ArrayCollection=new ArrayCollection();
+			private var CFDArraycollection:ArrayCollection=new ArrayCollection();
+			private var ACPArraycollection:ArrayCollection=new ArrayCollection();
+			private var totalArraycollection:ArrayCollection=new ArrayCollection();
+			
+			public function setAcnum(_acnum:String):void{
+				this.acid = _acnum;
+			}
+			public function setFlightno(flightno_A:String,flightno_D:String):void{
+				this.flightno_a = flightno_A;
+				this.flightno_d = flightno_D;
+			}
+			public function setFlightid(flightid_A:String,flightid_D:String):void{
+				this.flightid_a = flightid_A;
+				this.flightid_d = flightid_D;
+			}
+			public function setAcAp(ac_stop:String,code_3:String):void{
+				this.apcode = ac_stop;
+				this.code_3 = code_3;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				flightService.endpoint = endpoint;
+				flightService.destination = apmsDsst;
+				
+				ReportViewer.Instance.addEventListener(ExportEvent.EXPORT, OnExport);
+				
+				flightService.getDdInfoByAcId.addEventListener(ResultEvent.RESULT,setDdListInfo);
+				flightService.getDdInfoByAcId.addEventListener(FaultEvent.FAULT,faultHandlerForDd);	
+				
+				flightService.getRemindInfoByFlightId.addEventListener(ResultEvent.RESULT,setRemindListInfo);
+				flightService.getRemindInfoByFlightId.addEventListener(FaultEvent.FAULT,faultHandlerForRemind);	
+				
+				flightService.getCFDInfoByFlightId.addEventListener(ResultEvent.RESULT,setCFDListInfo);
+				flightService.getCFDInfoByFlightId.addEventListener(FaultEvent.FAULT,faultHandlerForCFD);	
+				
+				flightService.getACPInfoByAPAndCode_3.addEventListener(ResultEvent.RESULT,setACPListInfo);
+				flightService.getACPInfoByAPAndCode_3.addEventListener(FaultEvent.FAULT,faultHandlerForACP);	
+				
+				flightService.getDdInfoByAcId(acid);
+				flightService.getRemindInfoByFlightId(flightid_a,flightid_d);
+				flightService.getCFDInfoByFlightId(flightid_a,flightid_d);
+				flightService.getACPInfoByAPAndCode_3(apcode,code_3);
+			}
+			
+			private function setDdListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						ddArraycollection.addItem(res[i].dataMap);
+					}
+				}
+			}
+			
+			private function OnExport(event:ExportEvent):void
+			{
+				var file:FileReference;
+				if(event.FileType == ExportEvent.FILE_TYPE_PDF)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "接机信息但列表.pdf");
+				}
+				else if(event.FileType == ExportEvent.FILE_TYPE_XLS)
+				{
+					file = new FileReference();
+					//保存到本地，该方法要Flash player 10以上
+					file.save(event.Bytes, "接机信息但列表.xls");
+				}
+			}
+			
+			private function setRemindListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						RemindArraycollection.addItem(res[i].dataMap);
+					}
+				}
+			}
+			
+			private function setCFDListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						CFDArraycollection.addItem(res[i].dataMap);
+					}
+				}
+			}
+			
+			private function setACPListInfo(event:ResultEvent):void{
+				var res:Array = event.result as Array;
+				if(res.length>0){
+					for(var i:int=0;i<res.length;i++){
+						ACPArraycollection.addItem(res[i].dataMap);
+					}
+				}
+				HandleReport(1);
+				myreport.ReportViewer.Instance.width = 900;
+				PopUpManager.centerPopUp(myreport.ReportViewer.Instance);
+			}
+			
+			private function faultHandlerForDd(event:FaultEvent):void{
+				SmartXMessage.show("查询DD单信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				
+			}
+			
+			private function faultHandlerForRemind(event:FaultEvent):void{
+				SmartXMessage.show("查询提醒单信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				
+			}
+			
+			private function faultHandlerForCFD(event:FaultEvent):void{
+				SmartXMessage.show("查询CFD信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				
+			}
+			
+			private function faultHandlerForACP(event:FaultEvent):void{
+				SmartXMessage.show("查询ACP信息时出现错误！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+				
+			}
+			
+			private function creationComplete():void{
+				
+			}
+			/**
+			 * @param cmd: 0编辑, 1预览, 2直接打印
+			 */
+			private function HandleReport(mode:int):void
+			{
+				var url:String = "com/apms/flex/reportxml/XmlRunningAirInfoWindow2.xml";//XmlRunningAirInfoWindow2
+				var table:* = GetSubReportTableData1();
+				var params:* = GetParameterData();
+				
+				
+				switch(mode)
+				{
+					case 0://编辑
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportDesigner.Instance.Show(url, table, params);
+						break;
+					case 1://预览
+						//source支持url:String，xml:XML，null参数类型
+						myreport.ReportViewer.Instance.Show(url, table, params);
+						break;
+					case 2://直接打印
+						myreport.ReportEngine.LoadAndPrintAsync(url, table, params);
+						break;
+				}
+				
+			}
+			
+			
+			
+			private function GetParameterData():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				dict["主标题"] = "接机信息表";
+				dict["打印时间"] = new Date();
+				dict["打印人"] = user;
+				dict["航班日期"] = flightObj.flt_date_str!=null ? flightObj.flt_date_str : "";
+				dict["航班号"] = flightObj.flightno_union!=null ? flightObj.flightno_union : "";
+				dict["机号"] = flightObj.acnum!=null ? flightObj.acnum : "";
+				dict["机型"] = flightObj.acmodel!=null ? flightObj.acmodel : "";
+				dict["经停航站"] = flightObj.apt_union!=null ? flightObj.apt_union : "";
+				dict["维护"] = flightObj.maintaintype!=null ? flightObj.maintaintype: "";
+				dict["计划落起"] = flightObj.stda!=null ? flightObj.stda as String : "";
+				dict["机位"] = flightObj.ac_stop!=null ? flightObj.ac_stop : "";
+				dict["预达"] = flightObj.t_eta!=null ? flightObj.t_eta : "";
+				dict["预起"] = flightObj.t_etd !=null? flightObj.t_etd as String : "";
+				var maintain_userStr:String="";
+				var release_userStr:String="";;
+				var duty_userStr:String="";
+				var guardian_userStr:String="";
+				var handover_userStr:String="";
+				if(flightObj.maintain_user!=null){
+					maintain_userStr=flightObj.maintain_user+",";
+				}
+				if(flightObj.duty_user!=null){
+					duty_userStr=flightObj.duty_user+",";
+				}
+				if(flightObj.release_user!=null){
+					release_userStr=flightObj.release_user+",";
+				}
+				if(flightObj.guardian_user!=null){
+					guardian_userStr=flightObj.guardian_user+",";
+				}
+				if(flightObj.handover_user!=null){
+					handover_userStr=flightObj.handover_user;
+				}
+				dict["接机人"] = duty_userStr+maintain_userStr+release_userStr+guardian_userStr+handover_userStr;
+				//				dict["子报表1表格"] = GetSubReportTableData1();
+				//				dict["子报表1参数"] = GetSubReportParameterData1();
+				dict["子报表2表格"] = GetSubReportTableData2();
+				dict["子报表2参数"] = GetSubReportParameterData2();
+				dict["子报表3表格"] = GetSubReportTableData3();
+				dict["子报表3参数"] = GetSubReportParameterData3();
+				dict["子报表4表格"] = GetSubReportTableData4();
+				dict["子报表4参数"] = GetSubReportParameterData4();
+				
+				return dict;
+			}
+			/** 准备子报表1表格数据 */ 
+			private function GetSubReportTableData1():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if( ddArraycollection!=null){
+					for(var i:int=0;i<ddArraycollection.length;i++){  
+						var obj:Object = ddArraycollection.getItemAt(i);  
+						list.addItem({
+							DD单号: obj.dd_no!=null?obj.dd_no:"",
+							故障报告: obj.defect_rpt!=null?obj.defect_rpt:"",
+							措施: obj.rect!=null?obj.rect:"",
+							"M项":obj.m_flag!=null?obj.m_flag:""
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						DD单号: "",
+						故障报告: "",
+						措施: "",
+						"M项":""
+					});
+				}
+				return list;
+			}
+			/** 准备子报表1参数数据 */ 
+			private function GetSubReportParameterData1():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "DD单信息";
+				
+				return dict;
+			}
+			/** 准备子报表2表格数据 */ 
+			private function GetSubReportTableData2():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if(RemindArraycollection!=null){
+					for(var i:int=0;i<RemindArraycollection.length;i++){  
+						var obj:Object = RemindArraycollection.getItemAt(i);  
+						list.addItem({
+							提示类型:obj.tiptype!=null?obj.tiptype:"",
+							提示信息:obj.reminddesc!=null?obj.reminddesc:"",
+							反馈结果:obj.feedback!=null?obj.feedback:""
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						提示类型:"",
+						提示信息:"",
+						反馈结果:""
+					});
+				}
+				return list;
+			}
+			/** 准备子报表3表格数据 */ 
+			private function GetSubReportTableData3():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if( CFDArraycollection!=null){
+					for(var i:int=0;i<CFDArraycollection.length;i++){  
+						var obj:Object = CFDArraycollection.getItemAt(i);  
+						list.addItem({
+							类型:obj.type!=null?obj.type:"",
+							故障源:obj.fault_source!=null?obj.fault_source:"",
+							故障内容:obj.fault_content!=null?obj.fault_content:""
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						类型:"",
+						故障源:"",
+						故障内容:""
+					});
+				}
+				return list;
+			}
+			/** 准备子报表4表格数据 */ 
+			private function GetSubReportTableData4():ArrayCollection
+			{
+				var list:ArrayCollection = new ArrayCollection();
+				if( ACPArraycollection!=null){
+					for(var i:int=0;i<ACPArraycollection.length;i++){  
+						var obj:Object = ACPArraycollection.getItemAt(i);  
+						list.addItem({
+							提醒内容:obj.tipinfo!=null?obj.tipinfo:""
+						});
+					}  
+				}
+				if(list.length<=0){
+					list.addItem({
+						提醒内容:""
+					});
+				}
+				return list;
+			}
+			/** 准备子报表2参数数据 */ 
+			private function GetSubReportParameterData2():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "提醒单信息";
+				
+				return dict;
+			}
+			/** 准备子报表3参数数据 */ 
+			private function GetSubReportParameterData3():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "CFD信息";
+				
+				return dict;
+			}
+			/** 准备子报表4参数数据 */ 
+			private function GetSubReportParameterData4():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				
+				dict["主标题"] = "机位提醒信息";
+				
+				return dict;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</containers:SuperPanel>

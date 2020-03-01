@@ -1,0 +1,705 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  initialize="initializeHandler(event)"
+		  creationComplete="module_creationCompleteHandler(event)"
+		  xmlns:itemcomponent="smartx.flex.components.itemcomponent.*" xmlns:component="com.apms.flex.component.*"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+			
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.graphics.IFill;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			
+			[Bindable]
+			private var floatPointRadius:Number = 8;
+			
+			[Bindable]
+			private var changList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var s13Rank:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var s46Rank:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var etypeArr:ArrayCollection = new ArrayCollection([
+				{value:"0",desc:"未标记"},
+				{value:"1",desc:"故障数据"},
+				{value:"2",desc:"维修工作"},
+				{value:"3",desc:"不良数据"}]);
+			
+			private var markObj:Object;
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			[Bindable]
+			private var acmodel:String;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//行程服务添加监听
+				apmsService.getOxygenChartData.addEventListener(ResultEvent.RESULT,getOxygenChartDataHandler);
+				apmsService.getOxygenChartData.addEventListener(FaultEvent.FAULT,faultHandler4getOxygenChartData);
+				
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,getEventHashVoHandler);
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				apmsService.pointMarkA23.addEventListener(ResultEvent.RESULT,pointMarkOkHandler);
+				apmsService.pointMarkA23.addEventListener(FaultEvent.FAULT,faultHandler);
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var templetItemVO:TempletItemVO = new TempletItemVO();
+				templetItemVO.itemtype="参照";
+				templetItemVO.itemname="对照名称";
+				templetItemVO.itemkey="ACNUM";
+				templetItemVO.refdesc="SELECT air.ID ID#,am.modelcode modelcode#,AIRCRAFTSN 机号 FROM B_AIRCRAFT air,b_aircraft_model am where air.acmodelid=am.id;ds=datasource_apms";
+				var itemRefPanel:ItemRefPanel = new ItemRefPanel(templetItemVO,smartxDest,endpoint,false,false);
+				itemRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(itemRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = itemRefPanel.returnVO.name;
+						acmodel = itemRefPanel.returnVO.code;
+					}else{
+						acnum = null;
+					}
+				});
+				
+				acBox.addChild(itemRefPanel);				
+				
+				
+				//添加点提示信息的函数
+				s13Chart.plotChart.dataTipFunction=trendTipStrFunc0;
+				
+				s46Chart.plotChart.dataTipFunction=trendTipStrFunc0;
+				
+				presRateK.plotChart.dataTipFunction=trendTipStrFunc1;
+			}
+			
+			public function trendTipStrFunc0(e:HitData):String{
+				return trendTipStrFunc(e,"Psi");
+			}
+			
+			public function trendTipStrFunc1(e:HitData):String{
+				return trendTipStrFunc(e,"");
+			}
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				if(item[xField] is Date){
+					tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				}else if(item[xField] is Number){
+					var dateTemp:Date = DateUtil.parseMsToDate(item[xField]);
+					tip += "\n"+ DateUtil.dateToString(dateTemp,1);
+				}
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			} 
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据操作出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler4getOxygenChartData(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询氧气计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			//移除上一次计算出的斜率
+//			private function removePreSeries():void{
+//				var series13Arr:Array = s13Chart.series;
+//				var series46Arr:Array = s46Chart.series;
+//				
+//				var i:uint = series13Arr.length;
+//				var last:Series = series13Arr[series13Arr.length-1] as Series;
+//				while(last.name == "slopeLS"){
+//					series13Arr.pop();//从最后移除元素
+//					last = series13Arr[series13Arr.length-1] as Series;
+//				}
+//				
+//				last = series46Arr[series46Arr.length-1] as Series;
+//				while(last.name == "slopeLS"){
+//					series46Arr.pop();//从最后移除元素
+//					last = series46Arr[series46Arr.length-1] as Series;
+//				}
+//				
+//			}
+			
+			//是否显示斜率
+//			protected function s13SlopeChk_changeHandler(event:Event):void
+//			{
+//				var series13Arr:Array = s13Chart.series;
+//				var i:uint = series13Arr.length;
+//				for each(var s:Series in series13Arr){
+//					if(s.name == "slopeLS"){
+//						s.visible = s13SlopeChk.selected;
+//					}
+//				}				
+//			}
+			
+//			protected function s46SlopeChk_changeHandler(event:Event):void
+//			{
+//				var series46Arr:Array = s46Chart.series;
+//				var i:uint = series46Arr.length;
+//				for each(var s:Series in series46Arr){
+//					if(s.name == "slopeLS"){
+//						s.visible = s46SlopeChk.selected;
+//					}
+//				}				
+//			}
+//			
+			
+			private function getOxygenChartDataHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				changList = res["changList"];
+				allList = res["allList"];
+				s13Rank = res["s13Rank"];
+				s46Rank = res["s46Rank"];
+				
+				s13Chart.acmodel=acmodel;
+				s46Chart.acmodel=acmodel;
+				presRateK.acmodel=acmodel;
+				//添加斜率线
+				//addRankLineChart(res); //remove by zhangzy 20130507 使用线中缺失数据特点解决绘制多条线段难题
+				
+				
+			}
+			
+			//添加斜率线
+//			private function addRankLineChart(res:Object):void{
+//				//移除上一次的数据
+//				removePreSeries();
+//				
+//				if(isKChk.selected){					
+//					var s13RankList:ArrayCollection = res["s13RankList"];
+//					var s46RankList:ArrayCollection = res["s46RankList"];
+//					
+//					var rankNum:Number = s13RankList.length;
+//					
+//					var i:uint = 0;
+//					var rank:ArrayCollection;
+//					var ls:LineSeries;
+//					
+//					var series13Arr:Array = s13Chart.series;
+//					for(i=0;i<s13RankList.length;i++){
+//						rank = s13RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();						
+//						ls.visible = s13SlopeChk.selected;
+//						ls.name = "slopeLS";					
+//						ls.dataProvider = rank;
+//						ls.displayName="一元回归";
+//						ls.xField = "x";
+//						ls.yField = "y";
+//						ls.setStyle("fill",0x000000);
+//						ls.radius=1.5;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series13Arr = series13Arr.concat(ls);
+//						
+//						rank = s13RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();						
+//						ls.visible = s13SlopeChk.selected;
+//						ls.name = "slopeLS";					
+//						ls.dataProvider = rank;
+//						ls.displayName="范围上限";
+//						ls.xField = "x";
+//						ls.yField = "upValue";
+//						ls.setStyle("fill",0xcc0000);
+//						ls.radius=1;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series13Arr = series13Arr.concat(ls);
+//						
+//						rank = s13RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();						
+//						ls.visible = s13SlopeChk.selected;
+//						ls.name = "slopeLS";					
+//						ls.dataProvider = rank;
+//						ls.displayName="范围下限";
+//						ls.xField = "x";
+//						ls.yField = "downValue";
+//						ls.setStyle("fill",0xcc0000);
+//						ls.radius=1;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series13Arr = series13Arr.concat(ls);
+//					}
+//					s13Chart.series = series13Arr;
+//					
+//					var series46Arr:Array = s46Chart.series;
+//					for(i=0;i<s46RankList.length;i++){
+//						rank = s46RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();
+//						ls.visible = s46SlopeChk.selected;
+//						ls.name = "slopeLS";
+//						ls.dataProvider = rank;
+//						ls.displayName="一元回归";
+//						ls.xField = "x";
+//						ls.yField = "y";
+//						ls.setStyle("fill",0x000000);
+//						ls.radius=1.5;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series46Arr = series46Arr.concat(ls);
+//						
+//						rank = s46RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();
+//						ls.visible = s46SlopeChk.selected;
+//						ls.name = "slopeLS";
+//						ls.dataProvider = rank;
+//						ls.displayName="范围上限";
+//						ls.xField = "x";
+//						ls.yField = "upValue";
+//						ls.setStyle("fill",0xcc0000);
+//						ls.radius=1;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series46Arr = series46Arr.concat(ls);
+//						
+//						rank = s46RankList.getItemAt(i) as ArrayCollection;
+//						ls = new LineSeries();
+//						ls.visible = s46SlopeChk.selected;
+//						ls.name = "slopeLS";
+//						ls.dataProvider = rank;
+//						ls.displayName="范围下限";
+//						ls.xField = "x";
+//						ls.yField = "downValue";
+//						ls.setStyle("fill",0xcc0000);
+//						ls.radius=1;
+//						ls.setStyle("lineStroke",slopeStroke);
+//						series46Arr = series46Arr.concat(ls);
+//					}
+//					s46Chart.series = series46Arr;
+//				}
+				
+				//设置X坐标范围
+//				if(allList.length > 0){
+//					var min:Number = new Number(allList.getItemAt(0)["DATETIME_MID_S46"]) + 1000*3600*24;
+//					var max:Number = new Number(allList.getItemAt(allList.length-1)["DATETIME_MID_S46"]) + 1000*3600*24;
+//					dayXAxis.minimum = parseToDate(min+"");
+//					dayXAxis.maximum =  parseToDate(max+"");
+//				}
+//			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if(acnum == null || acnum==""){
+					SmartXMessage.show("请选择一个飞机号！");
+					return;
+				}
+				
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				apmsService.getOxygenChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+				
+				//清楚之前的斜率
+//				var series13Arr:Array = new Array(); ;
+//				for each(var s:Series in s13Chart.series){
+//					if(s.name != "slopeLS"){
+//						series13Arr.push(s);
+//					}
+//				}	
+//				s13Chart.series = series13Arr;
+//				
+//				var series46Arr:Array = new Array(); ;
+//				for each(var s2:Series in s46Chart.series){
+//					if(s.name != "slopeLS"){
+//						series46Arr.push(s2);
+//					}
+//				}	
+//				s46Chart.series = series46Arr;
+			}
+			
+			//用来将string型的时间换算成Date型，以便在X轴上正确显示
+			private function parseToDate(s:String):Date{
+				var newDate:Date = new Date();
+				if(s.indexOf("-") > 0){
+					//s = "2007-10-15 20:15" 
+					var temp:Array = s.split(" ");   
+					var datepart:String = temp[0];   
+					var datearray:Array = datepart.split("-");   
+					var timepart:String = temp[1];   
+					var timearray:Array = timepart.split(":");
+					newDate = new Date(datearray[0],datearray[1]-1,datearray[2],timearray[0],timearray[1]); 
+				}else{
+					//毫秒数
+					newDate.setTime(Number(s));
+				}
+				
+				return newDate;   
+			}
+			
+			//把毫秒转换成日期
+			private function parseMsToDate(ms:Number):Date{
+				var newDate:Date = new Date();
+				
+				newDate.setTime(ms);
+				return newDate;
+			}
+			
+			private function getDate():Date{
+				var nowTime:Date = new Date();
+				return nowTime;
+			}
+			
+			private function getPreDate():Date{
+				var nowTime:Date = new Date();
+				var now_millisecond:Number = nowTime.getTime();
+				var twenty_four_hour:Number = 24*60*60*1000;
+				var yesterday_millisecond:Number = now_millisecond - twenty_four_hour*10; //获取10天前日期
+				var preTime:Date = new Date(yesterday_millisecond);
+				return preTime;
+			}
+			
+			private function getFillColor(eventType:Number):uint{
+				var color:uint = 0x0000FF;
+				
+				if(eventType == 0){
+					//未标记
+					color = 0x0000FF;//蓝色
+				}else if(eventType == 1){
+					//故障数据
+					color = 0xFF0000;//红色
+				}else if(eventType == 2){
+					//维修工作
+					color = 0xFF9900;//橙色
+				}else if(eventType == 3){
+					//不良数据
+					color = 0x555555;//灰色
+				}
+				
+				return color;
+			}
+			
+			private function fillByType_K(element:ChartItem, index:Number):IFill {
+				return getFill(element,index,"PRES_ST_S46_K_OUT");
+			}
+			
+			//掉压率点填充
+			private function fillByType_DetaRate(element:ChartItem, index:Number):IFill {
+				return getFill(element,index,"DETA_PRESRATE_ST_OUT");
+			}
+			
+			private function fillByType_DetaRate24H(element:ChartItem, index:Number):IFill {
+				return getFill(element,index,"DETA_PRESRATE_ST_OUTS46H24");
+			}
+			
+			private function fillByType(element:ChartItem, index:Number):IFill {
+				return getFill(element,index,null);
+			}
+			
+			private function getFill(element:ChartItem, index:Number,outField:String):IFill {
+				var sc:SolidColor = new SolidColor(0x00CC00);
+				
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var eventType:Number = itemObj["EVENTTYPE"] as Number;
+				
+				var presrate_st_out:Number = itemObj[outField] as Number;
+				if(outField == null)
+					presrate_st_out = 0;
+					
+				if(presrate_st_out == 1){
+					sc.alpha = 0;
+				}else{
+					sc.color = getFillColor(eventType);
+				}
+				
+				return sc;
+			}
+			
+			//自定义DataTip
+			public function myDataTipFunction(e:HitData):String {
+				var s:String;
+				s += "Profit: $" + (e.item.Income - e.item.Expenses);
+				return s;
+			}
+
+		
+			
+			public function pointMarkOkHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("点事件标记成功！ ");
+				
+				PopUpManager.removePopUp(eventWindow);
+			}
+			
+			private function getEventHashVoHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Array = event.result as Array;
+				markObj = res[0]["dataMap"];
+				
+				if(etypeCmb != null){
+					//显示数据更新
+					eventWindowDataUpdated();
+				}
+									
+				PopUpManager.addPopUp(eventWindow,this);
+				PopUpManager.centerPopUp(eventWindow);
+			}
+			
+			protected function s46Chart_itemDoubleClickHandler(event:ChartItemEvent):void
+			{
+				//TODO Auto-generated method stub
+				
+			}
+			
+			private function markEventConfirm():void{
+				var nowData:String= DateUtil.dateToString(new Date(),1);
+				
+				apmsService.pointMarkA23(markObj["msg_no"],etypeCmb.selectedItem["value"],memoTextArea.text,user,nowData);
+				OperatingTipUtil.startOperat("正在更新....",this);
+			}
+			
+			protected function eventWindow_creationCompleteHandler(event:FlexEvent):void
+			{
+				eventWindowDataUpdated();
+			}
+			
+			private function eventWindowDataUpdated():void{
+				var type:String = markObj["eventtype"];
+				for each(var obj:Object in etypeCmb.dataProvider){
+					if(type == String(obj["value"])){
+						etypeCmb.selectedItem = obj;
+						break;
+					}
+				}
+				markerLabel.text = markObj["marker"];
+				
+				var time:Date = markObj["marktime"] as Date;
+				markerTime.text = DateUtil.dateToString(time,1);;
+				
+				
+				memoTextArea.text = markObj["markmemo"];
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"机组氧气趋势分析");
+			}
+			
+			protected function tabnavigator_changeHandler(event:IndexChangedEvent):void
+			{
+				if(tab.selectedIndex==1){
+					if(presrate_st!=null){
+						presrate_st.plotChart.dataTipFunction=trendTipStrFunc1;
+						presrate_sts46h24.plotChart.dataTipFunction=trendTipStrFunc1;
+						pres_fwd.plotChart.dataTipFunction=trendTipStrFunc0;
+					}
+				}else if(tab.selectedIndex==2){
+					if(presrate_st_tsmp_alter!=null){
+						presrate_st_tsmp_alter.plotChart.dataTipFunction=trendTipStrFunc1;
+						presrate_h24_tsmp_alter.plotChart.dataTipFunction=trendTipStrFunc1;
+						pres_st_s46_k_tsmp_alter.plotChart.dataTipFunction=trendTipStrFunc1;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+		
+	<fx:Declarations>
+		<mx:SolidColor id="blueColor" color="blue"/>
+		<mx:SolidColor id="redColor" color="red"/>
+		
+		<s:SolidColorStroke id="avgLineStroke" color="0x33CC66" weight="2" alpha="1"/>
+		<s:SolidColorStroke id="pointStroke" weight="1" alpha="1"/>
+		<s:SolidColorStroke id="slopeStroke" weight="1" alpha="1"/>
+
+		<mx:DateTimeAxis id="dayXAxis" labelUnits="days" dataUnits="days" parseFunction="parseToDate"/> 
+		<mx:LinearAxis id="lineYAxis" baseAtZero="false" />  
+		
+		<mx:TitleWindow id="eventWindow" layout="vertical" height="360" width="480" showCloseButton="true"
+						creationComplete="eventWindow_creationCompleteHandler(event)"
+						close="PopUpManager.removePopUp(eventWindow)" >
+			<mx:Label text="事件类型"/>
+			<mx:ComboBox id="etypeCmb" text="box" dataProvider="{etypeArr}" labelField="desc" />
+			<mx:Label text="标记说明:" />
+			
+			<mx:TextArea id="memoTextArea" width="400" height="150" />
+			<mx:HBox width="100%">
+				<mx:Label text="标记人："/>  
+				<mx:Label id="markerLabel" text="" color="red"/>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Label text="标记时间："/>
+				<mx:Label id="markerTime" text="" color="red"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="确定"  click="markEventConfirm()" height="22"/>
+				<mx:Button label="取消"  click="PopUpManager.removePopUp(eventWindow)"  height="22"/>
+			</mx:HBox>
+		</mx:TitleWindow>
+		
+	</fx:Declarations>
+	
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="40" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:CheckBox id="isKChk" label="斜率计算" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)"/>
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:TabNavigator id="tab" width="100%" height="100%" change="tabnavigator_changeHandler(event)">
+			<mx:VBox label="标态压力" width="100%" height="860">	
+				
+				<mx:VBox height="100%" width="100%">
+				
+					<component:ReportTrendChartOxy id="s13Chart" chartName="起飞前标态压力" height="100%" width="100%"
+											    valField="PRES_ST_C15_S13" xField="DATETIME_MID_S13" isAvg5="true" 
+												isSlope="true" isRangeChk="true" avg5Field="PRES_ST_C15_S13_ROLL5"
+												slopeList="{s13Rank}" changList="{changList}" allList="{allList}" isRedLine="true"
+												s13s46ChartBoolean="true">
+					</component:ReportTrendChartOxy>
+					<component:ReportTrendChartOxy id="s46Chart" chartName="落地后标态压力" height="100%" width="100%"
+											  valField="PRES_ST_C15_S46" xField="DATETIME_MID_S46" isAvg5="true" 
+											  isSlope="true" isRangeChk="true" avg5Field="PRES_ST_C15_S46_ROLL5"
+											  slopeList="{s46Rank}" changList="{changList}" allList="{allList}" isRedLine="true"
+											  s13s46ChartBoolean="true">
+					</component:ReportTrendChartOxy>
+					
+				
+					<component:ReportTrendChartOxy id="presRateK" chartName="K值(S46基于时间N点斜率)" height="100%" width="100%"
+													  valField="PRES_ST_S46_K" xField="DATETIME_MID_S46" 
+													  pointTypeField="PRES_ST_S46_K_OUT" isRedLine="true"
+													  changList="{changList}" allList="{allList}"
+													  presRateKBoolean="true">
+					</component:ReportTrendChartOxy>
+					
+					
+				</mx:VBox>
+			</mx:VBox >
+			<mx:VBox label="掉压分析" width="100%" height="860">
+				<component:ReportTrendChartOxy    id="presrate_st" chartName="本报文掉压率"   height="100%" width="100%"
+												  valField="DETA_PRESRATE_ST" xField="DATETIME_MID_S46" isAvg5="true" 
+												  avg5Field="DETA_PRESRATE_ST_ROLL5"
+												  pointTypeField="DETA_PRESRATE_ST_OUT"
+												  changList="{changList}" allList="{allList}">
+				</component:ReportTrendChartOxy>
+				
+				<component:ReportTrendChartOxy id="presrate_sts46h24" chartName="24小时掉压率" height="100%" width="100%"
+												  valField="DETA_PRESRATE_STS46H24" xField="DATETIME_MID_S46" isAvg5="true" 
+												  avg5Field="DETA_PRESRATE_STS46H24_ROLL5"
+												  pointTypeField="DETA_PRESRATE_ST_OUTS46H24"
+												  changList="{changList}" allList="{allList}">
+				</component:ReportTrendChartOxy>
+				
+				<component:ReportTrendChartOxy  id="pres_fwd" chartName="前后报文掉压" height="100%" width="100%"
+												  valField="DETA_PRES_FWD" xField="DATETIME_MID_S46" isAvg5="true" 
+												  avg5Field="DETA_PRES_FWD_ROLL5"
+												  changList="{changList}" allList="{allList}">
+				</component:ReportTrendChartOxy>
+				
+				
+				
+				
+			</mx:VBox>
+			<mx:VBox label="T检验分析" height="100%" width="100%">
+				
+				<component:ReportTrendChartOxy id="presrate_st_tsmp_alter" chartName="本报文掉压率T检验" height="100%" width="100%"
+												  valField="DETA_PRESRATE_ST_TSMP_ALTER" xField="DATETIME_MID_S46"  
+												  changList="{changList}" allList="{allList}" isPointChk="false">
+				</component:ReportTrendChartOxy>
+				
+				<component:ReportTrendChartOxy  id="presrate_h24_tsmp_alter" chartName="24H掉压率T检验" height="100%" width="100%"
+												  valField="DETA_PRESRATE_H24_TSMP_ALTER" xField="DATETIME_MID_S46"  
+												  changList="{changList}" allList="{allList}" isPointChk="false">
+				</component:ReportTrendChartOxy>
+				
+				<component:ReportTrendChartOxy id="pres_st_s46_k_tsmp_alter" chartName="掉压率K值T检验" height="100%" width="100%"
+											 	  valField="PRES_ST_S46_K_TSMP_ALTER" xField="DATETIME_MID_S46"  
+												  changList="{changList}" allList="{allList}" isPointChk="false">
+				</component:ReportTrendChartOxy>
+				
+				
+				
+			</mx:VBox>
+		</mx:TabNavigator>
+	</mx:VBox>
+	
+</mx:Module>

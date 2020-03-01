@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="1200" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A48 VSV性能报文" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a48vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a48Data:Object;//译后报文内容
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			[Bindable]
+			private var initCondition:String;
+			
+			private function creationComplete():void
+			{
+				a48Data = a48vo.dataMap;
+			}
+			
+			public function set msg_no(msg_no:String):void{
+				initCondition = " MSG_NO = " + msg_no;
+			}
+			
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A48 VSV性能报");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator height="100%" width="100%">
+		<mx:HDividedBox id="contentBox" width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="0" id="formatBox">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   ENG START AIR VALVE RPT(49)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>				
+				<report:ReportHeaderPanel headHashVo="{a48vo}" height="190"/>
+				
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号"  leftVal="{a48Data.esn_1}" rightVal="{a48Data.esn_2}"/>
+					<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a48Data.ehrs_1}" rightVal="{a48Data.ehrs_2}"/>
+					<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a48Data.ecyc_1}" rightVal="{a48Data.ecyc_2}" />
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="F1" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="SVAWAF" name1ToVisible="false" leftVal="{a48Data.svawaf}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="SVAL"  name1ToVisible="false" leftVal="{a48Data.sval}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="SVATK"  name1ToVisible="false" leftVal="{a48Data.svatk}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="SVAXCF"  name1ToVisible="false" leftVal="{a48Data.svaxcf}" boxWidth="80" />
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="F2" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="B25WAF"  name1ToVisible="false"  leftVal="{a48Data.b25waf}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="B25L"  name1ToVisible="false" leftVal="{a48Data.b25l}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="B25TK"  name1ToVisible="false" leftVal="{a48Data.b25tk}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="B25XCF"  name1ToVisible="false" leftVal="{a48Data.b25xcf}" boxWidth="80" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="BEFORE/AT and POST THEN EVENT( PER 1S )" fontWeight="bold"  />
+				</mx:HBox>
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="200" id="listPanel" 
+									templetCode="T_A_DFD_A48IAEV25_LIST_PREFDATA" debugMode="false"
+									initQueryCondition="{initCondition}"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				<mx:Spacer height="30"/>
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="S5" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="SVADQ"  name1ToVisible="false" leftVal="{a48Data.svadq_1}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="SVADAV"  name1ToVisible="false" leftVal="{a48Data.svadav_1}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="SVADVAR"  name1ToVisible="false" leftVal="{a48Data.svadvar_1}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="TIME"  name1ToVisible="false" leftVal="{a48Data.timestr_1}" boxWidth="80" />
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="S5" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false"  leftVal="{a48Data.svadq_2}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.svadav_2}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.svadvar_2}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.timestr_2}" boxWidth="80" />
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel leftVal="S5" name1ToVisible="false" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false"  leftVal="{a48Data.svadq_3}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.svadav_3}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.svadvar_3}" boxWidth="80" />
+					<report:OneValuesReportPanel englishName="" name1ToVisible="false" leftVal="{a48Data.timestr_3}" boxWidth="80" />
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:TabNavigator>
+</containers:SuperPanel>

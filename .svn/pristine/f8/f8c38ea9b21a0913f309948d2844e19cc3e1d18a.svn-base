@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   creationComplete="creationComplete()"
+			   showCloseButton="true"
+			   title="风险点关键点列表"
+			   width="800" height="500" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+		
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import com.apms.flex.vo.ApmsUIConst;
+
+
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			public var selObjCur:Object;
+			[Bindable]
+			private var querySqlMain:String = "";
+			[Bindable]
+			private var quereSqlChild:String = "";
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+
+			private function creationComplete():void
+			{	
+				
+				fileListDg.simpleQueryPanel.height=0;
+				childFileListDg.simpleQueryPanel.height = 0;
+				querySqlMain ="select j.id,c.name," +
+					" (select valueen  from B_DICTIONARY d where d.classname='JOBCARD_KEYPOINT' " +
+					" and d.attributename='POINTTYPE' and d.value = j.pointtype)  pointtype,j.seqnum,"+
+       				" (select valueen  from B_DICTIONARY d where d.classname='JOBCARD_KEYPOINT' " +
+					" and d.attributename='CHECKTYPE' and d.value = j.checktype ) checktype,"+
+                    " j.shortdesc,j.detaildesc from u_jobcard_keypoint j,U_JOBCARD_BASIC c " +
+					" where c.id = j.jobcardid  and j.jobcardid="+selObj["ID"]+" order by j.updatetime desc";
+				
+				
+				fileListDg.refresh();
+				
+				fileListDg.dataListGrid.addEventListener(ListEvent.CHANGE,listPanelItemClickHander);
+				
+			}
+			
+			private function listPanelItemClickHander(event:ListEvent):void{
+				selObjCur = fileListDg.getSelectedRowValue();
+				quereSqlChild = "select id, name, updateuser from u_jobcard_keypoint_met where keypointid="+selObjCur["id"];
+				childFileListDg.sql = quereSqlChild;
+				detail.text = selObjCur["detaildesc"];
+				childFileListDg.refresh();
+			}
+		]]>
+	</fx:Script>
+		
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		<mx:HBox width="100%" height="50%" >
+		<component:AdvDataGridPanel width="100%" height="100%" id="fileListDg"  sql="{querySqlMain}" dataSource="{apmsDs}">
+			<component:columns>	
+				<mx:DataGridColumn dataField="pointtype" headerText="要点类型" width="75"/>
+				<mx:DataGridColumn dataField="seqnum" headerText="序号" width="75" />
+				<mx:DataGridColumn dataField="checktype" headerText="检验类型" width="75"/>
+				<mx:DataGridColumn dataField="shortdesc" headerText="简要说明" width="150"/>
+				<mx:DataGridColumn dataField="name" headerText="工卡名称" width="300" />
+
+			</component:columns>
+		</component:AdvDataGridPanel>
+		</mx:HBox>	
+		
+		<mx:HBox   width="100%" height="50%"  verticalAlign="top">
+			<mx:Label text="详细说明:" width="6%"/>
+
+			<mx:TextArea id ="detail"  width="54%"  height="100%"  >
+				
+			</mx:TextArea>
+			<component:AdvDataGridPanel id="childFileListDg" width="40%"  height="100%" dataSource="{apmsDs}">
+				<component:columns>			
+					<mx:DataGridColumn dataField="name" headerText="资料名称" width="170" />
+					<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="125" />
+					
+					<mx:DataGridColumn dataField="xx" headerText="" width="30">
+						<mx:itemRenderer>
+							<fx:Component>
+									<mx:LinkButton toolTip="下载"
+												   click="downLoad(event);"
+												   icon="{AssetsFileLib.downIcon}"
+												   width="100%"
+												   height="100%">
+										<fx:Script>
+											<![CDATA[ 
+												import com.apms.flex.assets.AssetsFileLib;
+												import flash.net.URLRequest;
+												import flash.net.navigateToURL;
+												
+												import mx.controls.Alert;
+												import mx.events.CloseEvent;
+												import mx.managers.PopUpManager;
+												import mx.rpc.events.FaultEvent;
+												import mx.rpc.events.ResultEvent;
+												import mx.rpc.remoting.mxml.RemoteObject;
+												
+												import smartx.flex.components.basic.ClientEnviorment;
+												import smartx.flex.components.core.BillListPanel;
+												import smartx.flex.components.styletemplate.ifc.ListButtonListener;
+												import smartx.flex.components.util.OperatingTipUtil;
+												import smartx.flex.components.util.SmartXMessage;
+												import com.apms.flex.vo.ApmsUIConst;
+
+												private var destination:String = ApmsUIConst.FIEL_SEPFILESERVICE;
+
+												private var formService:RemoteObject=new RemoteObject;
+												private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+											
+												
+												private function downLoad(event:MouseEvent):void{
+
+													formService = new RemoteObject(destination);
+													formService.endpoint = endpoint;
+													
+													formService.riskAndKeyPointFileDownload.addEventListener(ResultEvent.RESULT,attachFileDownloadHandler);
+													formService.riskAndKeyPointFileDownload.addEventListener(FaultEvent.FAULT,faultHandler);
+													
+													formService.riskAndKeyPointFileDownload(data.id,data.name);
+
+												}
+												
+												private function faultHandler(event:FaultEvent):void{
+													OperatingTipUtil.endOperat();
+													SmartXMessage.show("文件下载失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+												}
+												
+												private function attachFileDownloadHandler(event:ResultEvent):void{
+													var url:String = event.result as String;
+													navigateToURL(new URLRequest(encodeURI(url)), "_blank");
+													OperatingTipUtil.endOperat();
+												}
+												
+											]]>  
+										</fx:Script>
+									</mx:LinkButton>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:HBox>
+		
+	</mx:VBox>
+</mx:TitleWindow>

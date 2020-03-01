@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:core="smartx.flex.components.core.*"
+					   width="750" height="500"  verticalGap="1" 
+					   xmlns:bill="com.cool.components.bill.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   title="日常计划编辑"  layout="vertical"
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this);" 
+					   >
+	<fx:Script>
+		<![CDATA[
+//			xmlns:styletemplate="smartx.flex.components.styletemplate.*"s
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.GridItem;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String ="http://localhost:8080/apms/messagebroker/amf";
+//				ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var user:String = "user";
+
+			[Bindable]
+			private var condStr:String = " 1=2 "; 
+			[Bindable]
+			public var scheduleDate:Date;
+			[Bindable]
+			public var scheduleTime:Date;
+			[Bindable]
+			private var initTime:Date = new Date();
+			[Bindable]
+			private var fltno:String;
+			
+			public var maintaintype:String;
+			private var flt_pk:String;
+			public var gridItem:GridItem;
+			public var  refreshGridItem:Function=function():void{};
+			public var gridItemText:String;
+			
+			//排故经过，技术分析，延误分析，运行调查，运行回复，日常通报，排故记录,运行错误
+			[Bindable]
+			private var typeArr:ArrayCollection = new ArrayCollection([
+				{value:""},{value:"排故经过"},{value:"技术分析"},{value:"延误分析"},{value:"航材保障"},{value:"工具保障"},{value:"技术方案"}
+				,{value:"运行调查"},{value:"运行回复"},{value:"运行困难"}
+				,{value:"排故记录"},{value:"日常通报"}
+				,{value:"三方业务"},{value:"协议外委"}
+				]);
+			
+			
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				updateTime.nowTime = new Date();
+				updateDate.nowTime = new Date();
+				
+				var tempStr:String=(gridItem.getChildAt(0) as Label).text;
+				var num:Number=tempStr.indexOf("\r");
+				if(num!=-1){
+					txtComments.text=tempStr.substring(num+1);
+				}
+				scheduleTime=scheduleDate;
+			}
+			
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				//listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListChangeHander(event:ListEvent):void{
+				
+			}
+			
+			
+			protected function onAddClickHandler(event:MouseEvent):void
+			{
+				var comments:String = txtComments.text;
+				var updatetime:String =updateDate.text ;
+				var updateuser:String = txtUser.text;
+				var obl:Object=gridItem;
+				var label:Label=(obl.getChildAt(0) as Label);
+				var tempStr:String= label.text;
+				var tempArr:Array=tempStr.split("\r");
+				tempStr =tempArr[0]+"\r\n"+ txtComments.text;
+				gridItemText=tempStr;
+				refreshGridItem();
+				srvFlight.dailyScheduleAdd(comments,updatetime,updateuser);
+				OperatingTipUtil.startOperat("确认数据保存中...");
+				PopUpManager.removePopUp(this);
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightReportAdd(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("添加或修改操作失败！",SmartXMessage.MESSAGE_ERROR);
+			}	
+			
+			private function result4flightReportAdd(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("添加或修改操作成功！");
+
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="dailyScheduleAdd" result="result4flightReportAdd(event)" 
+					   fault="fault4flightReportAdd(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%" paddingLeft="40" paddingTop="60">
+		<mx:HBox width="100%" height="55" verticalAlign="middle" paddingRight="20">
+			<mx:Label text="日程计划" width="60" />
+			<mx:TextInput id="txtComments" width="100%"  height="50" />
+		</mx:HBox>
+		<mx:HBox width="100%" height="35" verticalAlign="middle" >
+			<mx:Label text="日程日期" width="60" />
+			<component:DateTimeChooser id="updateDate" nowTime="{scheduleTime}"   enabled="false" formatterType="2"/>
+		</mx:HBox>
+		<mx:HBox width="100%" height="35" verticalAlign="middle" >
+			<mx:Label text="更新时间" width="60" />
+			<component:DateTimeChooser id="updateTime" nowTime="{initTime}"  enabled="false" formatterType="1"/>
+		</mx:HBox>
+		<mx:HBox width="100%" height="35" verticalAlign="middle" >
+			<mx:Label text="更新人" width="60" />
+			<mx:TextInput id="txtUser" width="140" text="{user}"  enabled="false"/>
+		</mx:HBox>
+		
+		<mx:HBox width="100%"  horizontalAlign="center"  height="100%" verticalAlign="bottom" paddingBottom="80">
+			<mx:Button icon="{AssetsFileLib.insertIcon}"  label="添加或修改" click="onAddClickHandler(event)" />
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

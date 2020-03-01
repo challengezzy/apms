@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="880" height="500" allowClose="true"
+					   title="工作通报" 
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this);"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:bill="com.cool.components.bill.*" xmlns:styletemplate="smartx.flex.components.styletemplate.*" xmlns:component="com.apms.flex.component.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+
+			[Bindable]
+			private var condStr:String = " 1=2 "; 
+			[Bindable]
+			private var initTime:Date = new Date();
+			[Bindable]
+			private var fltno:String;
+			
+			public var maintaintype:String;
+			private var flt_pk:String;
+			
+			
+			//排故经过，技术分析，延误分析，运行调查，运行回复，日常通报，排故记录,运行错误
+			[Bindable]
+			private var typeArr:ArrayCollection = new ArrayCollection([
+				{value:""},{value:"排故经过"},{value:"技术分析"},{value:"延误分析"},{value:"航材保障"},{value:"工具保障"},{value:"技术方案"}
+				,{value:"运行调查"},{value:"运行回复"},{value:"运行困难"}
+				,{value:"排故记录"},{value:"日常通报"}
+				,{value:"三方业务"},{value:"协议外委"}
+				]);
+			
+			public function setFlightno( fltpk_a:String,flightno_a:String, fltpk_d:String ,flightno_d:String):void{
+				var flightIdCondStr:String = "0";
+				if(maintaintype=="AF"){
+					flightIdCondStr += ","+fltpk_a;
+					flt_pk=fltpk_a;
+					fltno=flightno_a;
+					
+				}
+				if(maintaintype=="PF"){
+					flightIdCondStr += ","+fltpk_d;
+					flt_pk=fltpk_d;
+					fltno=flightno_d;
+				}
+				if(maintaintype=="AF+PF"||maintaintype=="TR"){
+					flightIdCondStr += ","+fltpk_d + ","+fltpk_a;
+					flt_pk=fltpk_d;
+					fltno=flightno_d;
+				}
+				condStr = " flightid = any("+flightIdCondStr+") ";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					txtDetailContent.text = "";
+					
+					listPanel.query(false,false,true);
+					clearCardValue();
+				}
+				
+				
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				dateReport.nowTime = new Date();
+				txtType.text = cmbType.selectedItem.value;
+				listPanel.addEventListener(BillListPanelEvent.INITCOMPLETE,onBillListInitCompleteHandler);
+				listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListChangeHander);
+			}
+			
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				//listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListChangeHander(event:ListEvent):void{
+				var rowObj:Object = listPanel.getSelectedRowValue();
+				txtDetailContent.text = rowObj["REPORTCONTENT"];
+				
+			}
+			
+			private function clearCardValue():void{
+				
+//				txtType.visible = false;
+//				
+//				flightnoid.text = "";
+				cmbType.selectedIndex = 10;
+//				txtType.text = "";
+				txtReporter.text = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+//				txtRecipient.text = "";
+//				dateReport.text = "";
+//				txtContent.text = "";
+//				
+//				dateReport.nowTime = new Date();
+			}
+			
+			protected function onAddClickHandler(event:MouseEvent):void
+			{
+				if(fltno == null){
+					SmartXMessage.show("航班号不能为空!");
+					return;
+				}
+				
+				if(txtType.text == null || txtType.text == ""){
+					SmartXMessage.show("通报类型不能为空!");
+					return;
+				}
+				if(txtReporter.text == null || txtReporter.text == ""){
+					SmartXMessage.show("通报人不能为空!");
+					return;
+				}
+				if(txtRecipient.text == null || txtRecipient.text == ""){
+					SmartXMessage.show("接收人不能为空!");
+					return;
+				}
+				if(dateReport.text == null || dateReport.text == ""){
+					SmartXMessage.show("通报时间不能为空!");
+					return;
+				}
+				if(txtContent.text == null || txtContent.text == ""){
+					SmartXMessage.show("通报内容不能为空!");
+					return;
+				}
+				
+				var rptObj:Object = new Object;
+				rptObj["FLIGHTID"] = flt_pk;
+				rptObj["FLIGHTNO"] = fltno;
+				rptObj["TYPE"] = txtType.text;
+				rptObj["REPORTER"] = txtReporter.text;
+				rptObj["RECIPIENT"] = txtRecipient.text;
+				rptObj["REPORTTIME"] = dateReport.text;
+				rptObj["REPORTCONTENT"] = txtContent.text;
+				rptObj["COMMENTS"] = txtComments.text;
+				
+				srvFlight.flightReportAdd(user, rptObj);
+				OperatingTipUtil.startOperat("确认数据保存中...");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightReportAdd(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("新增航班["+fltno+"]通报类型["+txtType.text+"]失败！",SmartXMessage.MESSAGE_ERROR);
+			}	
+			
+			private function result4flightReportAdd(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("新增航班["+fltno+"]通报类型["+txtType.text+"]成功！");
+
+				clearCardValue();
+				listPanel.query(false,false,true);
+			}
+			
+			
+			protected function cmbType_changeHandler(event:ListEvent):void
+			{
+				txtType.text = cmbType.selectedItem.value;
+				if(txtType.text == null || txtType.text == ""){
+					txtType.visible = true;
+				}else{
+					txtType.visible = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightReportAdd" result="result4flightReportAdd(event)" 
+					   fault="fault4flightReportAdd(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:TabNavigator width="100%" height="100%" creationPolicy="all">
+			<mx:VBox height="100%" width="100%" label="通报记录">
+				<bill:BillListPanel label="通报记录" id="listPanel" height="100%" width="100%" initQueryCondition="{condStr}" showDataAfterInit="true"
+									cacheMode="{BillListPanel.CACHE_MODE_NO}"
+									showQuickQueryPanel="true" showLoadingWindow="true" showPageBox="false"
+									endpoint="{endpoint}" templetCode="T_F_FLIGHTREPORT_MONITOR"
+									>
+					
+				</bill:BillListPanel>
+				<mx:HBox width="100%" paddingBottom="5">
+					<mx:Label text="通报内容" />
+					<mx:TextArea id="txtDetailContent" width="90%" height="50" paddingTop="5" paddingLeft="10" editable="false">
+					</mx:TextArea>
+				</mx:HBox>
+			</mx:VBox>
+			
+			<mx:VBox label="通报新增" height="100%" width="100%" paddingLeft="40" paddingTop="20">
+				<mx:HBox width="100%">
+					<mx:Label text="航班号" width="60" color="red"/>
+					<mx:TextInput id="flightnoid" width="140"  text="{fltno}" editable="false"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%">
+					<mx:Label text="通报类型" width="60" />
+					<mx:ComboBox id="cmbType" dataProvider="{typeArr}" selectedIndex="10" labelField="value" color="red" width="140" change="cmbType_changeHandler(event)" />
+					<s:Spacer width="10" />
+					<mx:TextInput id="txtType" width="140" visible="false" />
+				</mx:HBox>
+				
+				
+				<mx:HBox width="100%" height="35" verticalAlign="middle">
+					<mx:Label text="通报人" width="60" />
+					<mx:TextInput id="txtReporter" width="140" text="{user}" />
+				</mx:HBox>
+				<mx:HBox width="100%" height="35" verticalAlign="middle">
+					<mx:Label text="接收人" width="60" />
+					<mx:TextInput id="txtRecipient" width="140" text="MCC"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="35" verticalAlign="middle">
+					<mx:Label text="通报时间" width="60" />
+					<component:DateTimeChooser id="dateReport" nowTime="{initTime}"  editable="true" formatterType="1"/>
+				</mx:HBox>
+				<mx:HBox width="100%" verticalAlign="middle">
+					<mx:Label text="通报内容" width="60" />
+					<mx:TextArea id="txtContent" width="400" height="140"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="35" verticalAlign="middle" >
+					<mx:Label text="备注" width="60" />
+					<mx:TextInput id="txtComments" width="170"  />
+					<s:Spacer width="20" />
+					<mx:Button icon="{AssetsFileLib.insertIcon}"  label="新增通报" click="onAddClickHandler(event)" />
+				</mx:HBox>
+			</mx:VBox>
+		</mx:TabNavigator>
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

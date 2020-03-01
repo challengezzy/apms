@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   width="660" height="450" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   initialize="initHandler(event)" layout="vertical" title="拆换新发动机选择"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			public var selectedFunc:Function;//选中后处理函数
+			public var engmodelId:String;//当前APUID
+			
+			public var selectObj:Object;//选中的数据
+			
+			private function creationComplete():void
+			{
+				listPanel.addEventListener(MouseEvent.DOUBLE_CLICK,listDoubleClickHandler);
+				
+				//查询同一型号， 在库，状态为可用的APU
+				var queryCond:String = "STATUS=1 AND ENGLOC=0 "; //+" AND ENGMODELID=" + engmodelId;
+				listPanel.initQueryCondition = queryCond;
+				
+				listPanel.query();
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function listDoubleClickHandler(event:MouseEvent):void
+			{
+				if(listPanel.getSelectedRowValues().length != 1){
+					SmartXMessage.show("请选择一条数据！");
+					return;
+				}else{
+					selectObj = listPanel.getSelectedRowValue();
+					selectedFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top">
+		<core:BillListPanel width="100%" height="100%" id="listPanel"  endpoint="{endpoint}"
+							templetCode="T_B_ENGINE_INFO" debugMode="{debugMode}"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="820" height="600"  xmlns:core="smartx.flex.components.core.*"
+			   title="A23报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import com.apms.flex.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a23vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a23Data:Object;//译后报文内容
+			
+			[Bindable]
+			private var acnum:String;
+			[Bindable]
+			private var date_utc:String;
+			[Bindable]
+			private var fly_from:String;
+			[Bindable]
+			private var fly_to:String;
+			[Bindable]
+			private var flt:String;
+			[Bindable]
+			private var ph:String;
+			[Bindable]
+			private var cnt:String;
+			[Bindable]
+			private var code:String;
+			[Bindable]
+			private var bleed_status:String;
+			[Bindable]
+			private var apu:String;
+			
+			[Bindable]
+			private var tat:String;
+			[Bindable]
+			private var alt:String;
+			[Bindable]
+			private var cas:String;
+			[Bindable]
+			private var mn:String;
+			[Bindable]
+			private var gw:String;
+			[Bindable]
+			private var cg:String;
+			[Bindable]
+			private var dmu:String;
+			
+			[Bindable]
+			private var sTitleXml:XML = <root>
+								<item field="" ckpt_t="CKPT_T" sat="SAT" pres="PRES" date_utc="DATE_UTC"/>
+								<item field="" ckpt_t="客舱温度" sat="静温" pres="氧气压力" date_utc="采样时间"/>
+							</root>;
+			[Bindable]
+			private var s13Xml:XML = <root></root>;
+			[Bindable]
+			private var s46Xml:XML = <root></root>;
+			
+			[Bindable]
+			private var s7Xml:XML = <root></root>;
+			
+			private function creationComplete():void
+			{
+				a23Data = a23vo.dataMap;
+				
+				acnum = a23Data['acnum'];
+				date_utc = a23Data['date_utc'];
+				fly_from = a23Data['fly_from'];
+				fly_to = a23Data['fly_to'];
+				flt = a23Data['flt'];
+				
+				ph = a23Data['ph'];
+				cnt = a23Data['cnt'];
+				code = a23Data['code'];
+				apu = a23Data['apu'];
+				bleed_status = a23Data['bleed_status'];
+				
+				tat = a23Data['tat'];
+				alt = a23Data['alt'];
+				cas = a23Data['cas'];
+				mn = a23Data['mn'];
+				gw = a23Data['gw'];
+				cg = a23Data['cg'];
+				dmu = a23Data['dmu'];
+				
+				var temp:XML = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S1";
+				temp.@ckpt_t = a23Data['ckptts1'];
+				temp.@sat = a23Data['sats1'];
+				temp.@pres = a23Data['press1'];		
+				var dtUtc:Date = a23Data['datetimes1'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				
+				s13Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S2";
+				temp.@ckpt_t = a23Data['ckptts2'];
+				temp.@sat = a23Data['sats2'];
+				temp.@pres = a23Data['press2'];
+				dtUtc = a23Data['datetimes2'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s13Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S3";
+				temp.@ckpt_t = a23Data['ckptts3'];
+				temp.@sat = a23Data['sats3'];
+				temp.@pres = a23Data['press3'];
+				dtUtc = a23Data['datetimes3'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s13Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S4";
+				temp.@ckpt_t = a23Data['ckptts4'];
+				temp.@sat = a23Data['sats4'];
+				temp.@pres = a23Data['press4'];
+				dtUtc = a23Data['datetimes4'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s46Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S5";
+				temp.@ckpt_t = a23Data['ckptts5'];
+				temp.@sat = a23Data['sats5'];
+				temp.@pres = a23Data['press5'];
+				dtUtc = a23Data['datetimes5'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s46Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S6";
+				temp.@ckpt_t = a23Data['ckptts6'];
+				temp.@sat = a23Data['sats6'];
+				temp.@pres = a23Data['press6'];
+				dtUtc = a23Data['datetimes6'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s46Xml.appendChild(temp);
+				
+				temp = <item field="" ckpt_t="" sat="" pres="" date_utc=""/>;
+				temp.@field = "S7";
+				temp.@ckpt_t = a23Data['ckptts7'];
+				temp.@sat = a23Data['sats7'];
+				temp.@pres = a23Data['press7'];
+				dtUtc = a23Data['datetimes7'] as Date;
+				temp.@date_utc = DateUtil.dateToString(dtUtc,1);
+				s7Xml.appendChild(temp);
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A23 氧气报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" >
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   OXY LEAK MONI REPORT23" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a23vo}" width="100%" height="100%"/>
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="30S INTERVAL PRE ENGINE START" fontWeight="bold" />
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="sTitledg" width="100%" height="100%" color="red" dataProvider="{sTitleXml.item}"
+								 rowCount="2" showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@ckpt_t" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@sat" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@pres" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@date_utc" width="140"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="s13dg" width="100%" height="100%" dataProvider="{s13Xml.item}" rowCount="3"  showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@ckpt_t" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@sat" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@pres" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@date_utc" width="140"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="30S INTERVAL PRE ENGINE SHUT(POST 60MIN OR MES)" fontWeight="bold" />
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="s46dg" width="100%" height="100%" dataProvider="{s46Xml.item}" rowCount="3" showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@ckpt_t" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@sat" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@pres" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@date_utc" width="140"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="AT EVENT ENGINE SHUT DOWN" fontWeight="bold" />
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="s7dg" width="100%" height="100%" dataProvider="{s7Xml.item}" rowCount="1" showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@ckpt_t" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@sat" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@pres" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@date_utc" width="140"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="100%" height="100%" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A11IAE报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			import flash.text.engine.TabAlignment;
+			import com.apms.flex.assets.AssetsFileLib;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a11ivo:SimpleHashVO;
+			
+			[Bindable]
+			public var a11iData:Object;//译后报文内容
+					
+			
+			
+		
+			
+			private function creationComplete():void
+			{
+				a11iData = a11ivo.dataMap;
+				telegraphContent=a11iData.tel_content;
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A11 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+		<mx:HDividedBox id="contentBox" width="950" height="600"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文 ENGINE GAS PATH ADV REPORT (11)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE CRUISE REPORT(11)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a11ivo}" height="190"/>
+				<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号" leftVal="{a11iData.esn_1}" rightVal="{a11iData.esn_2}"/>
+				<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a11iData.ehrs_1}" rightVal="{a11iData.ehrs_2}"/>
+				<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a11iData.ecyc_1}" rightVal="{a11iData.ecyc_2}"/>
+				<report:TwoValuesReportPanel englishName="AP" chineseName1="自动驾驶状态" leftVal="{a11iData.ap_1}" rightVal="{a11iData.ap_2}" boxWidth="90"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="N1" rightVal="N2" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="EPR" chineseName1="推动比" leftVal="{a11iData.epr_1}" rightVal="{a11iData.epr_2}" />
+					<report:TwoValuesReportPanel englishName="EGT" chineseName1="排气温度" leftVal="{a11iData.egt_1}" rightVal="{a11iData.egt_2}" />
+					<report:TwoValuesReportPanel englishName="N1" chineseName1="N1转速" leftVal="{a11iData.n1_1}" rightVal="{a11iData.n1_2}" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="N2" chineseName1="N2转速" leftVal="{a11iData.n2_1}" rightVal="{a11iData.n2_2}" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="FF" chineseName1="燃油流量" leftVal="{a11iData.ff_1}" rightVal="{a11iData.ff_2}"/>
+					<report:TwoValuesReportPanel englishName="P125" chineseName1="P12.5压力" leftVal="{a11iData.p125_1}" rightVal="{a11iData.p125_2}" boxWidth="75"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel leftVal="S1" rightVal="S2" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="P25" chineseName1="2.5位置压力" leftVal="{a11iData.p25_1}" rightVal="{a11iData.p25_2}" boxWidth="90"/>
+					<report:TwoValuesReportPanel englishName="T25" chineseName1="2.5位置温度" leftVal="{a11iData.t25_1}" rightVal="{a11iData.t25_2}" boxWidth="90"/>
+					<report:TwoValuesReportPanel englishName="P3" chineseName1="3位置压力" leftVal="{a11iData.p3_1}" rightVal="{a11iData.p3_2}" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="T3" chineseName1="3位置温度" leftVal="{a11iData.t3_1}" rightVal="{a11iData.t3_2}" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="P49" chineseName1="P49压力" leftVal="{a11iData.p49_1}" rightVal="{a11iData.p49_2}" boxWidth="75"/>
+					<report:TwoValuesReportPanel englishName="SVA" chineseName1="静止叶片开度" leftVal="{a11iData.sva_1}" rightVal="{a11iData.sva_2}" boxWidth="90"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel leftVal="T1" rightVal="T2" boxWidth="30" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="BAF" chineseName1="2.5级放气" chineseName2="活门开度" leftVal="{a11iData.baf_1}" rightVal="{a11iData.baf_2}" boxWidth="75" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="ACC" chineseName1="ACC开度"  leftVal="{a11iData.acc_1}" rightVal="{a11iData.acc_2}" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="LP" chineseName1="低压涡轮间" chineseName2="系控制状态" leftVal="{a11iData.lp_1}" rightVal="{a11iData.lp_2}" boxWidth="75" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="GLE" chineseName1="发动机负载" leftVal="{a11iData.gle_1}" rightVal="{a11iData.gle_2}" boxWidth="75" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="PD" chineseName1="预冷器进" chineseName2="口压力" leftVal="{a11iData.pd_1}" rightVal="{a11iData.pd_2}" name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="TN" chineseName1="吊架温度" leftVal="{a11iData.tn_1}" rightVal="{a11iData.tn_2}"  name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="P2" chineseName1="P2总压"  leftVal="{a11iData.p2_1}" rightVal="{a11iData.p2_2}"  name2ToVisible="true"/>
+					<report:TwoValuesReportPanel englishName="T2" chineseName1="T2温度"  leftVal="{a11iData.t2_1}" rightVal="{a11iData.t2_2}"  name2ToVisible="true"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="V1" rightVal="V2" boxWidth="30" />
+					<report:TwoValuesReportPanel englishName="ECW1" chineseName1="控制字1"  leftVal="{a11iData.ecw1_1}" rightVal="{a11iData.ecw1_2}"  />
+					<report:TwoValuesReportPanel englishName="ECW2" chineseName1="控制字2"  leftVal="{a11iData.ecw2_1}" rightVal="{a11iData.ecw2_2}"  />
+					<report:TwoValuesReportPanel englishName="EVM" chineseName1="EVMU控制字"  leftVal="{a11iData.evm_1}" rightVal="{a11iData.evm_2}" boxWidth="90" />
+					<report:TwoValuesReportPanel englishName="VB1" chineseName1="N1抖动值"  leftVal="{a11iData.vb1_1}" rightVal="{a11iData.vb1_2}"  />
+					<report:TwoValuesReportPanel englishName="VB2" chineseName1="N2抖动值"  leftVal="{a11iData.vb2_1}" rightVal="{a11iData.vb2_2}"  />
+					<report:TwoValuesReportPanel englishName="PHA" chineseName1="抖动相位角"  leftVal="{a11iData.pha_1}" rightVal="{a11iData.pha_2}" boxWidth="75" />
+				</mx:HBox>	
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="V3" rightVal="V4" boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="OIP" chineseName1="暂无注释" leftVal="{a11iData.oip_1}" rightVal="{a11iData.oip_2}"/>
+					<report:TwoValuesReportPanel englishName="OIT" chineseName1="暂无注释" leftVal="{a11iData.oit_1}" rightVal="{a11iData.oit_2}"/>
+					<report:TwoValuesReportPanel englishName="EGTK" chineseName1="暂无注释" leftVal="{a11iData.egtk_1}" rightVal="{a11iData.egtk_2}"/>
+					<report:TwoValuesReportPanel englishName="N1K" chineseName1="暂无注释" leftVal="{a11iData.n1k_1}" rightVal="{a11iData.n1k_2}"/>
+					<report:TwoValuesReportPanel englishName="N2K" chineseName1="暂无注释" leftVal="{a11iData.n2k_1}" rightVal="{a11iData.n2k_2}"/>
+					<report:TwoValuesReportPanel englishName="FFK" chineseName1="暂无注释" leftVal="{a11iData.ffk_1}" rightVal="{a11iData.ffk_2}"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a11iData.acmodel}" rptno="A11"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

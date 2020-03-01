@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="1000" height="100%" allowClose="true"
+					   close="PopUpManager.removePopUp(this);"
+					   allowDrag="true" title="接机信息列表"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:component="com.apms.flex.component.*"
+					   creationComplete="creationComplete()"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.managers.PopUpManager;
+            
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var ddQuerySql:String="";
+			[Bindable]
+			private var defectremindQuerysql:String="";
+			[Bindable]
+			private var acPoTipQuerysql:String="";
+			[Bindable]
+			public var flightObj:Object; 
+			[Bindable]
+			private var cfdQuerysql:String="";
+			private var flightno_a:String;
+			private var flightno_d:String;
+			private var flightid_a:String;
+			private var flightid_d:String;
+			private var apcode:String;
+			private var code_3:String;
+			public function setAcnum(_acnum:String):void{
+				this.acid = _acnum;
+			}
+			public function setFlightno(flightno_A:String,flightno_D:String):void{
+				this.flightno_a = flightno_A;
+				this.flightno_d = flightno_D;
+			}
+			public function setFlightid(flightid_A:String,flightid_D:String):void{
+				this.flightid_a = flightid_A;
+				this.flightid_d = flightid_D;
+			}
+			public function setAcAp(ac_stop:String,code_3:String):void{
+				this.apcode = ac_stop;
+				this.code_3 = code_3;
+			}
+			
+			private function creationComplete():void{
+				ddQuerySql="select dd_no,defect_rpt,rect,decode(m_flag,0,'否',1,'是',null) m_flag from w_dd_info where finish_sign=any(0,2) and ((TARGET_DATE is null ) or (trunc(sysdate)<=TARGET_DATE and trunc(sysdate)>ISSUE_DATE)) and  ac_id='"+acid+"' AND ROWNUM<=3 order by OPERATE_TIME DESC";
+				ddListPanel.simpleQueryPanel.height=0;
+				ddListPanel.showPageBox=false;
+				ddListPanel.onlyShowRowHavingData=true;
+				
+				
+				defectremindQuerysql="select decode(wd.TIPTYPE,0,'生产运行类',1,'技术提醒类',2,'管理要求类',3,'提醒确认类') tiptype,wd.reminddesc,wd.feedback "
+					+" from w_defectremind_ins wdi,W_DEFECTREMIND wd where wdi.REMINDID=wd.id and wdi.STATUS=0  and wdi.FLIGHTID=any("+flightid_a+","+flightid_d+")";
+				defectremindListPanel.simpleQueryPanel.height=0;
+				defectremindListPanel.showPageBox=false;
+				defectremindListPanel.onlyShowRowHavingData=true;
+				
+				
+				cfdQuerysql="select '故障' type,fault_source,fault_content" 
+					+" from a_cfd_fault acf,a_cfd_head ach where acf.msg_no=ach.msg_no and ach.flightid=any("+flightid_a+","+flightid_d+")"
+					+" union all"
+					+" select '告警' type,null fault_source,warn_content fault_content" 
+					+" from a_cfd_warning acw,a_cfd_head ach where acw.msg_no=ach.msg_no and ach.flightid=any("+flightid_a+","+flightid_d+")";
+				cfdListPanel.simpleQueryPanel.height=0;
+				cfdListPanel.showPageBox=false;
+				cfdListPanel.onlyShowRowHavingData=true;
+				
+				
+				acPoTipQuerysql="select tipinfo from b_airport_positiontip bapt,b_airport_position bap,b_airport  air"
+					+" where bapt.ap_positionid = bap.id and bap.code = '"+apcode+"' and bap.airportid = air.id and  air.code_3='"+code_3+"'";
+				acPoTipListPanel.simpleQueryPanel.height=0;
+				acPoTipListPanel.showPageBox=false;
+				acPoTipListPanel.onlyShowRowHavingData=true;
+				
+				ddListPanel.refresh();
+				defectremindListPanel.refresh();
+				cfdListPanel.refresh();
+				acPoTipListPanel.refresh();
+				
+			}
+			/**
+			 *导出图片
+			 */
+			protected function exportHandler(event:MouseEvent):void{
+				PictureExportUtil.exportChart(runningAirInfoWindow,"接机信息表");
+			}
+			protected function printPreview():void{
+				var print:CoolPrintJob = new CoolPrintJob();
+				//smartPrint.container = this;
+				print.clearPrintObject();
+				print.addPrintObject(runningAirInfoWindow);
+				print.preview();
+			}
+			protected function print():void{
+				var print:CoolPrintJob = new CoolPrintJob();
+				print.clearPrintObject();
+				print.addPrintObject(runningAirInfoWindow);
+				print.print();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:HBox width="100%" verticalAlign="bottom"> 
+		<mx:Spacer width="100%"/>
+		<mx:Button label="打印" click="print()"/>
+		<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+	</mx:HBox>
+	<mx:VBox width="100%" height="100%" id="runningAirInfoWindow" verticalScrollPolicy="off">
+		<mx:HBox paddingLeft="10">
+			<mx:Label text="航班日期：" id="fourWordsWidth"/><mx:Text text="{flightObj.flt_date_str}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="航班号：" width="{sixWordsWidth.width}"/><mx:Text text="{flightObj.flightno_union}" width="110"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机号："/><mx:Text text="{flightObj.acnum}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机型："/><mx:Text text="{flightObj.acmodel}" width="80"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="经停航站："/><mx:Text text="{flightObj.apt_union}" />
+		</mx:HBox>
+		<mx:HBox paddingLeft="10">
+			<mx:Label text="维护：" width="{fourWordsWidth.width}"/><mx:Text text="{flightObj.maintaintype}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="计划到达/起飞：" id="sixWordsWidth"/><mx:Text text="{flightObj.stda}" width="110"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="机位："/><mx:Text text="{flightObj.ac_stop}" width="100"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="预达："/><mx:Text text="{flightObj.t_eta}" width="80"/>
+			<s:Spacer width="10"/>
+			<mx:Label text="预起：" width="{fourWordsWidth.width}"/><mx:Text text="{flightObj.t_etd}" />
+		</mx:HBox>
+		<mx:Label text="DD单信息" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="ddListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100"   onlyShowRowHavingData="true"
+									searchCondVisible="false"   horizontalAlign="center"   showPageBox="false"  verticalScrollPolicyBySelf="off"  
+								    rowHeightEqual="true"	 sql="{ddQuerySql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="DD单号" dataField="dd_no"/>
+				<mx:DataGridColumn headerText="故障报告" dataField="defect_rpt" wordWrap="true" width="400">
+					<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.defect_rpt}" />
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="措施" dataField="rect" wordWrap="true" width="400">
+				<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.rect}"/>
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="M项" dataField="m_flag" width="50"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<mx:Label text="提醒单信息" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="defectremindListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" onlyShowRowHavingData="true"
+									searchCondVisible="false"   horizontalAlign="center" paddingTop="0" showPageBox="false" verticalScrollPolicyBySelf="off" 
+									rowHeightEqual="true"	sql="{defectremindQuerysql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="提示类型" dataField="tiptype" />
+				<mx:DataGridColumn headerText="提示信息" dataField="reminddesc" width="450" wordWrap="true">
+					<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.reminddesc}" />
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="反馈结果" dataField="feedback" wordWrap="true">
+					<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.feedback}" />
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<s:Spacer height="0"/>
+		<mx:Label text="CFD信息" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="cfdListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" onlyShowRowHavingData="true"
+									searchCondVisible="false"   horizontalAlign="center" showPageBox="false" verticalScrollPolicyBySelf="off"
+									rowHeightEqual="true" sql="{cfdQuerysql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="类型" dataField="type" />
+				<mx:DataGridColumn headerText="故障源" dataField="fault_source"/>
+				<mx:DataGridColumn headerText="故障内容" dataField="fault_content">
+					<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.fault_content}" />
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<mx:Label text="机位提醒信息" horizontalCenter="0" paddingLeft="10" paddingBottom="0"/>
+		<component:AdvDataGridPanel id="acPoTipListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" onlyShowRowHavingData="true" 
+									searchCondVisible="false"   horizontalAlign="center" showPageBox="false" verticalScrollPolicyBySelf="off"
+									rowHeightEqual="true" sql="{acPoTipQuerysql}" dataSource="{apmsDs}">
+			<component:columns>
+				<mx:DataGridColumn headerText="提醒内容" dataField="tipinfo">
+					<mx:itemRenderer>
+						<fx:Component>
+							<mx:Text text="{data.tipinfo}" />
+						</fx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</containers:SuperPanel>

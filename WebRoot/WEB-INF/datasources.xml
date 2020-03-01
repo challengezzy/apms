@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<DataSources>
+    <DataSource>
+    
+        <!--Name of the data source -->
+        <DataSourceName>Provider=Mondrian;DataSource=MondrianDatasource</DataSourceName>
+
+        <!-- Description of the data source -->
+        <DataSourceDescription>Mondrian FoodMart Data Warehouse</DataSourceDescription>
+
+        <!-- The URL of the servlet -->
+        <URL>http://127.0.0.1:8080/BAM/xmla</URL>
+
+        <!--
+             Mondrian connect string for the data source. If this data
+             source contains multiple catalogs, omit the 'Catalog'
+             property, and specify the URI of the schema.xml file in
+             the catalog's <Definition> element.
+
+             Catalogs can override the connect string with their own
+             <DataSourceInfo> element.
+          -->
+        <DataSourceInfo>Provider=mondrian;Jdbc=jdbc:oracle:thin:dw_1.1/dw_1.1@192.168.2.20:1521:orcl;JdbcUser=dw_1.1;JdbcPassword=dw_1.1;JdbcDrivers=oracle.jdbc.OracleDriver;Catalog=/WEB-INF/schemas/MandrianSchema.xml</DataSourceInfo>
+
+        <!-- Provider name must be 'Mondrian' -->
+        <ProviderName>Mondrian</ProviderName>
+
+        <!-- Provider type must be 'MDP' -->
+        <ProviderType>MDP</ProviderType>
+
+        <!-- 
+             Authentication mode. Allowable values are
+             'Unauthenticated', 'Authenticated', 'Integrated'. 
+        -->
+        <AuthenticationMode>Unauthenticated</AuthenticationMode>
+        
+        <Catalogs>
+            <!--catalog的name属性填schemaXML文件中的name属性-->
+            <Catalog name="test_schema">
+                <!--该数据库地址会覆盖DataSource节点中的数据库地址,只对当前的catalog生效-->
+                <DataSourceInfo>Provider=mondrian;Jdbc=jdbc:oracle:thin:dw_1.1/dw_1.1@192.168.2.20:1521:orcl;JdbcDrivers=oracle.jdbc.OracleDriver</DataSourceInfo>
+                <Definition>/WEB-INF/schemas/MandrianSchema.xml</Definition>
+            </Catalog>
+        </Catalogs>
+    </DataSource>
+</DataSources>

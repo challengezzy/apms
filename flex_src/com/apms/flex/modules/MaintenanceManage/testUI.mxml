@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.apms.flex.component.*"
+			   minWidth="955" minHeight="600"
+			   creationComplete="creationComplete()">
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var threeWordsLen:Number;
+			[Bindable]
+			public var fourWordsLen:Number;
+			[Bindable]
+			public var fiveWordsLen:Number;
+			[Bindable]
+			public var textAreaLen:Number;
+			[Bindable]
+			public var initTime:Date=new Date(); 
+			public function  creationComplete():void{
+				threeWordsLen=threeWordsL.width;
+				fourWordsLen=fourWordsL.width;
+				fiveWordsLen=fiveWordsL.width;
+				textAreaLen=fiveWordsLen+fourWordsLen+2*threeWordsLen+5*dd_no.width;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox>
+		<mx:HBox >
+			<mx:Label text="DD单号" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="dd_no"/>
+			<mx:Label text="飞机号" id="threeWordsL"/><s:TextInput id="ac_id"/>
+			<mx:Label text="所属基地" id="fourWordsL"/><s:TextInput id="apt_iata"/>
+			<mx:Label text="发动机序号"  id="fiveWordsL"/><s:TextInput id="eng_sn"/>
+			<mx:Label text="总小时"/><s:TextInput id="total_fh"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="起始日期"/><component:DateTimeChooser id="issue_date" nowTime="{initTime}" editable="true" />
+			<mx:Label text="转录自"/><s:TextInput id="trans_from"/>
+			<mx:Label text="机型" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="AC_TYPE"/>
+			<mx:Label text="指令号" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="work_no"/>
+			<mx:Label text="总循环"/><s:TextInput id="total_cycl"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="故障报告"/><mx:TextArea  id="defect_rpt" width="{textAreaLen}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="措施" width="{fourWordsLen}" textAlign="right"/><mx:TextArea  id="rect" width="{textAreaLen}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:VBox>
+				<mx:HBox width="{fourWordsLen}" textAlign="right">
+					<mx:CheckBox id="m_flag"/>
+					<mx:Label text="M项" />
+				</mx:HBox>
+				<mx:Label text="M项描述" width="{fourWordsLen}" textAlign="right"/>
+			</mx:VBox>
+			<mx:TextArea   id="m_desc" width="{textAreaLen}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<s:BorderContainer>
+				<mx:VBox>
+					<mx:HBox>
+						<mx:Label text="期限预留至" color="red"/><component:DateTimeChooser id="target_date" nowTime="{initTime}" editable="true" />
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="小时" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="target_fh"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="循环" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="target_cycl"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="其它" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="keep_others"/>
+					</mx:HBox>
+				</mx:VBox>
+			</s:BorderContainer>
+			<s:BorderContainer>
+				<mx:VBox>
+					<mx:HBox>
+						<mx:Label text="DD-分类" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="dd_cls"/>
+						<mx:Label text="停场时间"/><s:TextInput id="req_grandt"/>	
+						<mx:Label text="MEL" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="mel_code"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="项目代码"/><s:TextInput id="item_no"/>
+						<mx:Label text="所需工时"/><s:TextInput id="req_mh"/>	
+						<mx:Label text="ATA章节" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="ata_no"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="故障系统"/><s:TextInput id="position"/>
+						<mx:HBox>
+							<mx:Label text="相关部门"/>
+							<mx:CheckBox/><mx:Label text="签派" id="reldep_qianpai"/>
+							<mx:CheckBox/><mx:Label text="飞行队" id="reldep_feixingdui"/>
+							<mx:CheckBox/><mx:Label text="客舱" id="reldep_kecang"/>
+							<mx:CheckBox/><mx:Label text="机组" id="reldep_jizu"/>
+						</mx:HBox>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="故障数量"/><s:TextInput id="num_bad"/>
+						<mx:Label text="放行数量"/><s:TextInput id="num_release"/>
+						<mx:Label text="安装数量"/><s:TextInput id="num_install"/>
+					</mx:HBox>
+				</mx:VBox>
+			</s:BorderContainer>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="运行限制"/>
+			<mx:Label text="减载"/><mx:CheckBox id="limit_jianzai"/>
+			<mx:Label text="减客"/><mx:CheckBox id="limit_jianke"/>
+			<mx:Label text="II类飞行"/><mx:CheckBox id="limit_erleifly"/>
+			<mx:Label text="高原航线"/><mx:CheckBox id="limit_gaoyuan"/>
+			<mx:Label text="RSVM"/><mx:CheckBox id="limit_rvsm"/>
+		</mx:HBox>
+		<s:Group >
+			<s:Line xFrom="0" xTo="950" yFrom="0" yTo="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0x0000ff" weight="2" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</s:Group>
+		<mx:HBox>
+			<mx:Label text="首办号" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="first_no"/>
+			<mx:Label text="关闭标识"/><s:TextInput id="finish_sign"/>
+			<mx:Label text="E/R标识" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="e_r"/>
+			<mx:Label text="第"/><s:TextInput id="delay_num"/><mx:Label text="次延期"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="首办日期"/><component:DateTimeChooser id="first_date" nowTime="{initTime}" editable="true" />
+			<mx:Label text="关闭日期"/><component:DateTimeChooser id="ef_date" nowTime="{initTime}" editable="true" />
+			<mx:Label text="延期单号"/><s:TextInput id="dd_no_next"/>
+			<mx:CheckBox id="material"/><mx:Label text="是否有料"/>
+			<mx:CheckBox id="srm_code"/><mx:Label text="放上飞机"/>
+			<mx:CheckBox id="repeat"/><mx:Label text="是否重检"/>
+			
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="处理状态" /><mx:TextArea  id="status" width="{textAreaLen}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="申请人" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="proposer"/>
+			<mx:Label text="申请日期"/><component:DateTimeChooser id="proposed_date" nowTime="{initTime}" editable="true" />
+			<mx:Label text="批准人" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="approver"/>
+			<mx:Label text="批准日期"/><component:DateTimeChooser id="approved_date" nowTime="{initTime}" editable="true" />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="技术人员"/><s:TextInput id="technician"/>
+			<mx:Label text="检查人员"/><s:TextInput id="inspector"/>
+			<mx:Label text="黄页撤出者"/><s:TextInput id="ef_man"/>
+			<mx:Label text="输机日期"/><component:DateTimeChooser id="input_date" nowTime="{initTime}" editable="true" />
+		</mx:HBox>
+		<s:Group >
+			<s:Line xFrom="0" xTo="950" yFrom="0" yTo="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0x0000ff" weight="2" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</s:Group>
+		<mx:HBox>
+			<mx:CheckBox id="sevice_sign"/><mx:Label text="影响服务"/>
+			<mx:CheckBox id="aoc_flag"/><mx:Label text="影响运行"/>
+			<mx:CheckBox id="property_flag"/><mx:Label text="是否性能分析"/>
+			<mx:CheckBox id="action_sign"/><mx:Label text="特殊关注"/>
+		</mx:HBox>
+		<s:BorderContainer>
+			<mx:VBox>
+				<mx:HBox>
+					<mx:Label text="是否分析完成"/><s:TextInput id="property_close"/>
+					<mx:Label text="分析人"/><s:TextInput id="propertyer"/>
+					<mx:Label text="分析日期"/><component:DateTimeChooser id="property_date" nowTime="{initTime}" editable="true" />
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Label text="分析结果"/><mx:TextArea  id="property_result" width="{textAreaLen}"/>
+				</mx:HBox>
+			</mx:VBox>
+				
+			
+			
+		</s:BorderContainer>
+	</mx:VBox>
+</s:Application>

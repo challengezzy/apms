@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   width="880" height="550" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   initialize="initHandler(event)" layout="vertical" title="APU拆换"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			import smartx.flex.components.vo.TempletItemVO;
+
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			[Bindable]
+			private var initCondition:String;
+			
+			[Bindable]
+			private var nowTime:Date = new Date();//当前时间
+			
+			public var curApuSn:String = "";//当前APUID
+			
+			public var apumodelId:String;//APU型号
+			public var infoDate:String;//APU型号
+			
+			private var apuSelectWindow:ApuSwapSelectWindow;
+			
+			private var swapReason:String = "0";
+			
+			private var newApuObj:Object;//选择的新APU对象
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+			}
+			
+			private function creationComplete():void
+			{
+				var queryCond:String = "APUSN='" + curApuSn+"'";
+				curApuCard.refresh(queryCond);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//远程服务添加监听
+				apmsService.swapApu.addEventListener(ResultEvent.RESULT,swapApuOkHandler);
+				apmsService.swapApu.addEventListener(FaultEvent.FAULT,swapApuFaultHandler);
+			}
+			
+			private function swapApuOkHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				
+				SmartXMessage.show("APU拆换成功！");
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function swapApuFaultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("APU拆换时异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function swapBtn_clickHandler(event:MouseEvent):void
+			{
+				var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+				
+				if(reasonBtn1.selected)
+					swapReason = "0";
+				else if(reasonBtn2.selected)
+					swapReason = "1";
+				
+				if(newApuObj == null){
+					SmartXMessage.show("请一个选择新APU！");
+					return;
+				}
+				
+				//判断两个APU是否相同
+				var newApuSn:String = newApuCard.getDataValue()["APUSN"];
+				
+				if(newApuSn == null || newApuSn == ""){
+					SmartXMessage.show("请选择新APU！");
+					return;
+				}
+				
+				if(curApuSn == newApuSn){
+					SmartXMessage.show("拆换的两个APU不能相同！");
+					return;
+				}
+				
+				if(descArea.text == null || descArea.text == ""){
+					SmartXMessage.show("请填写拆换说明！");
+					return;
+				}
+				if(DateUtil.stringToDateDay(swapTimeChser.text).getTime() < DateUtil.stringToDateDay(infoDate).getTime() ){
+					SmartXMessage.show("拆换日期必须大于有效数据日期！",SmartXMessage.MESSAGE_ERROR);
+					return;
+				} 
+				
+				var swapObj:Object = new Object();
+				swapObj["UPDATE_MAN"] = user;
+				swapObj["TIME"] = swapTimeChser.text;
+				swapObj["REASON"] = swapReason;
+				swapObj["FAULT_DESC"] = descArea.text;
+				swapObj["NEWAPUSN"] = newApuSn;
+				swapObj["OLDAPUSN"] = curApuSn;
+				swapObj["COMMENTS"] = comments.text;
+				
+				apmsService.swapApu(swapObj);
+				OperatingTipUtil.startOperat("拆换处理中...");
+			}
+			
+			protected function selectBtn_clickHandler(event:MouseEvent):void
+			{
+				apuSelectWindow = new ApuSwapSelectWindow();
+				apuSelectWindow.apumodelId = apumodelId;				
+				apuSelectWindow.selectedFunc = apuSelectedFun;
+				
+				PopUpManager.addPopUp(apuSelectWindow,desktop,true);
+				PopUpManager.centerPopUp(apuSelectWindow);
+			}
+			
+			private function apuSelectedFun():void{
+				newApuObj = apuSelectWindow.selectObj;
+				
+				newApuCard.setDataValue(newApuObj);
+				
+				PopUpManager.removePopUp(apuSelectWindow);
+				apuSelectWindow.selectedFunc = null;
+				apuSelectWindow = null;
+				MemoryUtil.forceGC();
+			}
+			
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top" paddingTop="5">
+		<mx:VBox width="100%" paddingLeft="5" paddingRight="5" verticalAlign="middle">
+			<mx:HBox borderStyle="solid" verticalAlign="top" width="100%" height="100%" paddingLeft="0">
+				<mx:Label text="拆换说明:"/>
+				<mx:TextArea width="365" height="80" id="descArea" ></mx:TextArea>
+				<mx:Label text="备注:"/>
+				<mx:TextArea width="394" height="80" id="comments" ></mx:TextArea>
+			</mx:HBox>			
+			<mx:HBox width="100%" paddingLeft="10">
+				<mx:Label text="拆换时间" />
+				<component:DateTimeChooser id="swapTimeChser" nowTime="{nowTime}" editable="true" />
+				<mx:HBox borderStyle="solid" >
+					<mx:Label width="65" text="拆换原因："/>
+					<mx:RadioButton id="reasonBtn1" label="故障" selected="true" groupName="SWAP_REASON"/>
+					<mx:RadioButton id="reasonBtn2" label="梯次" groupName="SWAP_REASON"/>
+				</mx:HBox>
+				<mx:Spacer width="100%"/>
+				
+				<mx:Button id="selectBtn" label="新APU选择" click="selectBtn_clickHandler(event)"/>
+			</mx:HBox>
+			
+		</mx:VBox>
+		<mx:HBox width="100%" height="100%" borderStyle="solid">
+			<core:BillCardPanel id="curApuCard" width="100%" height="100%" endpoint="{endpoint}" debugMode="{debugMode}"
+								destination="{smartxDest}" showButtonBar="false"  defaultItemUIComponentLabelWidth="120"
+								layoutType = "{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}"
+								templetCode="T_B_APU_SWAP" title="发动机构造部件" name="发动机构造部件"
+								editable="false" >
+				
+			</core:BillCardPanel>
+			<core:BillCardPanel id="newApuCard" width="100%" height="100%" endpoint="{endpoint}" debugMode="{debugMode}"
+								destination="{smartxDest}" showButtonBar="false" defaultItemUIComponentLabelWidth="120"
+								layoutType = "{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}"
+								templetCode="T_B_APU_SWAP" title="发动机构造部件" name="发动机构造部件"
+								editable="false" >
+				
+			</core:BillCardPanel>
+		</mx:HBox>
+		<mx:HBox width="100%" horizontalAlign="center">
+			<mx:Button id="swapBtn" label="确定" click="swapBtn_clickHandler(event)"/>
+			<mx:Button id="cancelBtn" label="取消" click="cancelBtn_clickHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

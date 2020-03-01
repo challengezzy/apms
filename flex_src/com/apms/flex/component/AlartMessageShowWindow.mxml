@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   width="880" height="550" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   initialize="initHandler(event)" layout="vertical" title="告警消息处理"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:aircond="com.apms.flex.modules.aircond.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.HitData;
+			import com.apms.flex.modules.aircond.A21TelegraphViewWindow;
+			import com.apms.flex.modules.aircond.A24TelegraphViewWindow;
+			import com.apms.flex.modules.apu.A13TelegraphViewWindow;
+			import com.apms.flex.modules.apu.ApuTrainDataWindow;
+			import com.apms.flex.modules.apu.R13TelegraphViewWindow;
+			import com.apms.flex.modules.engine.EngineTrainDataWindow;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var formService:RemoteObject;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			[Bindable]
+			private var initCondition:String;
+			[Bindable]
+			private var memoQueryCondition:String;
+			public var chartName:String;			
+
+			public var insertedFunc:Function;
+			public var insertedFun:Function;
+			public var isLeft:Boolean;//是否是左边点
+			public var curObj:Object;// 当前点对象
+			public var msgno:String = "";//消息号
+			public var valField1:String;
+			public var valField2:String;
+			public var dealstatus:String = "0";//处理状态
+			public var eventtype:String = "0";//报文点类型
+			public var rptno:String;
+			public var engineType:String;
+			[Bindable]
+			private var enentArr:ArrayCollection = new ArrayCollection([
+				{value:"0",desc:"正常点"},
+				{value:"1",desc:"维修点"},
+				{value:"2",desc:"坏点"}]);
+			
+			[Bindable]
+			public var statusDesc:String = "";//消息状态说明
+			[Bindable]
+			public var dealer:String = "";
+			[Bindable]
+			public var dealtime:String = "";
+			[Bindable]
+			public var dealdesc:String = "";
+			private var  rptvo:SimpleHashVO;
+			
+			public var queryForReportsql:String="";
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				initCondition = " DATAVIEWPK_VALUE =" + msgno;
+				memoQueryCondition = " MSG_NO=" + msgno; 
+				
+				formService = new RemoteObject(destination);
+				formService.endpoint = endpoint;
+				
+				formService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,queryOkHandler);
+				formService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,queryFaultHandler);
+				
+				
+				
+			}
+			
+			private function msgListPanelInitialize():void{
+				msgListPanel.addEventListener(MouseEvent.CLICK,alarmContentChange);
+			}
+			
+			private function alarmContentChange(event:MouseEvent):void{
+				var obj:Object=msgListPanel.dataGrid.selectedItem;
+				if(obj!=null)
+				alarmContent.text=obj["CONTENT"];
+			}
+			private function creationComplete():void
+			{
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				
+				//远程服务添加监听
+				apmsService.updateAlarmMessageStatus.addEventListener(ResultEvent.RESULT,dealOkHandler);
+				apmsService.updateAlarmMessageStatus.addEventListener(FaultEvent.FAULT,dealFaultHandler);
+				
+				apmsService.getReportMsg.addEventListener(ResultEvent.RESULT,getRptListHashVoHandler);
+				apmsService.getReportMsg.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				if(dealstatus == "1" ){
+					var sql:String = "SELECT ID,MSG_NO,EVENTTYPE,DEALSTATUS,DEALDESC,DEALER,TO_CHAR(DEALTIME,'YYYY-MM-DD HH24-MI-SS') DEALTIME " +
+								" FROM A_DFD_REPORTDEALMEMO WHERE MSG_NO='"+msgno+"'";
+					formService.getSimpleHashVoArrayByDS(ApmsUIConst.DATASOURCE_APMS,sql);
+					statusDesc = "告警消息已处理";
+					
+					for each(var obj:Object in enentArr){
+						if(obj.value == eventtype){
+							eventCmb.selectedItem = obj;
+							break;
+						}
+					}
+					eventCmb.enabled = false;
+					memoArea.editable = false;
+					btnBox.removeChild(confirmBtn);
+				}else{
+					statusDesc = "告警消息未处理，可以在此处理：";
+					dealerBox.visible = false;
+					
+					eventCmb.selectedIndex = 0;
+				}
+				msgListPanel.query();
+				
+			}
+			
+			private function dealOkHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				
+				SmartXMessage.show("消息处理成功！");
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function dealFaultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("消息标记为已处理时异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function queryOkHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				
+				var resArr:Array = event.result as Array;
+				
+				if(resArr.length > 0){ //消息已处理
+					var res:SimpleHashVO = resArr[0];
+					var memoObj:Object = res.dataMap;
+				
+					dealer = memoObj['dealer'];
+					dealtime = memoObj['dealtime'];
+					dealdesc = memoObj['dealdesc'];
+					memoArea.text = dealdesc;
+				}
+			}
+			
+			private function queryFaultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询消息处理说明异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function confirmBtn_clickHandler(event:MouseEvent):void
+			{
+				if( memoArea.text == null || memoArea.text == ""){
+					
+					SmartXMessage.show("处理说明不能为空！！");
+					return;
+				}
+				
+				var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+				var dealObj:Object = new Object();
+				dealObj["DEALER"] = user;
+				dealObj["DEALDESC"] = memoArea.text;
+				dealObj["MSG_NO"] = msgno;
+				dealObj["EVENTTYPE"] = eventCmb.selectedItem.value;
+				
+				apmsService.updateAlarmMessageStatus(dealObj);				
+				OperatingTipUtil.startOperat("数据处理中...");
+			}
+			
+			private function sampleDeal():void{
+				//处理内容显示,需要继续改
+				if(rptno == "A13"){
+					var apuTrainDataWindow:ApuTrainDataWindow = new ApuTrainDataWindow();
+					var utcdate:Date = curObj["UTCDATE"];
+					var isexist:String = curObj["ISEXIST"]; 
+					var datatype:String = curObj["DATATYPE"]; 
+					var comments:String = curObj["COMMENTS"]; 
+					apuTrainDataWindow.insertedFunc = insertedFunc;
+					apuTrainDataWindow.curMsgNo = curObj["MSG_NO"];
+					apuTrainDataWindow.alterHour =curObj["AHRS_REPAIRED"] ;
+					apuTrainDataWindow.alterCirculation =curObj["ACYC_REPAIRED"] ;
+					apuTrainDataWindow.allhour =curObj["AHRS"] ;
+					apuTrainDataWindow.allCirculation =curObj["ACYC"] ;
+					apuTrainDataWindow.acnum =curObj["ACNUM"] ;
+					apuTrainDataWindow.apu =curObj["ASN"] ;
+					apuTrainDataWindow.chartName = chartName;
+					apuTrainDataWindow.curObj = curObj;
+//					apuTrainDataWindow.insertedFunc = insertedFun;
+					apuTrainDataWindow.utcDate =DateUtil.dateToString(utcdate,1); ;
+					if(datatype !=null ){
+						apuTrainDataWindow.datatype = datatype;
+					}
+					if(comments!= null){
+						apuTrainDataWindow.comments = comments;
+					}
+					if(isexist =="1"){
+						apuTrainDataWindow.buttonLabel = "更新";
+					}
+					
+					PopUpManager.addPopUp(apuTrainDataWindow,desktop,true);
+					PopUpManager.centerPopUp(apuTrainDataWindow);					
+				}else if(rptno == "A01"){
+					if(engineType =="CFM"){
+						var engineTrainDataWindow:EngineTrainDataWindow = new EngineTrainDataWindow();
+						var lexist:String = curObj["LEXIST"]; 
+						var rexist:String = curObj["REXIST"]; 
+						engineTrainDataWindow.utcDate = DateUtil.dateToString(curObj["UTCDATE"],1);
+						engineTrainDataWindow.curMsgNo = curObj["MSG_NO"];
+						engineTrainDataWindow.chartName = chartName;
+						engineTrainDataWindow.rptNo = rptno;
+						engineTrainDataWindow.engineType = engineType;
+						engineTrainDataWindow.curObj = curObj;
+						engineTrainDataWindow.insertedFunc = insertedFunc;
+						
+						
+						if(isLeft == true){
+							engineTrainDataWindow.position ="1";
+							engineTrainDataWindow.number =curObj["ESN_1"] ;
+							engineTrainDataWindow.value = curObj[valField1];
+							if(lexist=="1"){
+								if(curObj["LDATATYPE"] !=null ){
+									engineTrainDataWindow.datatype = curObj["LDATATYPE"];
+									engineTrainDataWindow.buttonLabel = "更新";
+								}
+								if(curObj["LCOMMENTS"]!= null){
+									engineTrainDataWindow.comments = curObj["LCOMMENTS"];
+								}
+							}
+						}else{
+							engineTrainDataWindow.position ="2";
+							engineTrainDataWindow.number =curObj["ESN_2"] ;
+							engineTrainDataWindow.value = curObj[valField2];
+							if(rexist=="1"){
+								if(curObj["RDATATYPE"] !=null ){
+									engineTrainDataWindow.datatype = curObj["RDATATYPE"];
+									engineTrainDataWindow.buttonLabel = "更新";
+								}
+								if(curObj["RCOMMENTS"]!= null){
+									engineTrainDataWindow.comments = curObj["RCOMMENTS"];
+								}
+							}
+						}
+						PopUpManager.addPopUp(engineTrainDataWindow,desktop,true);
+						PopUpManager.centerPopUp(engineTrainDataWindow);		
+					}
+				}else if(rptno == "A38"){
+					SmartXMessage.show("38号报文不能添加到Apu样本点！");
+					return;
+				}
+			}
+			
+			private function queryForReport():void{
+				if(queryForReportsql!=""){
+					apmsService.getReportMsg(ApmsUIConst.DATASOURCE_APMS,queryForReportsql);
+					OperatingTipUtil.startOperat("正在查询....",this);
+				}else{
+					SmartXMessage.show("该点信息不支持报文查看！");
+				}
+				
+			}
+			private function getRptListHashVoHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				var rptArr:Array = event.result as Array;
+				rptvo = rptArr[0];
+				if(rptno=="A21"){
+					var a21ViewWindow:A21TelegraphViewWindow=new A21TelegraphViewWindow();
+					a21ViewWindow.a21vo=rptvo;
+					var a21Data:Object = rptvo.dataMap;
+					a21ViewWindow.telegraphContent=a21Data.tel_content;
+					PopUpManager.addPopUp(a21ViewWindow,desktop,true);
+					PopUpManager.centerPopUp(a21ViewWindow);
+				}else if(rptno=="A24"){
+					var a24ViewWindow:A24TelegraphViewWindow=new A24TelegraphViewWindow();
+					a24ViewWindow.a24vo=rptvo;
+					var a24Data:Object = rptvo.dataMap;
+					a24ViewWindow.telegraphContent=a24Data.tel_content;
+					PopUpManager.addPopUp(a24ViewWindow,desktop,true);
+					PopUpManager.centerPopUp(a24ViewWindow);
+				}else if (rptno == "A13"){
+					//13号报文需要区分是A13 还是R13
+					var rptno_2:String = rptvo.dataMap.rptno;
+					
+					if(rptno_2 == "A13"){
+						var a13ViewWindow:A13TelegraphViewWindow = new A13TelegraphViewWindow();
+						a13ViewWindow.a13vo = rptvo;
+						var a13Data:Object = rptvo.dataMap;
+						a13ViewWindow.telegraphContent = a13Data.tel_content;
+						
+						PopUpManager.addPopUp(a13ViewWindow,desktop,true);
+						PopUpManager.centerPopUp(a13ViewWindow);
+					}else if(rptno_2 == "R13"){
+						var r13ViewWindow:R13TelegraphViewWindow = new R13TelegraphViewWindow();
+						r13ViewWindow.r13vo = rptvo;
+						var r13Data:Object = rptvo.dataMap;
+						r13ViewWindow.telegraphContent = r13Data.tel_content;
+						
+						PopUpManager.addPopUp(r13ViewWindow,desktop,true);
+						PopUpManager.centerPopUp(r13ViewWindow);
+					}
+					
+				}
+				
+			}
+			private function faultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询报文信息失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top" paddingTop="5" label="消息处理">
+		<mx:VBox width="100%" height="100%" paddingLeft="5" paddingRight="5" verticalAlign="middle">
+			<mx:HBox width="100%">
+				<mx:VBox id="memoTabBox" width="50%">
+					<mx:HBox width="100%" paddingLeft="10">
+						<mx:Label text="{statusDesc}" paddingRight="5" color="red"/>
+						<mx:HBox width="100%" id="dealerBox">
+							<mx:Label text="处理人" />
+							<mx:TextInput editable="false" text="{dealer}" toolTip="处理人为当前用户" />
+							<mx:Label text="处理时间" />
+							<mx:TextInput  editable="false" text="{dealtime}" />
+						</mx:HBox>
+					</mx:HBox>
+					<mx:HBox width="100%" paddingLeft="10">
+						<mx:Label text="报文点类型" />
+						<mx:ComboBox id="eventCmb" dataProvider="{enentArr}" labelField="desc" />
+					</mx:HBox>
+					<mx:VBox horizontalAlign="left" verticalAlign="top" width="100%" height="100%" paddingLeft="10" paddingBottom="1">
+						<mx:Label text="处理说明:" fontWeight="bold" />
+						<mx:TextArea width="400" height="100" id="memoArea" ></mx:TextArea>
+					</mx:VBox>
+				</mx:VBox>
+				<mx:VBox id="sampleBox" width="50%" verticalAlign="bottom" paddingBottom="20" >
+					<mx:Button id="rptBtn" label="报文内容查看" click="queryForReport()"/>
+					<mx:Button id="sampleBtn" label="添加样本数据" click="sampleDeal()"/>
+				</mx:VBox>
+			</mx:HBox>
+			
+			<mx:VBox width="100%" height="100%" id="msgTabBox" label="告警消息" >
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="100%" id="msgListPanel" 
+									templetCode="T_ALARMMESSAGE_SHOW" debugMode="false" initialize="msgListPanelInitialize()"
+									initQueryCondition="{initCondition}" 
+									showPageBox="false" rowCountPerPage="100"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+			</mx:VBox>
+			<mx:Label text="主体内容："/>
+			<mx:TextArea id="alarmContent" width="100%" height="50%"/>
+		</mx:VBox>
+		<mx:HBox width="100%" id="btnBox" horizontalAlign="center">
+			<mx:Button id="confirmBtn" label="标记已处理" toolTip="对告警消息标记为已处理" click="confirmBtn_clickHandler(event)"/>
+			<mx:Button id="cancelBtn" label="关闭" click="cancelBtn_clickHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+				
+		
+</containers:SuperPanel>

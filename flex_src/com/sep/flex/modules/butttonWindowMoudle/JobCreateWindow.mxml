@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:containers="net.brandonmeyer.containers.*"
+				xmlns:core="smartx.flex.components.core.*"
+				xmlns:report="com.apms.flex.modules.report.*"
+				creationComplete="creationComplete()"
+				showCloseButton="true"
+				title="创建工作"
+				width="420" height="380" verticalGap="1"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.StyleTemplateEvent;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.util.TempletDataUtil;
+
+			
+			
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			[Bindable]
+			public var insertbfIncCard:String;
+			
+			private var obj:Object = new Object();
+
+			
+			private function creationComplete():void
+			{	
+				obj.JOBCARDID = selObj["ID"];
+				obj.JOBCARDNAME = selObj["NAME"];
+				obj.ISTRAINING = 0;
+				obj.WORKSTATE = 10;
+			}
+			
+			private function initCardPanelComplete():void{
+				cardPanel.setDataValue(obj);				
+
+				cardPanel.insertMode = true;		
+			}
+			
+			public function onSave():void{
+				cardPanel.save();
+				cardPanel.insertMode = false;		
+				cardPanel.editable= true;
+				cardSaveButton.label="更新";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+
+	<mx:VBox width="100%" height="100%"  >
+		
+		<core:BillCardPanel id="cardPanel" width="100%" height="100%" endpoint="{endpoint}" debugMode="{debugMode}"
+							destination="{smartxDest}" showButtonBar="false" defaultItemUIComponentLabelWidth="120"
+							layoutType = "{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}"
+							templetCode="T_U_WORKTRAIN_RECORD_2" title="" name=""
+							editable="true" initComplete="initCardPanelComplete()">
+			
+		</core:BillCardPanel>
+		<mx:HBox width="100%" id="cardButtonBox"  horizontalAlign="center" verticalAlign="middle">
+			<mx:Button id="cardSaveButton" label="保存" toolTip="保存当前信息" click="onSave()" icon="{AssetsFileLib.saveIcon}"/>
+			<mx:Button id="cardCancelButton" label="关闭" toolTip="关闭窗口" click="PopUpManager.removePopUp(this)" icon="{AssetsFileLib.closeIcon}"/>
+		</mx:HBox>
+		
+	</mx:VBox>
+</mx:TitleWindow>

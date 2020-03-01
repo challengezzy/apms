@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="creationComplete()"
+				showCloseButton="true"
+				title="工具信息列表"
+				width="720" height="500" verticalGap="2"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			public var selObjCur:Object;
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			private function creationComplete():void
+			{	
+				
+				fileListDg.simpleQueryPanel.height=0;
+			
+				querySql ="select name,seq,spec,count,PARTNO" 
+					+",(SELECT VALUECN FROM B_DICTIONARY WHERE CLASSNAME = 'JODCARD_TOOL' AND ATTRIBUTENAME = 'TYPE' and value = t.type) typecode,remark" 
+					+ " from u_jobcard_tool t"
+					+ " where  t.jobcardid=" + selObj["ID"]+" order by seq";
+				fileListDg.refresh();
+				
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		<mx:HBox   width="100%" height="100%"  verticalAlign="top">
+			
+			<component:AdvDataGridPanel id="fileListDg" width="100%"  height="100%" sql="{querySql}" dataSource="{apmsDs}">
+				<component:columns>			
+					<mx:DataGridColumn dataField="name" headerText="工具名称" width="180" />
+					<mx:DataGridColumn dataField="spec" headerText="规格" width="100" />
+					<mx:DataGridColumn dataField="partno" headerText="件号" width="120" />
+					<mx:DataGridColumn dataField="count" headerText="数量" width="50" />
+					<mx:DataGridColumn dataField="typecode" headerText="类型" width="50" />
+					<mx:DataGridColumn dataField="remark" headerText="备注" width="200" />
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:HBox>
+		
+
+	</mx:VBox>
+	
+</mx:TitleWindow>

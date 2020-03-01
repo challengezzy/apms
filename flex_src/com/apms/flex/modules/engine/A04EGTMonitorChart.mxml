@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" verticalGap="1"
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.component.CellColorRender;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var engmodelId:String ;//发动机号
+			private var esn:String; //发动机序号
+			private var acnum:String; //飞机号
+			private var acmodelId:String; //飞机机型
+			private var baseorgId:String;
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+//				//远程服务添加监听
+//				apmsService.getApuRunStatisInfo.addEventListener(ResultEvent.RESULT,getApuRunStatisInfoHandler);
+//				apmsService.getApuRunStatisInfo.addEventListener(FaultEvent.FAULT,getApuRunStatisInfoErrorHandler);
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				//添加参照控件
+				var orgItemVO:TempletItemVO = new TempletItemVO();
+				orgItemVO.itemtype="参照";
+				orgItemVO.itemname="基地";
+				orgItemVO.itemkey="ACNUM";
+				orgItemVO.refdesc="SELECT ID ID#,CODE CODE#,NAME 基地 FROM B_ORGANIZATION O WHERE O.ORGLEVEL=1;ds=datasource_apms";
+
+				var orgRefPanel:ItemRefPanel = new ItemRefPanel(orgItemVO,smartxDest,endpoint,false,false);
+				orgRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(orgRefPanel.returnVO != null){
+						//获取参照的返回值
+						baseorgId = orgRefPanel.returnVO.id;
+					}else{
+						baseorgId = null;
+					}
+				});
+				
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型,O.NAME 所属基地 " +
+					" FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M,B_ORGANIZATION O " +
+					" WHERE M.ID=A.ACMODELID AND O.ID=A.BASEORGID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var acmodItemVO:TempletItemVO = new TempletItemVO();
+				acmodItemVO.itemtype="参照";
+				acmodItemVO.itemname="机型";
+				acmodItemVO.itemkey="ACMODEL";
+				acmodItemVO.refdesc="SELECT M.ID ID#,ID CODE#,M.MODELCODE 机型 FROM B_AIRCRAFT_MODEL M;ds=datasource_apms";
+				var acmodRefPanel:ItemRefPanel = new ItemRefPanel(acmodItemVO,smartxDest,endpoint,false,false);
+				acmodRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acmodRefPanel.returnVO != null){
+						//获取参照的返回值
+						acmodelId = acmodRefPanel.returnVO.id;
+					}else{
+						acmodelId = null;
+					}
+				});	
+				
+				var engItemVO:TempletItemVO = new TempletItemVO();
+				engItemVO.itemtype="参照";
+				engItemVO.itemname="发动机型号";
+				engItemVO.itemkey="ENG";
+				engItemVO.refdesc="SELECT ID ID#, COMPANY CODE#,M.MODEL 发动机型号 FROM B_ENGINE_MODEL M WHERE MODELLEVEL =3;ds=datasource_apms";
+				var engRefPanel:ItemRefPanel = new ItemRefPanel(engItemVO,smartxDest,endpoint,false,false);
+				engRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(engRefPanel.returnVO != null){
+						//获取参照的返回值
+						engmodelId = engRefPanel.returnVO.id;
+					}else{
+						engmodelId = null;
+					}
+				});	
+				
+				var esnItemVO:TempletItemVO = new TempletItemVO();
+				esnItemVO.itemtype="参照";
+				esnItemVO.itemname="发动机序号";
+				esnItemVO.itemkey="ESN";
+				esnItemVO.refdesc="SELECT ID ID#,ACNUM ACNUM#,ENGSN 发动机序号 FROM B_ENGINE_INFO;ds=datasource_apms";
+				var esnRefPanel:ItemRefPanel = new ItemRefPanel(esnItemVO,smartxDest,endpoint,false,false);
+				esnRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(esnRefPanel.returnVO != null){
+						//获取参照的返回值
+						esn = esnRefPanel.returnVO.name;
+					}else{
+						esn = null;
+					}
+				});	
+				
+				baseorgBox.addChild(orgRefPanel);
+				acBox.addChild(acRefPanel);
+				acmodBox.addChild(acmodRefPanel);
+				engBox.addChild(engRefPanel);
+				esnBox.addChild(esnRefPanel);
+				
+				queryColumns.push("acnum");
+				queryColumns.push("modelcode");
+				queryColumns.push("engmodel");
+				queryColumns.push("esn");
+				
+				// 对EGT进行红色告警展示
+//				var bitColumn:DataGridColumn= new DataGridColumn();
+//				bitColumn.dataField = "EGT";
+//				bitColumn.headerText = "EGT";
+//				bitColumn.width = 50;
+//				var render:ClassFactory = new ClassFactory(CellColorRender);
+//				render.properties = {colorFunc:getColor};					
+//				bitColumn.itemRenderer = render;
+	
+			}
+			
+			//获取染色值
+			private function getColor(dataField:String,value:Object):String{
+				// CFM56-5B 的温度不能超过 920度
+				// EGT的监控 V2500 的温度不能超过 610度
+				
+				return "0xFF0000";//红色
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql = "SELECT VT.ID,VT.MSG_NO,VT.ACNUM,(SELECT NAME FROM B_ORGANIZATION O WHERE O.ID=VT.BASEORGID) BASEORGNAME," +
+					" TO_CHAR(VT.RPTDATE,'YYYY-MM-DD HH24:MI:SS') RPTDATE," +
+					" VT.POSITION,VT.ESN,VT.EGT,VT.TAT,VT.ALT,VT.CAL,AM.MODELCODE ACMODEL,EM.MODEL ENGMODEL FROM ("
+					+" SELECT * FROM (" 
+					+" SELECT T.ID,T.MSG_NO,T.ACNUM,AC.BASEORGID,T.RPTDATE,T.TAT,T.ALT,decode(T.N1MX_1,0,0,ROUND((T.N1MX_1-T.N1_1)/T.N1MX_1*100,2)) CAL,AC.ACMODELID,AC.ENGINE_MODE ENGMODELID,"
+					+" T.ESN_1 ESN,T.EGT_1 EGT,'1#' POSITION,"
+					+" RANK() OVER(PARTITION BY T.ACNUM,T.ESN_1 ORDER BY T.EGT_1 DESC) AS EGTSEQ"
+					+" FROM A_DFD_A04CFM56_5B_LIST T,B_AIRCRAFT AC"
+					+" WHERE AC.AIRCRAFTSN=T.ACNUM"
+
+				if(baseorgId != null && baseorgId != "")
+					querySql += " AND AC.BASEORGID= "+baseorgId;
+				
+				if(acnum != null && acnum != "")
+					querySql += " AND T.ACNUM='"+acnum+"'";
+				
+				if(esn != null && esn != "")
+					querySql += " AND T.ESN='"+esn+"'";
+				//发动机型号过滤
+				if(engmodelId != null && engmodelId != "")
+					querySql += " AND AC.ENGINE_MODE = "+engmodelId+"";
+				//飞机型号过滤
+				if(acmodelId != null && acmodelId != "")
+					querySql += " AND AC.ACMODELID = "+acmodelId+"";
+				
+				querySql += " AND T.RPTDATE >= TO_DATE('" + time_begin.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " AND T.RPTDATE <= TO_DATE('" + time_end.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " UNION ALL "				
+					+" SELECT  T.ID,T.MSG_NO,T.ACNUM,AC.BASEORGID,T.RPTDATE,T.TAT,T.ALT,decode(T.N1MX_2,0,0,ROUND((T.N1MX_2-T.N1_2)/T.N1MX_2*100,2)) CAL,AC.ACMODELID,AC.ENGINE_MODE ENGMODELID, "
+					+" T.ESN_2 ESN,T.EGT_2 EGT,'2#' POSITION, "
+					+" RANK() OVER(PARTITION BY T.ACNUM,T.ESN_2 ORDER BY T.EGT_2 DESC) AS EGTSEQ "
+					+" FROM A_DFD_A04CFM56_5B_LIST T,B_AIRCRAFT AC "
+					+" WHERE AC.AIRCRAFTSN=T.ACNUM "
+					
+				if(baseorgId != null && baseorgId != "")
+					querySql += " AND AC.BASEORGID= "+baseorgId;
+					
+				if(acnum != null && acnum != "")
+					querySql += " AND T.ACNUM='"+acnum+"'";
+				
+				if(esn != null && esn != "")
+					querySql += " AND T.ESN='"+esn+"'";
+				//发动机型号过滤
+				if(engmodelId != null && engmodelId != "")
+					querySql += " AND AC.ENGINE_MODE = "+engmodelId+"";
+				//飞机型号过滤
+				if(acmodelId != null && acmodelId != "")
+					querySql += " AND AC.ACMODELID = "+acmodelId+"";
+				
+				querySql += " AND T.RPTDATE >= TO_DATE('" + time_begin.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " AND T.RPTDATE <= TO_DATE('" + time_end.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " UNION ALL "		
+					+" SELECT  T.ID,T.MSG_NO,T.ACNUM,AC.BASEORGID,T.RPTDATE,T.TAT,T.ALT,decode(T.EPRT_1,0,0,ROUND((T.EPRT_1-T.EPR_1)/T.EPRT_1*100,2)) CAL,AC.ACMODELID,AC.ENGINE_MODE ENGMODELID, "
+					+" T.ESN_1 ESN,T.EGTM_1 EGT,'1#' POSITION, "
+					+" RANK() OVER(PARTITION BY T.ACNUM,T.ESN_1 ORDER BY T.EGTM_1 DESC) AS EGTSEQ "
+					+" FROM A_DFD_A04IAEV25_LIST T,B_AIRCRAFT AC "
+					+" WHERE AC.AIRCRAFTSN=T.ACNUM "
+				
+				if(baseorgId != null && baseorgId != "")
+					querySql += " AND AC.BASEORGID= "+baseorgId;
+				
+				if(acnum != null && acnum != "")
+					querySql += " AND T.ACNUM='"+acnum+"'";
+				
+				if(esn != null && esn != "")
+					querySql += " AND T.ESN='"+esn+"'";
+				//发动机型号过滤
+				if(engmodelId != null && engmodelId != "")
+					querySql += " AND AC.ENGINE_MODE = "+engmodelId+"";
+				//飞机型号过滤
+				if(acmodelId != null && acmodelId != "")
+					querySql += " AND AC.ACMODELID = "+acmodelId+"";
+				
+				querySql += " AND T.RPTDATE >= TO_DATE('" + time_begin.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " AND T.RPTDATE <= TO_DATE('" + time_end.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " UNION ALL "		
+					+" SELECT  T.ID,T.MSG_NO,T.ACNUM,AC.BASEORGID,T.RPTDATE,T.TAT,T.ALT,decode(T.EPRT_2,0,0,ROUND((T.EPRT_2-T.EPR_2)/T.EPRT_2*100,2)) CAL,AC.ACMODELID,AC.ENGINE_MODE ENGMODELID, "
+					+" T.ESN_2 ESN,T.EGTM_2 EGT,'2#' POSITION, "
+					+" RANK() OVER(PARTITION BY T.ACNUM,T.ESN_2 ORDER BY T.EGTM_2 DESC) AS EGTSEQ "
+					+" FROM A_DFD_A04IAEV25_LIST T,B_AIRCRAFT AC "
+					+" WHERE AC.AIRCRAFTSN=T.ACNUM "
+				
+				if(baseorgId != null && baseorgId != "")
+					querySql += " AND AC.BASEORGID= "+baseorgId;
+				
+				if(acnum != null && acnum != "")
+					querySql += " AND T.ACNUM='"+acnum+"'";
+				
+				if(esn != null && esn != "")
+					querySql += " AND T.ESN='"+esn+"'";
+				//发动机型号过滤
+				if(engmodelId != null && engmodelId != "")
+					querySql += " AND AC.ENGINE_MODE = "+engmodelId+"";
+				//飞机型号过滤
+				if(acmodelId != null && acmodelId != "")
+					querySql += " AND AC.ACMODELID = "+acmodelId+"";
+					
+				querySql += " AND T.RPTDATE >= TO_DATE('" + time_begin.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " AND T.RPTDATE <= TO_DATE('" + time_end.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " ) WHERE EGTSEQ=1 "		
+					+"  ) VT,B_AIRCRAFT_MODEL AM,B_ENGINE_MODEL EM "
+					+" WHERE AM.ID=VT.ACMODELID AND EM.ID=VT.ENGMODELID "
+					
+				querySql += " ORDER BY ACMODEL,ACNUM,POSITION ";
+					
+				
+				runlogListPanel.sql = querySql;
+				runlogListPanel.refresh();
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				runlogListPanel.exportAllData("A04 EGT统计");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%" verticalGap="1">
+		<mx:VBox width="100%" height="80" borderStyle="solid">
+		<mx:HBox verticalAlign="middle" id="conditionBox1" width="100%" height="30" paddingLeft="10">
+			<mx:HBox id="baseorgBox">
+				<mx:Label text="所属基地"/>
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="acmodBox">
+				<mx:Label text="机型"/>
+			</mx:HBox>
+			<mx:HBox id="engBox">
+				<mx:Label text="发动机型号"/>
+			</mx:HBox>
+			<mx:HBox id="esnBox">
+				<mx:Label text="发动机序号"/>
+			</mx:HBox>
+			
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<s:Spacer width="100%" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		</mx:VBox>
+		<mx:VBox label="A04EGT最大" width="100%" height="100%">
+			<component:AdvDataGridPanel id="runlogListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100"
+										sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn headerText="属性基地" dataField="baseorgname" width="100"/>
+					<mx:DataGridColumn headerText="飞机型号" dataField="acmodel" width="100"/>
+					<mx:DataGridColumn headerText="发动机型号" dataField="engmodel" width="100" />
+					<mx:DataGridColumn headerText="飞机号" dataField="acnum" width="80"/>
+					<mx:DataGridColumn headerText="发动机序号" dataField="esn" width="90"/>
+					<mx:DataGridColumn headerText="位置" dataField="position" width="100"/>
+					<mx:DataGridColumn headerText="EGT" dataField="egt" width="80"/>
+					<mx:DataGridColumn headerText="减推" dataField="cal" width="100"/>
+					<mx:DataGridColumn headerText="总温" dataField="tat" width="80"/>
+					<mx:DataGridColumn headerText="海拔" dataField="alt" width="90"/>
+					<mx:DataGridColumn headerText="报文时间" dataField="rptdate" width="145"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

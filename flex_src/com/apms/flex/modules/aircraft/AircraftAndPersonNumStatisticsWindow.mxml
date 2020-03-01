@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:component="com.apms.flex.component.*"
+					   initialize="initializeHandler(event)"
+					   width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.hurlant.eval.gen.CodeGeneration;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.series.items.LineSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var apmsService:RemoteObject ;
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			[Bindable]
+			public var columnVisible:Boolean=true;
+			[Bindable]
+			public var acnumChartArr:ArrayCollection=new ArrayCollection();
+			[Bindable]
+			private var startDate:Date;
+			[Bindable]
+			private var endDate:Date;
+			[Bindable]
+			private var lineArr:ArrayCollection;
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			protected function initializeHandler(event:FlexEvent):void{
+				orgline.selectedIndex=0;
+				var today:Date=new Date();
+				startDate=DateUtil.moveDay(today,-1);
+				endDate=today;
+				lineArr=new ArrayCollection([{val:""},{val:"航线浦东维修车间"},{val:"航线虹桥维修车间"},{val:"宽体机维修车间"}]);
+
+				apmsService=new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				
+				apmsService.queryForAcnumByAcmodel.addEventListener(ResultEvent.RESULT,acnumHandler);
+				apmsService.queryForAcnumByAcmodel.addEventListener(FaultEvent.FAULT,acnumFaultHandler);
+			}
+			private function queryForAcnum():void{
+				var code_3:String="PVG";
+				if(pvg.selected){
+					code_3="PVG";
+				}
+				if(sha.selected){
+					code_3="SHA";
+				}
+				if(hgh.selected){
+					code_3="HGH";
+				}
+				apmsService.queryForAcnumByAcmodel(code_3,orgline.textInput.text,start_date.text,end_date.text);
+				OperatingTipUtil.startOperat("正在查询...");
+				
+			}
+			private function acnumHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				acnumChartArr=null;
+				var arr:Array=event.result as Array;
+				if(arr!=null){
+					acnumChartArr=new ArrayCollection();
+					for(var i:int=0;i<arr.length;i++){
+						acnumChartArr.addItem(arr[i].dataMap);
+					}
+				}
+			}
+			
+			private function nowTimeFlagColumn(element:ChartItem,index:Number):IFill{
+				if(index==7){
+					return new SolidColor(0xee0000);
+				}else{
+					if(!columnVisible){
+						return new SolidColor(0xffffff,0);
+					}else{
+						return new SolidColor(0x336633);
+					}
+				}
+				
+			}
+			
+			private function acnumFaultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询失败！");
+				return;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:SolidColorStroke id="redLineStroke" color="0x990033" weight="2" alpha="1"/>
+	</fx:Declarations>
+	<mx:VBox width="100%">
+		<mx:HBox width="100%">
+			<mx:RadioButton label="浦东" selected="true" id="pvg"/><mx:RadioButton label="虹桥" id="sha"/><mx:RadioButton label="杭州" id="hgh"/>
+			<mx:Label text="车间:"/>  
+			<s:ComboBox id="orgline" dataProvider="{lineArr}" labelField="val" width="120"/>
+			<mx:Label text="开始时间:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="2"/>
+			<mx:Label text="结束时间:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="2"/>
+			<mx:Button  label="查询" click="queryForAcnum()"/>
+		</mx:HBox>
+		<mx:ColumnChart id="acnumChart" dataProvider="{acnumChartArr}" color="green" height="100%" width="100%" showDataTips="true">
+			<mx:horizontalAxis>
+				<mx:CategoryAxis dataProvider="{acnumChartArr}" categoryField="acmodel"/>
+			</mx:horizontalAxis>
+			<mx:series>
+				<mx:ColumnSeries     xField="acmodel" yField="orglinereleasecount" displayName="该车间放行的该机型飞机数量"  />
+				<mx:ColumnSeries    xField="acmodel" yField="orglinereleaserightcount" displayName="该车间拥有该机型放行资质人数"  />
+				<mx:ColumnSeries   xField="acmodel" yField="personaircraftscale" displayName="人机比"  />
+			</mx:series>
+		</mx:ColumnChart>
+		<mx:Legend dataProvider="{acnumChart}"  x="314" y="0" height="54" width="86"/>
+	</mx:VBox>
+</mx:Module>

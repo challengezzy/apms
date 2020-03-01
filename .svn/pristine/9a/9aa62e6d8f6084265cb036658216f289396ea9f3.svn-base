@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="apms" basedir="." default="all">
+	<tstamp>
+		<format property="today" pattern="yyyyMMdd" />
+	</tstamp>
+	<property environment="env" />
+	<property name="FLEX_HOME" value="${env.FLEX_HOME}" />
+	<property name="ant_home" value="${env.ANT_HOME}" />
+	<property name="flex_framework" value="${FLEX_HOME}/frameworks/libs" />
+	<property name="java_src" value="../src" />
+	<property name="flex_src" value="../flex_src" />
+	<property name="deploy_dir" value="../war" />
+	<property name="temp_dir" value="${deploy_dir}/apms" />
+	<property name="war.filename" value="apms.war" />
+	<property name="lib.classpath" value="../WebRoot/WEB-INF/lib" />
+	<property name="jar.filename" value="apms.jar" />
+	<property name="compile.dest" value="${deploy_dir}/temp" />
+	<property name="locale_dir" value="../locale" />
+	<property name="third_libs" value="../flex_libs" />
+
+	<property name="script.root" value="../script" />
+	<property name="output_dir" value="../../output" />
+	<property name="release.root" value="${output_dir}/release${today}" />
+	<property name="release.javasdk" value="${release.root}/SDK" />
+	<property name="release.webproject" value="${release.root}/WebRoot" />
+	<property name="release.script" value="${release.root}/script" />
+
+	<!-- 引入flexTasks.jar -->
+	<taskdef resource="flexTasks.tasks" classpath="${FLEX_HOME}/ant/lib/flexTasks.jar" />
+
+	<path id="java.classpath">
+		<fileset dir="${lib.classpath}" includes="*.jar" />
+	</path>
+	<target name="all" depends="jar,createApplication,createModule,copy,exportWar,copyScriptAndWar,clean" />
+
+	<target name="init">
+		<mkdir dir="${output_dir}" />
+		<delete dir="${release.root}" />
+		<mkdir dir="${release.root}" />
+		<mkdir dir="${deploy_dir}" />
+		<mkdir dir="${temp_dir}" />
+	</target>
+	<target name="jar" depends="compileJava">
+		<jar destfile="${deploy_dir}/${jar.filename}" basedir="${compile.dest}" />
+		<delete dir="${compile.dest}" />
+	</target>
+	<target name="compileJava" depends="init">
+		<mkdir dir="${compile.dest}" />
+		<javac debug="true" encoding="utf-8" srcdir="${java_src}" destdir="${compile.dest}" nowarn="true">
+			<classpath refid="java.classpath" />
+		</javac>
+	</target>
+	<target name="createApplication">
+		<macrodef name="compileModule">
+			<attribute name="package" />
+			<attribute name="moduleName" />
+			<attribute name="extension" />
+			<sequential>
+				<echo message="--compile module @{package}/@{moduleName}.mxml" />
+				<!-- 编译module并使用主程序的link_port-->
+				<mxmlc file="${flex_src}/@{package}/@{moduleName}.@{extension}" output="${temp_dir}/@{package}/@{moduleName}.swf"
+					keep-generated-actionscript="false" actionscript-file-encoding="UTF-8" keep-all-type-selectors="true" 
+					incremental="true" optimize="true" warnings="true" fork="true" benchmark="true" maxmemory="1024m" isolate-styles="false">
+					<!-- 防止出现Permgen Space错误-->
+					<jvmarg value="-Xmx1024m" />
+					<jvmarg value="-Xms512m" />
+					<jvmarg value="-XX:MaxPermSize=128m" />
+
+					<!--项目的多语言及配置文件目录-->
+					<!--source-path path-element="${locale_dir}/zh_CN" /-->
+					<load-config filename="${FLEX_HOME}/frameworks/flex-config.xml" />
+					<source-path path-element="${flex_src}" />
+					<source-path path-element="${FLEX_HOME}/frameworks" />
+					<!-- flex 4默认的主题是spark 所以这里设置添加HALO主题 -->
+					<theme dir="${FLEX_HOME}/frameworks/themes/Halo" append="true">
+						<include name="halo.swc" />
+					</theme>
+
+					<!-- 引用第三方 SWC库-->
+					<library-path dir="${third_libs}" append="true">
+						<include name="**/**" />
+					</library-path>
+					<library-path dir="${FLEX_HOME}/frameworks" append="true">
+						<include name="libs" />
+						<include name="/locale/${application.locale}" />
+					</library-path>
+				</mxmlc>
+				<delete>
+					<!-- 删除 cache文件 -->
+					<fileset dir="${temp_dir}/@{package}/" includes="@{moduleName}*.cache" defaultexcludes="false" />
+				</delete>
+			</sequential>
+		</macrodef>
+		<compileModule package="" moduleName="flightscheduleunion" extension="mxml" />
+		<compileModule package="" moduleName="airportmap" extension="mxml" />
+	</target>
+
+	<target name="createModule">
+		<macrodef name="compileModule">
+			<attribute name="package" />
+			<attribute name="moduleName" />
+			<attribute name="extension" />
+			<sequential>
+				<echo message="--compile module @{package}/@{moduleName}.mxml" />
+				<!-- 编译module并使用主程序的link_port-->
+				<mxmlc file="${flex_src}/@{package}/@{moduleName}.@{extension}" output="${temp_dir}/@{package}/@{moduleName}.swf" 
+					load-externs="${third_libs}/MangoWeb_LinkReport.xml"
+					keep-generated-actionscript="false" actionscript-file-encoding="UTF-8" keep-all-type-selectors="true" 
+					incremental="true" optimize="true" warnings="true" fork="true" benchmark="true" maxmemory="1024m" 
+					isolate-styles="false">
+					<!-- 防止出现Permgen Space错误-->
+					<jvmarg value="-Xmx1024m" />
+					<jvmarg value="-Xms512m" />
+					<jvmarg value="-XX:MaxPermSize=128m" />
+
+					<!--项目的多语言及配置文件目录-->
+					<!--source-path path-element="${locale_dir}/zh_CN" /-->
+					<load-config filename="${FLEX_HOME}/frameworks/flex-config.xml" />
+					<source-path path-element="${flex_src}" />
+					<source-path path-element="${FLEX_HOME}/frameworks" />
+					<!-- flex 4默认的主题是spark 所以这里设置添加HALO主题 -->
+					<theme dir="${FLEX_HOME}/frameworks/themes/Halo" append="true">
+						<include name="halo.swc" />
+					</theme>
+
+					<!-- 引用第三方 SWC库-->
+					<library-path dir="${third_libs}" append="true">
+						<include name="**/**" />
+					</library-path>
+					<library-path dir="${FLEX_HOME}/frameworks" append="true">
+						<include name="libs" />
+						<include name="/locale/${application.locale}" />
+					</library-path>
+				</mxmlc>
+				<delete>
+					<!-- 删除 cache文件 -->
+					<fileset dir="${temp_dir}/@{package}/" includes="@{moduleName}*.cache" defaultexcludes="false" />
+				</delete>
+			</sequential>
+		</macrodef>
+
+		<compileModule package="com/apms/flex/modules" moduleName="ApmsCustomLibrary" extension="as" />
+		<compileModule package="com/sep/flex/modules" moduleName="SepCustomLibrary" extension="as" />
+		
+		<!-- 人员能力提升 -->
+		<compileModule package="com/sep/flex/modules/workorder" moduleName="WorkOrderMaintain" extension="mxml" />
+		
+		<!-- APU燃油成本 --> 
+		<compileModule package="com/apms/flex/modules/fueloil" moduleName="ApuFuelOilCostChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/fueloil" moduleName="ApuRptFuelAnalyze" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/fueloil" moduleName="ApuOverhaulCostChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuChangeForecast" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuOverviewComponent" extension="mxml" />
+		
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevA49Chart" extension="mxml" />
+		
+		<compileModule package="com/apms/flex/modules/oxygen" moduleName="OxyPressMonitorChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/oxygen" moduleName="OxygenBottleChangeForecast" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuPerformanceChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuStructPartMng" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine" moduleName="EngineStructPartMng" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine" moduleName="A04EGTMonitorChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/oil" moduleName="OilStatusChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/oil" moduleName="OilAddChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuRunStatisticsView" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuRunStatisticsChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/apu" moduleName="ApuCWMonitor" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircond" moduleName="AircondChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircond" moduleName="AirbleedChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircond" moduleName="GndsysChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/wavhealth" moduleName="WavStatusChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/vibration" moduleName="VibrationFreqChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightScheduling" extension="mxml" />
+		<!-- 可视化部分功能菜单 -->
+		<compileModule package="com/apms/flex/modules/MaintenanceManage" moduleName="CrewScheduling" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/MaintenanceManage" moduleName="CrewSchedulingQuery" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightSchBatchConfirm" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/cfd" moduleName="FlrCfdQueryView" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/cfd" moduleName="WrnCfdQueryView" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/cfd" moduleName="MpfCfdQueryView" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightsViewForOrglineEveryday" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightChangeLogQueryView" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightWorkReportWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircraft" moduleName="AircraftNumStatisticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircraft" moduleName="AircraftAddingWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircraft" moduleName="AircraftAtPortAndLeavePortWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="PersonalFlightWorkStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="OrglineFlightWorkStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircraft" moduleName="AircraftAndPersonNumStatisticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="PersonalWorkTimeStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/statistics" moduleName="FlightWorkReportMissingReport" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/statistics" moduleName="WorkerButNoSchedulingStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/statistics" moduleName="ReleaserButNoRightStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/statistics" moduleName="FlightChangeInfoStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/statistics" moduleName="RemindInsHaveNotHandledStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/flight" moduleName="FlightWillBeArrivedStaticsWindow" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/aircond" moduleName="A40RptChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineCfmA01Chart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineCfmA04Chart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineCfmSlideOilChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineCfmVibrationChart" extension="mxml" />
+
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevA01Chart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevA04Chart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevSlideOilChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevVibrationChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevUnitComponentChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevA01ActuatorCylinderChart" extension="mxml" />
+		<compileModule package="com/apms/flex/modules/engine/engineChart" moduleName="EngineIaevA04ActuatorCylinderChart" extension="mxml" />
+		
+	</target>
+	<target name="copy">
+		<copy todir="${temp_dir}">
+			<fileset dir="../WebRoot">
+				<exclude name="WEB-INF/classes/**" />
+			</fileset>
+			<fileset dir="${flex_src}">
+				<include name="com/apms/flex/assets/**" />
+				<include name="assets/**" />
+			</fileset>
+			<fileset dir="${flex_src}">
+				<include name="com/apms/flex/reportxml/*.xml" />
+			</fileset>
+			<fileset dir="${flex_src}">
+				<include name="com/sep/flex/modules/reportxml/*.xml" />
+			</fileset>
+		</copy>
+		<copy todir="${temp_dir}/WEB-INF/lib" file="${deploy_dir}/${jar.filename}" />
+		<copy todir="${release.javasdk}">
+			<fileset dir="${deploy_dir}" includes="*.jar" />
+		</copy>
+	</target>
+	<target name="exportWar">
+		<war destfile="${deploy_dir}/${war.filename}" webxml="${temp_dir}/WEB-INF/web.xml">
+			<fileset dir="${temp_dir}">
+				<includesfile />
+			</fileset>
+		</war>
+	</target>
+	<target name="clean">
+		<delete dir="${temp_dir}" />
+	</target>
+
+	<target name="copyScriptAndWar">
+		<copy todir="${release.script}">
+			<fileset dir="${script.root}/current" excludes="uncommitted/**" />
+		</copy>
+		<copy todir="${release.webproject}">
+			<fileset dir="${deploy_dir}" includes="*.war" />
+		</copy>
+	</target>
+</project>

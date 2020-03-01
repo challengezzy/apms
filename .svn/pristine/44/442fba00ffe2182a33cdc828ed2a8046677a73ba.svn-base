@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				creationComplete="creationComplete()"
+				showCloseButton="true"
+				title="差错历史列表"
+				width="750" height="450" verticalGap="2"
+				close="PopUpManager.removePopUp(this);"
+				xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			public var selObjCur:Object;
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			private function creationComplete():void
+			{	
+				
+				fileListDg.simpleQueryPanel.height=0;
+							
+				querySql =" select j.id,k.shortdesc,keypointid,u.name,errordesc,to_char(errordate,'YYYY-MM-DD HH24:MI:SS') errordate," +
+					" to_char(j.updatetime,'YYYY-MM-DD HH24:MI:SS') updatetime,j.updateuser from b_user u, u_jobcard_errorhis j, u_jobcard_keypoint k" +
+					" where k.id=j.keypointid and u.id = j.userid and k.jobcardid=" + selObj["ID"];
+				
+				fileListDg.refresh();
+				
+				fileListDg.dataListGrid.addEventListener(ListEvent.CHANGE,listPanelItemClickHander);
+
+				
+			}
+			
+			private function listPanelItemClickHander(event:ListEvent):void{
+				selObjCur = fileListDg.getSelectedRowValue();
+				
+				detail.text = selObjCur["errordesc"];
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+	
+	<mx:VBox verticalGap="5" width="100%" height="100%"  >
+		<mx:HBox   width="100%" height="70%"  verticalAlign="top">
+			
+			<component:AdvDataGridPanel id="fileListDg" width="100%"  height="100%" sql="{querySql}" dataSource="{apmsDs}">
+				<component:columns>			
+					<mx:DataGridColumn dataField="shortdesc" headerText="工作要点" width="150" />
+					<mx:DataGridColumn dataField="name" headerText="负责人员" width="75" />
+					<mx:DataGridColumn dataField="errordate" headerText="差错发生日期" width="200" />
+					<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="100" />
+					<mx:DataGridColumn dataField="updatetime" headerText="更新时间" width="200" />
+
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:HBox>
+		<mx:HBox width="100%" height="30%" paddingBottom="5">
+			<mx:Label text="差错说明:" width="7%"/>
+			<mx:TextArea id ="detail" width="93%" height="100%" >
+				
+			</mx:TextArea>
+		</mx:HBox>
+
+	</mx:VBox>
+	
+</mx:TitleWindow>

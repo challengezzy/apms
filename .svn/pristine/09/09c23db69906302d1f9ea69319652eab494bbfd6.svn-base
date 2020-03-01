@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*" xmlns:datagrid="com.cool.components.datagrid.*" xmlns:item="com.cool.components.item.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.modules.flight.info.FlightConfirmModifyWindow;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.ItemComponentEvent;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var flightDest:String = ApmsUIConst.FLIGHT_SERVICE;
+			private var flightService:RemoteObject = new RemoteObject;
+			
+			private var filterCondPanel:FlightUnionFilterPanel = new FlightUnionFilterPanel();
+			private var flightConfirmPanel:FlightConfirmModifyWindow = new FlightConfirmModifyWindow();
+
+			[Bindable]
+			private var aptItemVo:TempletItemVO = new TempletItemVO();
+			private var aptcode:String ;//查询机号
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date = new Date();
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var querySql:String = "";
+			private var queryFilter:String = "1=1";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				flightService.endpoint = endpoint;
+				flightService.destination = flightDest;
+				//远程服务添加监听
+				flightService.flightBatchConfirm.addEventListener(ResultEvent.RESULT,result4flightBatchConfirm);
+				flightService.flightBatchConfirm.addEventListener(FaultEvent.FAULT,fault4flightBatchConfirm);
+				
+				beginTime = DateUtil.moveHour(new Date(),4);
+				endTime = DateUtil.moveHour(new Date(),16);
+				
+				aptItemVo = new TempletItemVO();
+				aptItemVo.itemtype="参照";
+				aptItemVo.itemname="选择航站";
+				aptItemVo.itemkey="APT";
+				aptItemVo.refdesc="SELECT CODE_3 CODE3#,lower(CODE_3) 三字码,NAME 名称 FROM V_AIRPORT_REFQUERY;ds=datasource_apms";
+				
+				//初始化,为了使刚开始查询时候不报错
+				querySql = " select 1 from v_flightsch_join where apt='XXXXXXXXX'";
+				flightListPanel.sql = querySql;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				queryColumns.push("apt_union");
+				queryColumns.push("flightno_union");
+			}
+			
+			private function aptChangeHandler(event:ItemComponentEvent):void{
+				if(aptRef.returnVO != null){
+					//获取参照的返回值
+					aptcode = aptRef.returnVO.id;
+				}else{
+					aptcode = null;
+				}
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				var begin:String =  "TO_DATE('" + dateBegin.text + "', 'YYYY-MM-DD HH24:MI:SS')";
+				var end:String =  "TO_DATE('" + dateEnd.text + "', 'YYYY-MM-DD HH24:MI:SS')";
+				
+				if(aptcode == null || aptcode == ""){
+					SmartXMessage.show("请先选择机场!");
+					return;
+				}
+				
+				var now:Date = new Date();
+				if( DateUtil.dayDiff(now,dateBegin.nowTime) > 3){
+					SmartXMessage.show("开始日期必须为3天内！");
+					return ;
+				}
+				if( DateUtil.dayDiff(dateEnd.nowTime, now) > 5){
+					SmartXMessage.show("结束日期必须为5天内！");
+					return ;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql = " select datatype, flt_date, flt_date_str, iata_c, iata_c_name, co_seq, co_seq_name, acnum, acmodel  ";
+				querySql += "   , dd_flag, m_flag, apt, maintaintype, workforce_state, workforce_state_name ";
+				querySql += "   , ac_stop,isconfirmed, isconfirmed_name,islockedin,islockedin_name ";
+				querySql += "   ,memo,flightdesc, flt_pk_a, flt_pk_d, flightno_union,flightno_a,flightno_d, apt_union ";
+				querySql += "   , stda, sta, std, cta, ctd ";
+				querySql += " , ac_state_a, ac_state_name_a, ac_state_d, ac_state_name_d, acportstate"
+				querySql += "   , chgalternum,chglognum,timefilter ";
+				querySql += " from v_flightsch_join t ";
+				querySql += " where t.apt = '"+aptcode+"'  and t.cancel_flag=0 ";
+				querySql += "   AND timefilter >="+begin+" and timefilter <="+end+"  ";
+				querySql += " and " + queryFilter;
+				querySql += " order by timefilter asc";
+
+				
+				flightListPanel.sql = querySql;
+				flightListPanel.refresh();
+			}
+			
+			protected function onFlightFilterSetOk():void
+			{
+				//设置过滤条件子句
+				queryFilter = filterCondPanel.conditionStr;
+				if(filterCondPanel.isQuery == true){
+					queryBtnClickHandler(null);
+				}
+				
+			}
+			
+			private function onFlightFilterCondHandler():void{
+				filterCondPanel.okFunc = onFlightFilterSetOk;
+				filterCondPanel.isQuery = false;
+				
+				PopUpManager.addPopUp(filterCondPanel,this);
+				PopUpManager.centerPopUp(filterCondPanel);
+				
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				flightListPanel.exportCurData( aptcode +"航班计划清单");
+			}
+			
+			protected function onBatchConfirmHandler(event:MouseEvent):void
+			{
+				var dgArr:ArrayCollection = flightListPanel.dataListGrid.dataProvider as ArrayCollection;
+				var i:int=0;
+				var confirmArr:ArrayCollection = new ArrayCollection();
+				for( i=0; i<dgArr.length; i=i+1 )
+				{
+					var row:Object = dgArr.getItemAt(i);
+					if( row.isChecked == true )
+					{
+						var dataType:String = row["datatype"];
+						var arrflt:Object = new Object;
+						var depflt:Object = new Object;
+						
+						arrflt["ISCONFIRMED"] = "1";
+						arrflt["ISLOCKED"] = "0";
+						arrflt["MAINTAINTYPE"] = row["maintaintype"];
+						arrflt["ARRDEP_TYPE"] = "ARR";
+						arrflt["USER"] = user;//操作者
+						arrflt["FLIGHTNO"] = row["flightno_a"];
+						
+						depflt["ISCONFIRMED"] = "1";
+						depflt["ISLOCKED"] = "0";
+						depflt["MAINTAINTYPE"] = row["maintaintype"];
+						depflt["ARRDEP_TYPE"] = "DEP";
+						depflt["USER"] = user;//操作者
+						depflt["FLIGHTNO"] = row["flightno_d"];
+						
+						if(dataType == "0"){//航前
+							depflt["MAINTAINCOLUMN"] = "FLTTYPE_DEP";
+							depflt["FLTPK"] = row["flt_pk_d"];
+							
+							confirmArr.addItem(depflt);
+						}else if(dataType == "1"){//过站
+							
+							depflt["MAINTAINCOLUMN"] = "FLTTYPE_DEP";
+							depflt["FLTPK"] = row["flt_pk_d"];
+							arrflt["MAINTAINCOLUMN"] = "FLTTYPE_ARR";
+							arrflt["FLTPK"] = row["flt_pk_a"];
+							
+							confirmArr.addItem(depflt);
+							confirmArr.addItem(arrflt);
+							
+						}else if(dataType == "2"){//航后
+							depflt["MAINTAINCOLUMN"] = "FLTTYPE_ARR";
+							depflt["FLTPK"] = row["flt_pk_a"];
+							confirmArr.addItem(depflt);
+						}
+						
+					}
+				}
+				
+				flightService.flightBatchConfirm(confirmArr);
+				OperatingTipUtil.startOperat("批量确认中...");
+			}
+			
+			//
+			protected function onConfirmHandler(event:MouseEvent):void
+			{
+				//flightListPanel.exportAllData( aptcode +  dateBegin.text +"航班计划清单");
+				if(flightListPanel.getSelectedRowValue() != null){
+					var row:Object = flightListPanel.getSelectedRowValue();					
+					flightConfirmPanel.flightValue = row;
+					PopUpManager.addPopUp(flightConfirmPanel,this);
+					PopUpManager.centerPopUp(flightConfirmPanel);
+					
+				}else{
+					SmartXMessage.show("请选择一行！");
+				}
+				
+			}
+			
+			private function fault4flightBatchConfirm(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班确认失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4flightBatchConfirm(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("航班确认成功！");
+				PopUpManager.removePopUp(this);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Button label="过滤条件" click="onFlightFilterCondHandler()" />
+				<mx:Label text="航站"/>
+				<item:ItemRefField id="aptRef" templetItemVO="{aptItemVo}" destination="{smartxDest}" endpoint="{endpoint}"
+								   showLabel="false" realValueChange="aptChangeHandler(event)" />
+				
+				<mx:Label text="航班日期" />
+				<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="1"/>
+				<mx:Label text="->" />
+				<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="1"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+			<mx:Button label="批量确认" click="onBatchConfirmHandler(event)" />
+			<mx:Button label="修改确认"  click="onConfirmHandler(event)"/>
+		
+		</mx:HBox>
+		<mx:VBox width="100%" height="100%">
+			<component:AdvDataGridPanel id="flightListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+										searchCondVisible="true" doubleClick="onConfirmHandler(event)" doubleClickEnabled="true"
+										sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<datagrid:CheckBoxColumn id="columnIsChecked"
+											 itemRenderer="com.cool.components.datagrid.CheckBoxItemRenderer" 
+											 headerRenderer="com.cool.components.datagrid.CheckBoxHeaderRenderer" 
+											 editable="true" editorDataField="selected"
+											 width="35" dataField="isChecked" rendererIsEditor="true">
+						
+					</datagrid:CheckBoxColumn>
+					<mx:DataGridColumn headerText="航班日期" dataField="flt_date_str" width="90"/>
+					<mx:DataGridColumn headerText="公司" dataField="iata_c_name" width="50"/>
+					<mx:DataGridColumn headerText="分公司" dataField="co_seq_name" width="50"/>
+					<mx:DataGridColumn headerText="航班号" dataField="flightno_union" width="140"/>
+					<mx:DataGridColumn headerText="机号" dataField="acnum" width="80"/>
+					<mx:DataGridColumn headerText="机型" dataField="acmodel" width="70"/>
+					<mx:DataGridColumn headerText="经停航站" dataField="apt_union" width="140" />
+					<mx:DataGridColumn headerText="维护种类" dataField="maintaintype" width="100"/>
+					<mx:DataGridColumn headerText="计划到达/起飞时间" dataField="stda" width="150"/>
+					<mx:DataGridColumn headerText="已确认" dataField="isconfirmed_name" width="50"/>
+					<mx:DataGridColumn headerText="已锁定" dataField="islockedin_name" width="50"/>
+					<mx:DataGridColumn headerText="OMIS备注" dataField="memo" width="180"/>
+					<mx:DataGridColumn headerText="航班备注" dataField="flightdesc" width="180"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

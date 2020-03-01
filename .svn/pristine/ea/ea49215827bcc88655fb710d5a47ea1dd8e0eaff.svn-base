@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DataGrid xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					 xmlns:s="library://ns.adobe.com/flex/spark"
+					 creationComplete="creationCompleteHandler(event)"
+					 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.siloon.plugin.rightClick.RightClickManager;
+			
+			import mx.controls.Menu;
+			import mx.controls.listClasses.IListItemRenderer;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			//	描述    begin
+			//	描述    end
+			
+			//	0	输入参数    begin	
+			public var rightClickMenu:Menu; //右键弹出菜单
+			private var rightClickMenuItems:Array = []; //右键弹出菜单内容
+			
+			//	0	输入参数    end
+			
+			//	1	输出参数    begin
+			//	1	输出参数    end
+			
+			//	2	本地变量    begin			
+			//	2	本地变量    end			
+			
+			//	3	公共方法    begin
+			
+			public function setRightClickMenuItems(menuItems:Array):void{
+				this.rightClickMenuItems = menuItems;
+				
+				rightClickMenu = Menu.createMenu(this,rightClickMenuItems,true);
+				rightClickMenu.setStyle("fontSize",12);
+			}
+			
+			//	3	公共方法    end		
+			
+			//	4	初始化方法    begin			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加右键菜单
+				RightClickManager.regist();
+				this.addEventListener(RightClickManager.RIGHT_CLICK,onRightMouseClick);
+			}
+			
+			//	4	初始化方法    end				
+			
+			//	5	事件响应方法    begin
+			private function onRightMouseClick(event:MouseEvent):void{
+				if(rightClickMenu != null && rightClickMenuItems.length > 0){
+					//选中当前所在行
+					selectItemByMouseEvent(event);
+					
+					rightClickMenu.hide();
+					rightClickMenu.dataProvider = rightClickMenuItems;
+					var point:Point = new Point(mouseX,mouseY);
+					point = localToGlobal(point);  
+					var xx:Number = point.x;
+					var yy:Number = point.y;
+					
+					if(xx + rightClickMenu.width > this.stage.stageWidth)
+						xx = this.stage.stageWidth - rightClickMenu.width - 2;
+					
+					if(yy + rightClickMenu.height > this.stage.stageHeight)
+						yy = this.stage.stageHeight - rightClickMenu.height-2;
+					
+					rightClickMenu.show(xx,yy); 
+				}
+			}
+			
+			/**右键选中一行效果*/
+			public function selectItemByMouseEvent(e:MouseEvent):int{
+				var render:IListItemRenderer = this.mouseEventToItemRenderer(e);
+				if(render != null){
+					var i:int = this.itemRendererToIndex(render);
+					this.selectedIndex = i;
+					return i;
+				}
+				return -1;
+			}
+		]]>
+	</fx:Script>
+</mx:DataGrid>

@@ -1,0 +1,665 @@
+package com.apms.bs.datacompute;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.apache.log4j.Logger;
+
+import smartx.framework.common.bs.CommDMO;
+import smartx.framework.common.vo.HashVO;
+import smartx.framework.common.vo.NovaLogger;
+
+import com.apms.ApmsConst;
+import com.apms.bs.datacompute.vo.FieldComputeVo;
+import com.apms.bs.dfd.DfdVarConst;
+import com.apms.bs.sysconfig.ApmsSysParamConfService;
+import com.apms.bs.sysconfig.RegressionVarVo;
+import com.apms.bs.util.MathUtil;
+import com.apms.matlab.MatlabFunctionService;
+import com.apms.matlab.vo.MathCountResult;
+import com.apms.matlab.vo.MathOneXFitResult;
+import com.apms.matlab.vo.MathOneXPerdictorAeraResult;
+import com.apms.matlab.vo.Math_TTestResult;
+
+public class DfdFieldCompute {
+	
+	private Logger logger = NovaLogger.getLogger(this.getClass());
+	private CommDMO dmo = new CommDMO();
+	private MatlabFunctionService functionService = new MatlabFunctionService();
+	
+	private RegressionVarVo regVar;
+	
+	private int pointsN;//N点数目
+	
+	private int rollN = 5;//滚动平均点个数
+	
+	DataComputeCacheService cacheServide = DataComputeCacheService.getInstance();
+	
+	public  DfdFieldCompute() throws Exception{
+		regVar = ApmsSysParamConfService.getInstance().getRegressionVar();
+		
+		pointsN = regVar.getNumberOfPoints();
+	}
+	
+	/**
+	 * 5点均计算
+	 * @param curVo 当前数据HashVo
+	 * @param fieldVo 字段计算对象 
+	 * @param changeMsgno 开始计算报文no
+	 * @param isChangePoint 是否开始点
+	 * @throws Exception
+	 */
+	public void fieldRollNCompute(HashVO curVo,FieldComputeVo fieldVo,String changeMsgno,boolean isChangePoint) throws Exception{
+		double f_value      = fieldVo.getF_value();		
+		//这是N点均取缓存数据有问题，应该查询表A_DFD_FIELD_NROLL, 而不是A_DFD_FIELD_COMPUTE
+		if( isChangePoint ){
+			logger.debug("该报文msgno=["+fieldVo.getMsg_no()+"]是计算起始点，回归数据取默认值!");
+			//清空缓存内数据
+			cacheServide.clearCacheByChangePoint(fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name());
+			
+		}else{
+			//HashVO[] dataHis = getFieldComputeHisVos(fieldVo, changeMsgno);
+			ArrayList<FieldComputeVo> dataHis = cacheServide.getFieldRollNVoHis(
+					fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name(), fieldVo.getMsg_no(),changeMsgno);
+
+			ArrayList<Double> vlist = new ArrayList<Double>(rollN * 2);
+			//首先加入本节点数据
+			vlist.add(f_value);
+			
+			//取的点，不超过2n-1 个
+			for(int i=0;i<dataHis.size() && i<rollN*2-1; i++){
+				FieldComputeVo hisVo = dataHis.get(i);
+				vlist.add(hisVo.getF_value()); //"F_VALUE"
+			}
+			
+			int qryPointsNum = vlist.size();//实际计算节点数
+			Double[] arr_st = new Double[qryPointsNum];//保存所有点的数组
+			vlist.toArray(arr_st);
+			
+			//5点均计算
+			rollNCompute(arr_st, fieldVo);
+			
+			//5点均的计算值使用FieldComputeVo对象，以后可以使用独立对象
+		}
+		//把当前节点加入到缓存中
+		cacheServide.addFieldVoToCache(fieldVo);
+		
+		//logger.debug("报文msg_no="+fieldVo.getMsg_no()+",rptno=["+fieldVo.getRptno()+"],fname=["+fieldVo.getF_name()+"]的N点滚动平均计算完成！");
+	}
+	
+	//n点均值计算
+	private void rollNCompute(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double f_value_roll5 = fieldVo.getF_value();//5点均
+		int roll5_length = rollN;
+		if(arr_st.length < rollN)//不足n点按实际点计算
+			roll5_length = arr_st.length;
+		
+		//Double[] arrRoll5 = new Double[roll5_length];//5占均值
+		//System.arraycopy(arr_st, 0, arrRoll5, 0, roll5_length);
+		//n点均计算
+		//MathCountResult res = functionService.Math_Count(arrRoll5);
+		//f_value_roll5 = res.getAvg();
+		
+		//zhangzy 2014-12-16 5点均计算不使用matlab
+		double sum = 0;
+		for(int i=0;i<roll5_length;i++){
+			sum += arr_st[i];
+		}
+		f_value_roll5 = sum/roll5_length;
+		
+		fieldVo.setF_value_roll5(f_value_roll5);
+	}
+	
+	/**
+	 * 
+	 * @param curVo 当前数据HashVo
+	 * @param fieldVo 字段计算对象 
+	 * @param changeMsgno 开始计算报文no
+	 * @param isChangePoint 是否开始点
+	 * @param isTTest 是否进行T检验
+	 * @throws Exception
+	 */
+//	public void fieldRegressionCompute(HashVO curVo,FieldComputeVo fieldVo) throws Exception{
+//		
+//		fieldRegressionCompute(curVo, fieldVo, "1", false, false, false,false);		
+//	}
+	
+	/**
+	 * 
+	 * @param curVo 当前数据HashVo
+	 * @param fieldVo 字段计算对象 
+	 * @param changeMsgno 开始计算报文no
+	 * @param isChangePoint 是否开始点
+	 * @throws Exception
+	 */
+	public void fieldRegressionCompute(HashVO curVo,FieldComputeVo fieldVo,String changeMsgno,boolean isChangePoint) throws Exception{
+		
+		fieldRegressionCompute(curVo, fieldVo, changeMsgno, isChangePoint, false, false, false);		
+	}
+	
+	/**
+	 * 
+	 * @param curVo 当前数据HashVo
+	 * @param fieldVo 字段计算对象 
+	 * @param changeMsgno 开始计算报文no
+	 * @param isChangePoint 是否开始点
+	 * @param isTTest 是否进行T检验
+	 * @throws Exception
+	 */
+	public void fieldRegressionCompute(HashVO curVo,FieldComputeVo fieldVo,String changeMsgno,boolean isChangePoint,
+			boolean isTTest) throws Exception{
+		
+		fieldRegressionCompute(curVo, fieldVo, changeMsgno, isChangePoint, isTTest, false, false);		
+	}
+	
+	/**
+	 * 
+	 * @param curVo 当前数据HashVo
+	 * @param fieldVo 字段计算对象 
+	 * @param changeMsgno 开始计算报文no
+	 * @param isChangePoint 是否开始点
+	 * @param isTTest 是否进行T检验
+	 * @param isRake 是否进行斜率计算,不再使用此参数，使用fieldVo.isRank()判断是否进行斜率计算
+	 * @param isRakeTTest 是否进行斜率T检验
+	 * @throws Exception
+	 */
+	public void fieldRegressionCompute(HashVO curVo,FieldComputeVo fieldVo,String changeMsgno,boolean isChangePoint,
+			boolean isTTest,boolean isRake,boolean isRakeTTest) throws Exception{
+		//logger.debug("开始报文["+fieldVo.getRptno()+"],acnum="+fieldVo.getAcnum()+",msg_no="+fieldVo.getMsg_no()+",field="+fieldVo.getF_name()+",的回归计算");
+		
+		double f_value      = fieldVo.getF_value();		
+		//如果当前点是起始点，则不用计算，直接取默认值
+		if( isChangePoint ){
+			logger.debug("该报文msgno=["+fieldVo.getMsg_no()+"]是计算起始点，回归数据取默认值!");
+			//清空缓存内数据
+			cacheServide.clearCacheByChangePoint(fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name());
+			
+		}else{
+			//HashVO[] dataHis = getFieldComputeHisVos(fieldVo, changeMsgno);
+			ArrayList<FieldComputeVo> dataHis = cacheServide.getFieldComputedVoHis(
+					fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name(), fieldVo.getMsg_no(),changeMsgno);
+
+			ArrayList<Double> vlist = new ArrayList<Double>(pointsN * 2);
+			ArrayList<Double> klist = new ArrayList<Double>(pointsN * 2);
+			//首先加入本节点数据
+			vlist.add(f_value);
+			
+			//取的点，不超过2n-1 个
+			for(int i=0;i<dataHis.size() && i<pointsN*2-1; i++){
+				FieldComputeVo hisVo = dataHis.get(i);
+				int pointType = hisVo.getV_pointtype(); //hisVo.getIntegerValue("V_POINTTYPE");
+				
+				if(i==0){//前面第一个点
+					fieldVo.setPre1_v_pointtype(pointType);
+					fieldVo.setPre1_msgno(hisVo.getMsg_no());
+				}
+				if(i==1){//前面第二个点
+					fieldVo.setPre2_v_pointtype(pointType);
+					fieldVo.setPre2_msgno(hisVo.getMsg_no());
+				}
+				
+				//只有实点才加入计算
+				if(pointType == DfdVarConst.POINTTYPE_REAL){
+					vlist.add(hisVo.getF_value()); //"F_VALUE"
+					
+					klist.add(hisVo.getV_k());
+				}
+			}
+			
+			int qryPointsNum = vlist.size();//实际计算节点数
+			Double[] arr_st = new Double[qryPointsNum];//保存所有标准压力数组
+			vlist.toArray(arr_st);
+			
+			//5点均计算
+			roll5Compute(arr_st, fieldVo);
+			
+			//N点均、方差计算
+			v_AvgStdCompute(arr_st, fieldVo);
+			
+			//样本T检验云计算
+			if(isTTest){
+				v_TTestComput(arr_st, fieldVo);
+			}
+			
+			//必须到达足够的点，才进行求导计算
+			int times = fieldVo.getTimes();
+			if(fieldVo.isRank() && qryPointsNum > times*3 +2){
+				//斜率计算
+				k_Compute(curVo, dataHis, fieldVo, times,isRakeTTest);
+			}
+		}
+		
+		//把当前节点加入到缓存中
+		cacheServide.addFieldVoToCache(fieldVo);
+		
+		//logger.debug("报文msg_no="+fieldVo.getMsg_no()+",rptno=["+fieldVo.getRptno()+"],fname=["+fieldVo.getF_name()+"]的回归计算完成！");
+		
+	}
+	
+	/**
+	 * 做回归斜率计算
+	 * @param curVo
+	 * @param fieldVo
+	 * @param changeMsgno
+	 * @param isChangePoint
+	 * @param isRakeTTest
+	 * @throws Exception
+	 */
+	public void fieldRegressionKCompute(HashVO curVo,FieldComputeVo fieldVo,
+			String changeMsgno,boolean isChangePoint,boolean isRakeTTest) throws Exception{
+		logger.debug("开始报文["+fieldVo.getRptno()+"],acnum="+fieldVo.getAcnum()+",msg_no="+fieldVo.getMsg_no()
+					+",field="+fieldVo.getF_name()+",的回归计算");
+		
+		//如果当前点是起始点，则不用计算，直接取默认值
+		if( isChangePoint ){
+			logger.debug("该报文msgno=["+fieldVo.getMsg_no()+"]是计算起始点，回归数据取默认值!");
+			cacheServide.clearCacheByChangePoint(fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name());
+			
+		}else{
+			//HashVO[] dataHis = getFieldComputeHisVos(fieldVo, changeMsgno);
+			ArrayList<FieldComputeVo> dataHis = cacheServide.getFieldComputedVoHis(
+					fieldVo.getAcnum(), fieldVo.getRptno(), fieldVo.getF_name(), fieldVo.getMsg_no(),changeMsgno);
+			
+			//必须到达足够的点，才进行求导计算
+			int times = fieldVo.getTimes();
+			if(dataHis.size() > times*3 +2){
+				//斜率计算
+				k_Compute(curVo, dataHis, fieldVo, times,isRakeTTest);
+			}
+		}
+		
+		//把当前节点加入到缓存中
+		cacheServide.addFieldVoToCache(fieldVo);
+		
+		//logger.debug("报文msg_no="+fieldVo.getMsg_no()+",rptno=["+fieldVo.getRptno()+"],fname=["+fieldVo.getF_name()+"]的回归计算完成！");
+		
+	}
+	
+	private void k_Compute(HashVO curVo,ArrayList<FieldComputeVo> dataHis,FieldComputeVo fieldVo,int times,boolean isRakeTTest) throws Exception{
+		//todo yvarr值应该是原始值 而不是f_value（差分） 待修改
+		ArrayList<Double> vlist = new ArrayList<Double>(pointsN*2);		
+		ArrayList<Double> xlist = new ArrayList<Double>(pointsN*2);
+		ArrayList<Double> klist = new ArrayList<Double>(pointsN*2);
+		
+		//加入当前点值
+		vlist.add(fieldVo.getF_value());
+		xlist.add(fieldVo.getX_value());
+		
+		//取的点，不超过2n-1 个
+		for(int i=0;i<dataHis.size() && i<pointsN*2-1; i++){
+			FieldComputeVo hisVo = dataHis.get(i);
+			int pointType = hisVo.getV_pointtype();
+			
+			//只有实点才加入计算
+			if(pointType == DfdVarConst.POINTTYPE_REAL){
+				vlist.add(hisVo.getF_value()); //("F_VALUE");
+				xlist.add(hisVo.getX_value()); //("X_VALUE"));
+				klist.add(hisVo.getV_k()); //("V_K"));
+				
+			}
+		}
+		
+		//先计算S46基于时间N点斜率 k
+		Double[] yArrn = new Double[vlist.size()];
+		Double[] xArrn = new Double[xlist.size()];
+		for(int m=0; m<vlist.size(); m++){
+			yArrn[m] = vlist.get(m);
+			xArrn[m] = xlist.get(m);
+		}
+		//求N点一元回归，可能是二元、三元回归，应该是当前点的导数
+		//MathOneFitResult oneFitRes = functionService.Math_One_OneFit(xArrn, yArrn);
+		//double v_k = oneFitRes.getK();
+		//double v_b = oneFitRes.getB();
+		//一元N次回归及K值计算
+		MathOneXFitResult fitXRes = functionService.Math_OneXFit(xArrn, yArrn, times);
+		double[] coefficient = fitXRes.getCoefficient();
+		
+		//当前点求导计算
+		double v_k = derivativeCompute(fitXRes, fieldVo.getX_value());
+		
+		//add zhangzy 20170502 可能的一种情况是，求导失败，得不到K值。这是使用上一个K值代替当前K
+		if(Double.isNaN(v_k) || Double.isInfinite(v_k) ){
+			if(klist.get(0) == null){
+				v_k = 110/7000;//2018-11-04兼容没有小时循环的情况，小时循环回归的，用 小时循环回归 就用 110/7000 
+			}else{
+				v_k = klist.get(0);
+			}
+			
+		}
+		
+		fieldVo.setV_k(v_k);
+		fieldVo.setV_b(coefficient[times]);
+		//一次回归进行区间判断
+		if(fieldVo.isRankScope()){
+			
+			Double[] polyFitArr = new Double[times+1];
+			for(int i=0;i<times+1;i++){
+				polyFitArr[i]=coefficient[i];
+			}
+			MathOneXPerdictorAeraResult areaResult = functionService.Math_OneX_Perdictor_Aera(xArrn, yArrn, polyFitArr);
+			Double up_value = areaResult.getY_result()[0]+areaResult.getDetaValue()[0]*2;
+			Double down_value = areaResult.getY_result()[0]-areaResult.getDetaValue()[0]*2;
+			Double f_value = fieldVo.getF_value();
+			
+			fieldVo.setUp_value(up_value);
+			fieldVo.setDown_value(down_value);
+			fieldVo.setV_b(polyFitArr[times]);
+			fieldVo.setYy(areaResult.getY_result()[0]);
+			if(f_value > up_value || f_value < down_value){  
+				fieldVo.setIsOverFlow(1);
+			}
+		}
+		
+		try{
+			//回归求解可能有问题
+			if(fieldVo.isEstimateLimit() ){ //TODO 求解有问题
+				//TODO 根据当前的一元N次回归公式，求出到达极限值时，对应的X的值
+				double[] coeArr = fitXRes.getCoefficient();
+				//如果 kx+b =y, 那么 公式 为kx+ (b-y) =0 由Math_Solve 改为使用Math_SolveXReal
+				//double constVal = coeArr[coeArr.length-1] - fieldVo.getLimitY();
+				//coeArr[coeArr.length-1] = constVal;
+				Double[] xSolve =  functionService.Math_SolveXReal(coeArr,fieldVo.getLimitY());
+				Arrays.sort(xSolve);//对结果数组进行排序
+				
+				//TODO 需要修改，如果是N次(n>1)方程式求解，找最小值的解可能不对。本计算是求解时间点，应该找大于当前点的解。
+				//等到多个解，找到最小的那个解
+				double est_value = fieldVo.getX_value();
+				boolean findValue = false;
+				for(int i=0;i<xSolve.length;i++){
+					if(xSolve[i] >= fieldVo.getX_value()/2){
+						est_value = xSolve[i];
+						findValue = true;//找到了正常解
+						break;
+					}
+				}
+				if(findValue == false)
+					est_value = -1;
+				
+				fieldVo.setX_on_estlimitvalue(est_value);
+				fieldVo.setDeta_x_on_estlimitvalue(est_value-fieldVo.getX_value());
+			}
+			
+			klist.add(0, v_k);
+			Double[] arr_st = new Double[klist.size()];//保存所有标准压力数组
+			klist.toArray(arr_st);		
+			//方差
+			k_AvgStdCompute(arr_st, fieldVo);
+			
+			//样本T检验
+			if(isRakeTTest){
+				k_TTestComput(arr_st, fieldVo);
+			}
+			
+		}catch (Exception e) {
+			logger.debug("报文["+fieldVo.getRptno()+"],v_k=["+v_k+"]acnum="+fieldVo.getAcnum()+",msg_no="+fieldVo.getMsg_no()
+					+",field="+fieldVo.getF_name()+"的回归求解X异常！",e);
+		}
+		
+	}
+	
+	//当前点导数计算
+	public double derivativeCompute(MathOneXFitResult fitXRes,double x_value){
+		double k = 0;
+		int times = fitXRes.getTimes();
+		double[] coefficients = fitXRes.getCoefficient();
+		
+		//y = nx^(n-1) + (n-1)x(n-2) + ... + c; 求出当前点的导数值
+		for(int i=0;i< times; i++){
+			k = k + coefficients[i]* (times-i)* Math.pow(x_value, (times-1-i) );
+		}
+		
+		return k;
+	}
+	
+	//样本T检查计算
+	private void k_TTestComput(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double v_tsmp_x_avg  = fieldVo.getF_value(); //0~N点的数据均值 
+		double v_tsmp_y_avg  = fieldVo.getF_value(); //N+1~2N点的数据均值 
+		int v_tsmp           = 0; //T检验，差异结果1-有差异，0-无差异
+		double v_tsmp_sign   = 0; //显著性 一般与alpha比较，如果小于alpha那么 这个Diff 结果可信
+		int v_tsmp_alter  = 0; //值为1时，发告警
+		
+		int pointsNum = arr_st.length;
+		int n1_length,n2_length;
+		if(pointsNum%2 == 1){//奇数个
+			n1_length = pointsNum/2 + 1;
+			n2_length = pointsNum/2;
+		}else{
+			n1_length = pointsNum/2 ;
+			n2_length = pointsNum/2 ;
+		}
+		
+		//数据从当前点开始，倒序排列
+		Double[] arrn1 = new Double[n1_length];//样本T检验 n1
+		Double[] arrn2 = new Double[n2_length];//样本T检验 n2
+		System.arraycopy(arr_st, 0, arrn2, 0, n2_length);
+		System.arraycopy(arr_st, n2_length, arrn1, 0, n1_length);
+		
+		if(pointsNum > 5){
+			MathCountResult vag_n1 = functionService.Math_Count(arrn1);
+			v_tsmp_x_avg = vag_n1.getAvg();
+			
+			MathCountResult vag_n2 = functionService.Math_Count(arrn2);
+			v_tsmp_y_avg = vag_n2.getAvg();
+			
+			Double alpha = regVar.getAlpha();
+			String tail = "both";
+			Math_TTestResult t_testRes = functionService.Math_t_test(arrn1, arrn2, alpha, tail);
+			v_tsmp = t_testRes.getDiff();
+			v_tsmp_sign = t_testRes.getSignificance();
+			//T检验告警
+			if(v_tsmp ==1 && v_tsmp_sign < regVar.getAlpha() ){
+				//两组数据平均值相差50%时，进行告警
+				if( MathUtil.isValueBigDiff(v_tsmp_x_avg,v_tsmp_y_avg,regVar.getDiffValuePercent())){
+					if(v_tsmp_x_avg > v_tsmp_y_avg)
+						v_tsmp_alter = -1;
+					else
+						v_tsmp_alter = 1;
+				}
+			}
+		}
+		
+		fieldVo.setV_k_tsmp_x_avg(v_tsmp_x_avg);
+		fieldVo.setV_k_tsmp_y_avg(v_tsmp_y_avg);
+		fieldVo.setV_k_tsmp(v_tsmp);
+		fieldVo.setV_k_tsmp_sign(v_tsmp_sign);
+		fieldVo.setV_k_tsmp_alter(v_tsmp_alter);
+	}
+	
+	
+	//样本T检查计算
+	private void v_TTestComput(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double v_tsmp_x_avg  = fieldVo.getF_value(); //0~N点的数据均值 
+		double v_tsmp_y_avg  = fieldVo.getF_value(); //N+1~2N点的数据均值 
+		int v_tsmp           = 0; //T检验，差异结果1-有差异，0-无差异
+		double v_tsmp_sign   = 0; //显著性 一般与alpha比较，如果小于alpha那么 这个Diff 结果可信
+		int v_tsmp_alter  = 0; //值为1时，发告警
+		
+		int pointsNum = arr_st.length;
+		int n1_length,n2_length;
+		if(pointsNum%2 == 1){//奇数个
+			n1_length = pointsNum/2 + 1;
+			n2_length = pointsNum/2;
+		}else{
+			n1_length = pointsNum/2 ;
+			n2_length = pointsNum/2 ;
+		}
+		
+		//数据从当前点开始，倒序排列
+		Double[] arrn1 = new Double[n1_length];//样本T检验 n1
+		Double[] arrn2 = new Double[n2_length];//样本T检验 n2
+		System.arraycopy(arr_st, 0, arrn2, 0, n2_length);
+		System.arraycopy(arr_st, n2_length, arrn1, 0, n1_length);
+		
+		if(pointsNum > 5){
+			MathCountResult vag_n1 = functionService.Math_Count(arrn1);
+			v_tsmp_x_avg = vag_n1.getAvg();
+			
+			MathCountResult vag_n2 = functionService.Math_Count(arrn2);
+			v_tsmp_y_avg = vag_n2.getAvg();
+			
+			Double alpha = regVar.getAlpha();
+			String tail = "both";
+			Math_TTestResult t_testRes = functionService.Math_t_test(arrn1, arrn2, alpha, tail);
+			v_tsmp = t_testRes.getDiff();
+			v_tsmp_sign = t_testRes.getSignificance();
+			//T检验告警
+			if(v_tsmp ==1 && v_tsmp_sign < regVar.getAlpha() ){
+				//两组数据平均值相差50%时，进行告警
+				if( MathUtil.isValueBigDiff(v_tsmp_x_avg,v_tsmp_y_avg,regVar.getDiffValuePercent())){
+					if(v_tsmp_x_avg > v_tsmp_y_avg)
+						v_tsmp_alter = -1;
+					else
+						v_tsmp_alter = 1;
+				}
+			}
+		}
+		
+		fieldVo.setV_tsmp_x_avg(v_tsmp_x_avg);
+		fieldVo.setV_tsmp_y_avg(v_tsmp_y_avg);
+		fieldVo.setV_tsmp(v_tsmp);
+		fieldVo.setV_tsmp_sign(v_tsmp_sign);
+		fieldVo.setV_tsmp_alter(v_tsmp_alter);
+	}
+	
+	//N点均、方差计算
+	private void k_AvgStdCompute(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double v_avg         = fieldVo.getF_value(); //本报文掉压率N点均 
+		double v_std         = 0; //本报文掉压率N点均方
+		int v_out            = 0; //本报文掉压率DETA超限
+		int v_pointtype      =0;//0-普通点(实点) 1-飘点   2--不良数据连续出现3次时，把这3个飘点改为实点
+		
+		int pointsNum = arr_st.length;
+		int n_length;		
+		//n_length 取最小的那一个
+		if(pointsNum >= pointsN){
+			n_length = pointsN;
+		}else{
+			n_length = pointsNum;
+		}
+		Double[] arrn = new Double[n_length];//做回归计算		
+		System.arraycopy(arr_st, 0, arrn, 0, n_length);
+		
+		//求平均和正态计算
+		MathCountResult presRateRes = functionService.Math_Count(arrn);
+		v_avg = presRateRes.getAvg();
+		v_std = presRateRes.getStd();
+		v_out = computeStdOut(fieldVo.getF_value(),v_avg,v_std);
+		
+		if(v_out == 1){
+			v_pointtype = DfdVarConst.POINTTYPE_FLOAT;
+		}
+		
+		fieldVo.setV_k_avg(v_avg);
+		fieldVo.setV_k_std(v_std);
+		fieldVo.setV_k_out(v_out);
+		fieldVo.setV_k_pointtype(v_pointtype);
+	}
+	
+	//N点均、方差计算
+	private void v_AvgStdCompute(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double v_avg         = fieldVo.getF_value(); //本报文掉压率N点均 
+		double v_std         = 0; //本报文掉压率N点均方
+		int v_out            = 0; //本报文掉压率DETA超限
+		int v_pointtype      =0;//0-普通点(实点) 1-飘点   2--不良数据连续出现3次时，把这3个飘点改为实点
+		
+		int pointsNum = arr_st.length;
+		int n_length;		
+		//n_length 取最小的那一个
+		if(pointsNum >= pointsN){
+			n_length = pointsN;
+		}else{
+			n_length = pointsNum;
+		}
+		Double[] arrn = new Double[n_length];//做回归计算		
+		System.arraycopy(arr_st, 0, arrn, 0, n_length);
+		
+		//求平均和正态计算
+		MathCountResult presRateRes = functionService.Math_Count(arrn);
+		v_avg = presRateRes.getAvg();
+		v_std = presRateRes.getStd();
+		v_out = computeStdOut(fieldVo.getF_value(),v_avg,v_std);
+		
+		if(v_out == 1){
+			v_pointtype = DfdVarConst.POINTTYPE_FLOAT;
+		}
+		
+		fieldVo.setV_avg(v_avg);
+		fieldVo.setV_std(v_std);
+		fieldVo.setV_out(v_out);
+		fieldVo.setV_pointtype(v_pointtype);
+	}
+	
+	//5点均值计算
+	private void roll5Compute(Double[] arr_st,FieldComputeVo fieldVo) throws Exception{
+		double f_value_roll5 = fieldVo.getF_value();//5点均
+		int roll5_length = 5;
+		if(arr_st.length < 5)//不足5点按实际点计算
+			roll5_length = arr_st.length;
+		
+		Double[] arrRoll5 = new Double[roll5_length];//5占均值
+
+		System.arraycopy(arr_st, 0, arrRoll5, 0, roll5_length);
+		//5点均计算
+		MathCountResult res = functionService.Math_Count(arrRoll5);
+		f_value_roll5 = res.getAvg();
+		
+		fieldVo.setF_value_roll5(f_value_roll5);
+	}
+	
+	/** 查询该飞机报文的最近3N个历史数据, zhangzy 20141107 使用缓存DataComputeCacheService */
+	private HashVO[] getFieldComputeHisVosOld(FieldComputeVo fieldVo,String changeMsgno) throws Exception{
+		StringBuilder sb = new StringBuilder("SELECT * FROM ( ");
+		//TODO 最好再加个日期过滤，如3个月内，以提高查询速度
+		sb.append("SELECT * FROM A_DFD_FIELD_COMPUTE WHERE ACNUM=? AND F_NAME=? AND RPTNO=? AND MSG_NO>? ORDER BY MSG_NO DESC");
+		sb.append(" ) WHERE ROWNUM < " + (pointsN*2+10) );//考虑飘点情况,多取N条数据
+		
+		HashVO[] vos =dmo.getHashVoArrayByDS(ApmsConst.DS_APMS, sb.toString(), 
+					fieldVo.getAcnum(),fieldVo.getF_name(),fieldVo.getRptno(),changeMsgno);
+		
+		return vos;		
+	}
+	
+	/**
+	 * DETA超限值计算
+	 * @param f_value 当前值
+	 * @param v_avg 平均值
+	 * @param v_std 方差
+	 * @return
+	 */
+	private int computeStdOut(double f_value,double v_avg,double v_std){
+		double dValue = Math.abs(f_value-v_avg);
+		
+		if(v_std ==0){//方差为0，肯定没有超限
+			return 0;
+		}
+		
+		//本报文掉压率DETA超限  本点-平均值. 超过2个 正负STD的范围 值为1 报警	否则设为0 不报警
+		int n_dstd = regVar.getNumberOfStdToAlarm();
+		//超过几个STD范围要求可配置
+		if( dValue >=  n_dstd*v_std ){
+			return 1;
+		}else{
+			return 0;
+		}
+		
+	}
+
+	public int getPointsN() {
+		return pointsN;
+	}
+
+	public void setPointsN(int pointsN) {
+		this.pointsN = pointsN;
+	}
+
+	public int getRollN() {
+		return rollN;
+	}
+
+	public void setRollN(int rollN) {
+		this.rollN = rollN;
+	}
+
+	
+}

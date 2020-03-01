@@ -1,0 +1,84 @@
+DROP INDEX IDX_CFD_SMD_REPORDTIME;
+
+DROP INDEX IDX_CFD_SMD_MSGNO;
+
+DROP TABLE A_CFD_SMD CASCADE CONSTRAINTS;
+
+/*==============================================================*/
+/* Table: A_CFD_SMD                                             */
+/*==============================================================*/
+CREATE TABLE A_CFD_SMD  (
+   ID                   NUMBER(18)                      NOT NULL,
+   MSG_NO               NUMBER(18),
+   APUSN                VARCHAR2(15),
+   HOURS                VARCHAR2(15),
+   ATTEMPTS             VARCHAR2(15),
+   CYCLES               VARCHAR2(15),
+   OILLEVEL             VARCHAR2(15),
+   REPORTTIME           DATE,
+   UPDATETIME           DATE
+)
+PCTFREE 10
+INITRANS 1
+STORAGE
+(
+    INITIAL 5120K
+    MINEXTENTS 1
+    MAXEXTENTS UNLIMITED
+)
+TABLESPACE SDH_DATA
+LOGGING
+MONITORING
+ NOPARALLEL;
+
+COMMENT ON TABLE A_CFD_SMD IS
+'CFD';
+
+COMMENT ON COLUMN A_CFD_SMD.ID IS
+'ID';
+
+COMMENT ON COLUMN A_CFD_SMD.MSG_NO IS
+'消息编号';
+
+COMMENT ON COLUMN A_CFD_SMD.HOURS IS
+'起飞4字码';
+
+COMMENT ON COLUMN A_CFD_SMD.ATTEMPTS IS
+'落地4字码';
+
+COMMENT ON COLUMN A_CFD_SMD.CYCLES IS
+'是否有告警';
+
+COMMENT ON COLUMN A_CFD_SMD.OILLEVEL IS
+'是否有故障';
+
+COMMENT ON COLUMN A_CFD_SMD.REPORTTIME IS
+'报文时间';
+
+COMMENT ON COLUMN A_CFD_SMD.UPDATETIME IS
+'更新时间';
+
+/*==============================================================*/
+/* Index: IDX_CFD_SMD_MSGNO                                     */
+/*==============================================================*/
+CREATE INDEX IDX_CFD_SMD_MSGNO ON A_CFD_SMD (
+   MSG_NO ASC
+)
+PCTFREE 10
+INITRANS 2
+STORAGE
+(
+    INITIAL 896K
+    MINEXTENTS 1
+    MAXEXTENTS UNLIMITED
+    BUFFER_POOL DEFAULT
+)
+TABLESPACE SDH_DATA
+LOGGING;
+
+/*==============================================================*/
+/* Index: IDX_CFD_SMD_REPORDTIME                                */
+/*==============================================================*/
+CREATE INDEX IDX_CFD_SMD_REPORDTIME ON A_CFD_SMD (
+   REPORTTIME ASC
+);

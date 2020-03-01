@@ -1,0 +1,668 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.MetadataTemplet;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			
+			private var markObj:Object;
+			
+			[Bindable]
+			private var changList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			private var allA21Compu:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var formService:RemoteObject;
+			private var endpoint_Global:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var acmodel:String="";
+			[Bindable]
+			private var a39list:ArrayCollection=new ArrayCollection();
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-1);
+				formService = new RemoteObject(destination);
+				if(endpoint_Global != null)
+					formService.endpoint = endpoint_Global;
+				
+				formService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,getAircondA39ChartDataHandler);
+				formService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,getAircondA39ChartDataErrorHandler);
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,M.modelcode modelcode#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+						acmodel = acRefPanel.returnVO.code;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+
+				aircond_chart_ff_avg.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart_ff_avg_std.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart_pd_avg.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				aircond_chart_pd_avg_std.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				aircond_chart_n21_avg.plotChart.dataTipFunction=trendTipStrFunc0;
+				aircond_chart_n21_avg_std.plotChart.dataTipFunction=trendTipStrFunc0;
+				
+				aircond_chart_ff1_ff2_sub.leftChk.visible=false;
+				aircond_chart_ff1_ff2_sub.rightChk.visible=false;
+				aircond_chart_ff1_ff2_sub.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart_ff1_ff2_sub.tipLable.width=0;
+				
+				aircond_chart_ff1_ff2_sub_std.leftChk.visible=false;
+				aircond_chart_ff1_ff2_sub_std.rightChk.visible=false;
+				aircond_chart_ff1_ff2_sub_std.plotChart.dataTipFunction=trendTipStrFunc1;
+				aircond_chart_ff1_ff2_sub_std.tipLable.width=0;
+
+				aircond_chart_pd1_pd2_sub.leftChk.visible=false;
+				aircond_chart_pd1_pd2_sub.rightChk.visible=false;
+				aircond_chart_pd1_pd2_sub.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				aircond_chart_pd1_pd2_sub.tipLable.width=0;
+				
+				aircond_chart_pd1_pd2_sub_std.leftChk.visible=false;
+				aircond_chart_pd1_pd2_sub_std.rightChk.visible=false;
+				aircond_chart_pd1_pd2_sub_std.plotChart.dataTipFunction=trendTipStrFuncPsi;
+				aircond_chart_pd1_pd2_sub_std.tipLable.width=0;
+				
+				aircond_chart_n21_n22_sub.leftChk.visible=false;
+				aircond_chart_n21_n22_sub.rightChk.visible=false;
+				aircond_chart_n21_n22_sub.plotChart.dataTipFunction=trendTipStrFunc0;
+				aircond_chart_n21_n22_sub.tipLable.width=0;
+				
+				aircond_chart_n21_n22_sub_std.leftChk.visible=false;
+				aircond_chart_n21_n22_sub_std.rightChk.visible=false;
+				aircond_chart_n21_n22_sub_std.plotChart.dataTipFunction=trendTipStrFunc0;
+				aircond_chart_n21_n22_sub_std.tipLable.width=0;
+			}
+			
+			public function trendTipStrFunc0(e:HitData):String{
+				return trendTipStrFunc(e,"%");
+			}
+			
+			public function trendTipStrFunc1(e:HitData):String{
+				return trendTipStrFunc(e,"kg/s");
+			}
+			
+			public function trendTipStrFuncPsi(e:HitData):String{
+				return trendTipStrFunc(e,"psi");
+			}
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += "\n"+ item[yField]+unitStr;
+				
+				return tip;
+			}
+			
+			
+			private function getAircondA39ChartDataHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				a39list = new ArrayCollection();
+				var obj:Array=event.result as Array;
+				if(obj.length>0){
+					for(var i:int=0;i<obj.length;i++){
+						a39list.addItem(obj[i].dataMap);
+					}
+				}
+				redlineChkClick();
+			}
+			
+			private function getAircondA39ChartDataErrorHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A39计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function getAircondA21ChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A39计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				var sql:String="SELECT a.MSG_NO,a.FF1_AVG,a.FF2_AVG,a.PD1_AVG,a.PD2_AVG,a.N21_AVG,a.N22_AVG,a.RPTDATE," 
+					+ "c1.F_VALUE_ROLL5 ff1_roll5,c1.V_POINTTYPE ff1_pointtype," 
+					+ "c2.F_VALUE_ROLL5 ff2_roll5,c2.V_POINTTYPE ff2_pointtype," 
+					+ "c3.F_VALUE_ROLL5 pd1_roll5,c3.V_POINTTYPE pd1_pointtype," 
+					+ "c4.F_VALUE_ROLL5 pd2_roll5,c4.V_POINTTYPE pd2_pointtype," 
+					+ "c5.F_VALUE_ROLL5 n21_roll5,c5.V_POINTTYPE n21_pointtype," 
+					+ "c6.F_VALUE_ROLL5 n22_roll5,c6.V_POINTTYPE n22_pointtype,"
+					+ "T.FF1_AVG_STD,T.FF2_AVG_STD,T.PD1_AVG_STD,T.PD2_AVG_STD,T.N21_AVG_STD,T.N22_AVG_STD,"
+					+ "c10.F_VALUE_ROLL5 ff1_std_roll5,c10.V_POINTTYPE ff1_std_pointtype,"
+					+ "c11.F_VALUE_ROLL5 ff2_std_roll5,c11.V_POINTTYPE ff2_std_pointtype,"
+					+ "c12.F_VALUE_ROLL5 pd1_std_roll5,c12.V_POINTTYPE pd1_std_pointtype,"
+					+ "c13.F_VALUE_ROLL5 pd2_std_roll5,c13.V_POINTTYPE pd2_std_pointtype,"
+					+ "c14.F_VALUE_ROLL5 n21_std_roll5,c14.V_POINTTYPE n21_std_pointtype,"
+					+ "c15.F_VALUE_ROLL5 n22_std_roll5,c15.V_POINTTYPE n22_std_pointtype,"
+					//以上是均值和标准方差图，以下是差值均值和差值标准方差值
+					+ "T.SUB_FF1_FF2,T.SUB_PD1_PD2,T.SUB_N21_N22,"
+					+ "T.SUB_FF1_FF2_STD,T.SUB_PD1_PD2_STD,T.SUB_N21_N22_STD,"
+					+ "c7.F_VALUE_ROLL5 ff1_ff2_roll5,c7.V_POINTTYPE ff1_ff2_pointtype," 
+					+ "c8.F_VALUE_ROLL5 pd1_pd2_roll5,c8.V_POINTTYPE pd1_pd2_pointtype,"
+					+ "c9.F_VALUE_ROLL5 n21_n22_roll5,c9.V_POINTTYPE n21_n22_pointtype,"
+					+ "c16.F_VALUE_ROLL5 ff1_ff2_std_roll5,c16.V_POINTTYPE ff1_ff2_std_pointtype," 
+					+ "c17.F_VALUE_ROLL5 pd1_pd2_std_roll5,c17.V_POINTTYPE pd1_pd2_std_pointtype,"
+					+ "c18.F_VALUE_ROLL5 n21_n22_std_roll5,c18.V_POINTTYPE n21_n22_std_pointtype,"
+					+ " (SELECT COUNT(1) FROM ALARM_MESSAGE A WHERE A.RPTNO='A40' AND A.DATAVIEWPK_VALUE=T.MSG_NO) ALARMNUM"
+					+ " FROM A_DFD_A40_LIST a," 
+					+ " A_DFD_A40_COMPUTE T," 
+					+ " A_DFD_FIELD_COMPUTE c1," 
+					+ " A_DFD_FIELD_COMPUTE c2," 
+					+ " A_DFD_FIELD_COMPUTE c3," 
+					+ " A_DFD_FIELD_COMPUTE c4," 
+					+ " A_DFD_FIELD_COMPUTE c5," 
+					+ " A_DFD_FIELD_COMPUTE c6," 
+					+ " A_DFD_FIELD_COMPUTE c7," 
+					+ " A_DFD_FIELD_COMPUTE c8," 
+					+ " A_DFD_FIELD_COMPUTE c9," 
+					+ " A_DFD_FIELD_COMPUTE c10," 
+					+ " A_DFD_FIELD_COMPUTE c11," 
+					+ " A_DFD_FIELD_COMPUTE c12," 
+					+ " A_DFD_FIELD_COMPUTE c13," 
+					+ " A_DFD_FIELD_COMPUTE c14," 
+					+ " A_DFD_FIELD_COMPUTE c15," 
+					+ " A_DFD_FIELD_COMPUTE c16," 
+					+ " A_DFD_FIELD_COMPUTE c17," 
+					+ " A_DFD_FIELD_COMPUTE c18" 
+					+ " WHERE T.FF1_AVG!=0 and a.MSG_NO=T.MSG_NO " 
+					+ " and a.MSG_NO=c1.MSG_NO and c1.f_name='FF1_AVG'" 
+					+ " and a.MSG_NO=c2.MSG_NO and c2.f_name='FF2_AVG'"
+					+ " and a.MSG_NO=c3.MSG_NO and c3.f_name='PD1_AVG'" 
+					+ " and a.MSG_NO=c4.MSG_NO and c4.f_name='PD2_AVG'" 
+					+ " and a.MSG_NO=c5.MSG_NO and c5.f_name='N21_AVG'" 
+					+ " and a.MSG_NO=c6.MSG_NO and c6.f_name='N22_AVG'" 
+					+ " and a.MSG_NO=c7.MSG_NO and c7.f_name='SUB_FF1_FF2'" 
+					+ " and a.MSG_NO=c8.MSG_NO and c8.f_name='SUB_PD1_PD2'" 
+					+ " and a.MSG_NO=c9.MSG_NO and c9.f_name='SUB_N21_N22'" 
+					
+					+ " and a.MSG_NO=c10.MSG_NO and c10.f_name='FF1_AVG_STD'"
+					+ " and a.MSG_NO=c11.MSG_NO and c11.f_name='FF2_AVG_STD'"
+					+ " and a.MSG_NO=c12.MSG_NO and c12.f_name='PD1_AVG_STD'"
+					+ " and a.MSG_NO=c13.MSG_NO and c13.f_name='PD2_AVG_STD'"
+					+ " and a.MSG_NO=c14.MSG_NO and c14.f_name='N21_AVG_STD'"
+					+ " and a.MSG_NO=c15.MSG_NO and c15.f_name='N22_AVG_STD'"
+					
+					+ " and a.MSG_NO=c16.MSG_NO and c16.f_name='SUB_FF1_FF2_STD'"
+					+ " and a.MSG_NO=c17.MSG_NO and c17.f_name='SUB_PD1_PD2_STD'"
+					+ " and a.MSG_NO=c18.MSG_NO and c18.f_name='SUB_N21_N22_STD'"
+					+ " and  a.acnum='"+acnum+"' " 
+					+ " and a.rptdate>=to_date('"+time_begin.text+"','yyyy-mm-dd hh24:mi:ss') and a.rptdate<=to_date('"+time_end.text+"','yyyy-mm-dd hh24:mi:ss')";
+				OperatingTipUtil.startOperat("正在查询....",this);
+				formService.getSimpleHashVoArrayByDS(ApmsUIConst.DATASOURCE_APMS,sql);
+//				apmsService.getAircondA21ChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+				
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"A39报文引气系统趋势");
+			}
+			
+			
+			//红线复选框点击 
+			private function redlineChkClick():void{
+				var mtd:MetadataTemplet = MetadataTempletUtil.getInstance().findMetadataTemplet("ReadLineConfig");
+				var xml:XML = mtd.contentXML;
+				var redline_ff1ff2avg_maxvalue:String=""; 
+				var redline_ff1ff2avg_minvalue:String=""; 
+				
+				var redline_ff1ff2std_maxvalue:String=""; 
+				var redline_ff1ff2std_minvalue:String=""; 
+				
+				var redline_pd1pd2avg_maxvalue:String=""; 
+				var redline_pd1pd2avg_minvalue:String=""; 
+				
+				var redline_pd1pd2std_maxvalue:String=""; 
+				var redline_pd1pd2std_minvalue:String="";
+				
+				var redline_n21n22avg_maxvalue:String="";
+				var redline_n21n22avg_minvalue:String=""; 
+				
+				var redline_n21n22std_maxvalue:String=""; 
+				var redline_n21n22std_minvalue:String=""; 
+				
+				var redline_sub_ff1ff2avg_maxvalue:String=""; 
+				var redline_sub_ff1ff2avg_minvalue:String="";
+				
+				var redline_sub_ff1ff2std_maxvalue:String=""; 
+				var redline_sub_ff1ff2std_minvalue:String=""; 
+				
+				var redline_sub_pd1pd2avg_maxvalue:String=""; 
+				var redline_sub_pd1pd2avg_minvalue:String=""; 
+				
+				var redline_sub_pd1pd2std_maxvalue:String=""; 
+				var redline_sub_pd1pd2std_minvalue:String="";
+				
+				var redline_sub_n21n22avg_maxvalue:String="";
+				var redline_sub_n21n22avg_minvalue:String=""; 
+				
+				var redline_sub_n21n22std_maxvalue:String=""; 
+				var redline_sub_n21n22std_minvalue:String="";
+				
+				for(var i:Number = 0;i <xml.children().length()-1;i++){
+					var acmodelStr:String=xml.headitem[i].@acmodel;
+					if(acmodel.localeCompare(acmodelStr)==0){
+						redline_ff1ff2avg_maxvalue=xml.headitem[i].a39ff1ff2avg_redlinevalue.@upperlimitvalue;
+						redline_ff1ff2avg_minvalue=xml.headitem[i].a39ff1ff2avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_ff1ff2std_maxvalue=xml.headitem[i].a39ff1ff2std_redlinevalue.@upperlimitvalue;
+						redline_ff1ff2std_minvalue=xml.headitem[i].a39ff1ff2std_redlinevalue.@lowerlimitvalue;
+						
+						redline_pd1pd2avg_maxvalue=xml.headitem[i].a39pd1pd2avg_redlinevalue.@upperlimitvalue;
+						redline_pd1pd2avg_minvalue=xml.headitem[i].a39pd1pd2avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_pd1pd2std_maxvalue=xml.headitem[i].a39pd1pd2std_redlinevalue.@upperlimitvalue;
+						redline_pd1pd2std_minvalue=xml.headitem[i].a39pd1pd2std_redlinevalue.@lowerlimitvalue;
+						
+						redline_n21n22avg_maxvalue=xml.headitem[i].a39n21n22avg_redlinevalue.@upperlimitvalue;
+						redline_n21n22avg_minvalue=xml.headitem[i].a39n21n22avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_n21n22std_maxvalue=xml.headitem[i].a39n21n22std_redlinevalue.@upperlimitvalue;
+						redline_n21n22std_minvalue=xml.headitem[i].a39n21n22std_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_ff1ff2avg_maxvalue=xml.headitem[i].a39sub_ff1ff2avg_redlinevalue.@upperlimitvalue;
+						redline_sub_ff1ff2avg_minvalue=xml.headitem[i].a39sub_ff1ff2avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_ff1ff2std_maxvalue=xml.headitem[i].a39sub_ff1ff2std_redlinevalue.@upperlimitvalue;
+						redline_sub_ff1ff2std_minvalue=xml.headitem[i].a39sub_ff1ff2std_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_pd1pd2avg_maxvalue=xml.headitem[i].a39sub_pd1pd2avg_redlinevalue.@upperlimitvalue;
+						redline_sub_pd1pd2avg_minvalue=xml.headitem[i].a39sub_pd1pd2avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_pd1pd2std_maxvalue=xml.headitem[i].a39sub_pd1pd2std_redlinevalue.@upperlimitvalue;
+						redline_sub_pd1pd2std_minvalue=xml.headitem[i].a39sub_pd1pd2std_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_n21n22avg_maxvalue=xml.headitem[i].a39sub_n21n22avg_redlinevalue.@upperlimitvalue;
+						redline_sub_n21n22avg_minvalue=xml.headitem[i].a39sub_n21n22avg_redlinevalue.@lowerlimitvalue;
+						
+						redline_sub_n21n22std_maxvalue=xml.headitem[i].a39sub_n21n22std_redlinevalue.@upperlimitvalue;
+						redline_sub_n21n22std_minvalue=xml.headitem[i].a39sub_n21n22std_redlinevalue.@lowerlimitvalue;
+					}
+				}
+				if(""==redline_ff1ff2avg_maxvalue){
+					redline_ff1ff2avg_maxvalue=xml.defaultconfig.a39ff1ff2avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_ff1ff2avg_minvalue){
+					redline_ff1ff2avg_minvalue=xml.defaultconfig.a39ff1ff2avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_ff1ff2std_maxvalue){
+					redline_ff1ff2std_maxvalue=xml.defaultconfig.a39ff1ff2std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_ff1ff2std_minvalue){
+					redline_ff1ff2std_minvalue=xml.defaultconfig.a39ff1ff2std_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_pd1pd2avg_maxvalue){
+					redline_pd1pd2avg_maxvalue=xml.defaultconfig.a39pd1pd2avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_pd1pd2avg_minvalue){
+					redline_pd1pd2avg_minvalue=xml.defaultconfig.a39pd1pd2avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_pd1pd2std_maxvalue){
+					redline_pd1pd2std_maxvalue=xml.defaultconfig.a39pd1pd2std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_pd1pd2std_minvalue){
+					redline_pd1pd2std_minvalue=xml.defaultconfig.a39pd1pd2std_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n21n22avg_maxvalue){
+					redline_n21n22avg_maxvalue=xml.defaultconfig.a39n21n22avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n21n22avg_minvalue){
+					redline_n21n22avg_minvalue=xml.defaultconfig.a39n21n22avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_n21n22std_maxvalue){
+					redline_n21n22std_maxvalue=xml.defaultconfig.a39n21n22std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_n21n22std_minvalue){
+					redline_n21n22std_minvalue=xml.defaultconfig.a39n21n22std_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_ff1ff2avg_maxvalue){
+					redline_sub_ff1ff2avg_maxvalue=xml.defaultconfig.a39sub_ff1ff2avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_ff1ff2avg_minvalue){
+					redline_sub_ff1ff2avg_minvalue=xml.defaultconfig.a39sub_ff1ff2avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_ff1ff2std_maxvalue){
+					redline_sub_ff1ff2std_maxvalue=xml.defaultconfig.a39sub_ff1ff2std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_ff1ff2std_minvalue){
+					redline_sub_ff1ff2std_minvalue=xml.defaultconfig.a39sub_ff1ff2std_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_pd1pd2avg_maxvalue){
+					redline_sub_pd1pd2avg_maxvalue=xml.defaultconfig.a39sub_pd1pd2avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_pd1pd2avg_minvalue){
+					redline_sub_pd1pd2avg_minvalue=xml.defaultconfig.a39sub_pd1pd2avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_pd1pd2std_maxvalue){
+					redline_sub_pd1pd2std_maxvalue=xml.defaultconfig.a39sub_pd1pd2std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_pd1pd2std_minvalue){
+					redline_sub_pd1pd2std_minvalue=xml.defaultconfig.a39sub_pd1pd2std_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_n21n22avg_maxvalue){
+					redline_sub_n21n22avg_maxvalue=xml.defaultconfig.a39sub_n21n22avg_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_n21n22avg_minvalue){
+					redline_sub_n21n22avg_minvalue=xml.defaultconfig.a39sub_n21n22avg_redlinevalue.@lowerlimitvalue;
+				}
+				if(""==redline_sub_n21n22std_maxvalue){
+					redline_sub_n21n22std_maxvalue=xml.defaultconfig.a39sub_n21n22std_redlinevalue.@upperlimitvalue;
+				}
+				if(""==redline_sub_n21n22std_minvalue){
+					redline_sub_n21n22std_minvalue=xml.defaultconfig.a39sub_n21n22std_redlinevalue.@lowerlimitvalue;        
+				}
+				for(var j:int=0;j<a39list.length;j++){
+					a39list[j]["redline_ff1ff2avg_maxvalue"]=redline_ff1ff2avg_maxvalue; 
+					a39list[j]["redline_ff1ff2avg_minvalue"]=redline_ff1ff2avg_minvalue;
+					
+					a39list[j]["redline_ff1ff2std_maxvalue"]=redline_ff1ff2std_maxvalue; 
+					a39list[j]["redline_ff1ff2std_minvalue"]=redline_ff1ff2std_minvalue;
+					
+					a39list[j]["redline_pd1pd2avg_maxvalue"]=redline_pd1pd2avg_maxvalue; 
+					a39list[j]["redline_pd1pd2avg_minvalue"]=redline_pd1pd2avg_minvalue;
+					
+					a39list[j]["redline_pd1pd2std_maxvalue"]=redline_pd1pd2std_maxvalue; 
+					a39list[j]["redline_pd1pd2std_minvalue"]=redline_pd1pd2std_minvalue;
+					
+					a39list[j]["redline_n21n22avg_maxvalue"]=redline_n21n22avg_maxvalue; 
+					a39list[j]["redline_n21n22avg_minvalue"]=redline_n21n22avg_minvalue;
+					
+					a39list[j]["redline_n21n22std_maxvalue"]=redline_n21n22std_maxvalue; 
+					a39list[j]["redline_n21n22std_minvalue"]=redline_n21n22std_minvalue;
+					
+					a39list[j]["redline_sub_ff1ff2avg_maxvalue"]=redline_sub_ff1ff2avg_maxvalue; 
+					a39list[j]["redline_sub_ff1ff2avg_minvalue"]=redline_sub_ff1ff2avg_minvalue;
+					
+					a39list[j]["redline_sub_ff1ff2std_maxvalue"]=redline_sub_ff1ff2std_maxvalue; 
+					a39list[j]["redline_sub_ff1ff2std_minvalue"]=redline_sub_ff1ff2std_minvalue;
+					
+					a39list[j]["redline_sub_pd1pd2avg_maxvalue"]=redline_sub_pd1pd2avg_maxvalue; 
+					a39list[j]["redline_sub_pd1pd2avg_minvalue"]=redline_sub_pd1pd2avg_minvalue;
+					
+					a39list[j]["redline_sub_pd1pd2std_maxvalue"]=redline_sub_pd1pd2std_maxvalue; 
+					a39list[j]["redline_sub_pd1pd2std_minvalue"]=redline_sub_pd1pd2std_minvalue;
+					
+					a39list[j]["redline_sub_n21n22avg_maxvalue"]=redline_sub_n21n22avg_maxvalue; 
+					a39list[j]["redline_sub_n21n22avg_minvalue"]=redline_sub_n21n22avg_minvalue
+					
+					a39list[j]["redline_sub_n21n22std_maxvalue"]=redline_sub_n21n22std_maxvalue; 
+					a39list[j]["redline_sub_n21n22std_minvalue"]=redline_sub_n21n22std_minvalue;
+					
+				}
+				//把对应的红线值分配给对应的图形对象
+				aircond_chart_ff_avg.redlineFieldUpperLimitValue = "redline_ff1ff2avg_maxvalue";
+				aircond_chart_ff_avg_std.redlineFieldUpperLimitValue = "redline_ff1ff2std_maxvalue";
+				aircond_chart_pd_avg.redlineFieldUpperLimitValue = "redline_pd1pd2avg_maxvalue";
+				aircond_chart_pd_avg_std.redlineFieldUpperLimitValue = "redline_pd1pd2std_maxvalue";
+				aircond_chart_n21_avg.redlineFieldUpperLimitValue = "redline_n21n22avg_maxvalue";
+				aircond_chart_n21_avg_std.redlineFieldUpperLimitValue = "redline_n21n22std_maxvalue";
+				aircond_chart_ff1_ff2_sub.redlineFieldUpperLimitValue = "redline_sub_ff1ff2avg_maxvalue";
+				aircond_chart_ff1_ff2_sub_std.redlineFieldUpperLimitValue = "redline_sub_ff1ff2std_maxvalue";
+				aircond_chart_pd1_pd2_sub.redlineFieldUpperLimitValue = "redline_sub_pd1pd2avg_maxvalue";
+				aircond_chart_pd1_pd2_sub_std.redlineFieldUpperLimitValue = "redline_sub_pd1pd2std_maxvalue";
+				aircond_chart_n21_n22_sub.redlineFieldUpperLimitValue = "redline_sub_n21n22avg_maxvalue";
+				aircond_chart_n21_n22_sub_std.redlineFieldUpperLimitValue = "redline_sub_n21n22std_maxvalue";
+				
+				aircond_chart_ff_avg.redlineFieldLowerLimitValue = "redline_ff1ff2avg_minvalue";
+				aircond_chart_ff_avg_std.redlineFieldLowerLimitValue = "redline_ff1ff2std_minvalue";
+				aircond_chart_pd_avg.redlineFieldLowerLimitValue = "redline_pd1pd2avg_minvalue";
+				aircond_chart_pd_avg_std.redlineFieldLowerLimitValue = "redline_pd1pd2std_minvalue";
+				aircond_chart_n21_avg.redlineFieldLowerLimitValue = "redline_n21n22avg_minvalue";
+				aircond_chart_n21_avg_std.redlineFieldLowerLimitValue = "redline_n21n22std_minvalue";
+				aircond_chart_ff1_ff2_sub.redlineFieldLowerLimitValue = "redline_sub_ff1ff2avg_minvalue";
+				aircond_chart_ff1_ff2_sub_std.redlineFieldLowerLimitValue = "redline_sub_ff1ff2std_minvalue";
+				aircond_chart_pd1_pd2_sub.redlineFieldLowerLimitValue = "redline_sub_pd1pd2avg_minvalue";
+				aircond_chart_pd1_pd2_sub_std.redlineFieldLowerLimitValue = "redline_sub_pd1pd2std_minvalue";
+				aircond_chart_n21_n22_sub.redlineFieldLowerLimitValue = "redline_sub_n21n22avg_minvalue";
+				aircond_chart_n21_n22_sub_std.redlineFieldLowerLimitValue = "redline_sub_n21n22std_minvalue";
+			}
+			
+			private function tabCompanentCreateComplete():void{
+				
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:CheckBox id="isKChk" label="斜率计算" enabled="false" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:VBox  width="100%" height="100%">
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_ff_avg" chartName="燃油流量(均值)" height="100%" width="100%"
+												xField="rptdate"  colorTipVisible="true" isAvg5="true" colorLeft="0x0000ff" colorRight="0xff0000"
+												valField1="ff1_avg" point1Name="左发燃油流量" colorAttribute1="alarmnum" pointTypeField1="ff1_out"
+												valField2="ff2_avg" point2Name="右发燃油流量" colorAttribute2="alarmnum" pointTypeField2="ff2_out"
+												avg5Field1="ff1_roll5" avg5Field2="ff2_roll5" isRedLine="true"
+												allList1="{a39list}" allList2="{a39list}"
+												chartTitle_left="左发燃油流量" chartTitle_right="右发燃油流量" 
+												>
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_ff_avg_std" chartName="燃油流量(标准方差)" height="100%" width="100%"
+												xField="rptdate" colorLeft="0x0000ff" colorRight="0xff0000" colorTipVisible="true"
+												valField1="ff1_avg_std" point1Name="左发燃油流量" colorAttribute1="alarmnum" pointTypeField1="ff1_std_pointtype"
+												valField2="ff2_avg_std" point2Name="右发燃油流量" colorAttribute2="alarmnum" pointTypeField2="ff2_std_pointtype"
+												allList1="{a39list}"  allList2="{a39list}" isRedLine="true"
+												isAvg5="true" avg5Field1="ff1_std_roll5" avg5Field2="ff2_std_roll5"
+												chartTitle_left="左发燃油流量" chartTitle_right="右发燃油流量"
+												>
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_pd_avg" chartName="引气压力(均值)" height="100%" width="100%"
+												xField="rptdate"  colorTipVisible="true" isAvg5="true" colorLeft="0x0000ff" colorRight="0xff0000"
+												valField1="pd1_avg" point1Name="左发引气压力" colorAttribute1="alarmnum" pointTypeField1="pd1_pointtype"
+												valField2="pd2_avg" point2Name="右发引气压力" colorAttribute2="alarmnum" pointTypeField2="pd2_pointtype"
+												avg5Field1="pd1_roll5" avg5Field2="pd2_roll5" isRedLine="true"
+												allList1="{a39list}" allList2="{a39list}"
+												chartTitle_left="左发引气压力" chartTitle_right="右发引气压力"
+												>
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_pd_avg_std" chartName="引气压力(标准方差)" height="100%" width="100%"
+												xField="rptdate"   colorLeft="0x0000ff" colorRight="0xff0000" colorTipVisible="true"
+												valField1="pd1_avg_std" point1Name="左发引气压力(标准方差)"
+												valField2="pd2_avg_std" point2Name="右发引气压力(标准方差)"
+												allList1="{a39list}"  allList2="{a39list}" isRedLine="true"
+												chartTitle_left="左发引气压力" chartTitle_right="右发引气压力"
+												isAvg5="true" avg5Field1="pd1_std_roll5" avg5Field2="pd2_std_roll5"
+												colorAttribute1="alarmnum" pointTypeField1="pd1_std_pointtype"
+												colorAttribute2="alarmnum" pointTypeField2="pd2_std_pointtype"
+												>
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_n21_avg" chartName="N2转速(均值)" height="100%" width="100%"
+												xField="rptdate" colorTipVisible="true" isAvg5="true" colorLeft="0x0000ff" colorRight="0xff0000"
+												valField1="n21_avg" point1Name="N2转速左(均值)"  colorAttribute1="alarmnum" pointTypeField1="n21_pointtype"
+												valField2="n22_avg" point2Name="N2转速右(均值)"  colorAttribute2="alarmnum" pointTypeField2="n22_pointtype"
+												avg5Field1="n21_roll5" avg5Field2="n22_roll5" isRedLine="true"
+												allList1="{a39list}" allList2="{a39list}"
+												chartTitle_left="N2转速左(均值)" chartTitle_right="N2转速右(均值)"
+												>
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_n21_avg_std" chartName="N2转速(标准方差)" height="100%" width="100%"
+												xField="rptdate"  colorLeft="0x0000ff" colorRight="0xff0000" colorTipVisible="true"
+												valField1="n21_avg_std" point1Name="N2转速左(标准方差)"
+												valField2="n22_avg_std" point2Name="N2转速右(标准方差)"
+												allList1="{a39list}"  allList2="{a39list}" isRedLine="true"
+												chartTitle_left="左(标准方差)" chartTitle_right="右(标准方差)"
+												isAvg5="true" avg5Field1="n21_std_roll5" avg5Field2="n22_std_roll5"
+												colorAttribute1="alarmnum" pointTypeField1="n21_std_pointtype"
+												colorAttribute2="alarmnum" pointTypeField2="n22_std_pointtype"
+												>
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_ff1_ff2_sub" chartName="燃油流量左右差值(均值)" height="100%" width="100%"
+														 xField="rptdate" colorLeft="0xff0000" isRedLine="true"
+														 valField1="sub_ff1_ff2" point1Name="燃油流量左右差值(均值)"
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="ff1_ff2_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="ff1_ff2_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_ff1_ff2_sub_std" chartName="燃油流量左右差值(标准方差)" height="100%" width="100%"
+														 xField="rptdate" colorLeft="0xff0000"
+														 valField1="sub_ff1_ff2_std" point1Name="燃油流量左右差值(标准方差)"
+														 valField2="ff2_std"  isRedLine="true"
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="ff1_ff2_std_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="ff1_ff2_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_pd1_pd2_sub" chartName="引气压力左右差值(均值)" height="100%" width="100%"
+														 xField="rptdate"   colorLeft="0xff0000" isRedLine="true"
+														 valField1="sub_pd1_pd2" point1Name="引气压力左右差值(均值)" 
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="pd1_pd2_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="pd1_pd2_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_pd1_pd2_sub_std" chartName="引气压力左右差值(标准方差)" height="100%" width="100%"
+														 xField="rptdate" colorLeft="0xff0000" isRedLine="true"
+														 valField1="sub_pd1_pd2_std" point1Name="引气压力左右差值(标准方差)"
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="pd1_pd2_std_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="pd1_pd2_std_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+			<mx:HBox height="100%" width="100%">
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_n21_n22_sub" chartName="N2转速左右差值(均值)" height="100%" width="100%"
+														 xField="rptdate"   colorLeft="0xff0000" isRedLine="true"
+														 valField1="sub_n21_n22" point1Name="N2转速左右差值(均值)"
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="n21_n22_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="n21_n22_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+				<component:ReportTrendBySelfDefDualChart id="aircond_chart_n21_n22_sub_std" chartName="N2转速左右差值(标准方差)" height="100%" width="100%"
+														 xField="rptdate"   colorLeft="0xff0000" isRedLine="true"
+														 valField1="sub_n21_n22_std" point1Name="N2转速左右差值(标准方差)"
+														 allList1="{a39list}" colorTipVisible="false" isAvg5="true" avg5Field1="n21_n22_std_roll5"
+														 colorAttribute1="alarmnum" pointTypeField1="n21_n22_std_pointtype"
+														 >
+				</component:ReportTrendBySelfDefDualChart>
+			</mx:HBox>
+		</mx:VBox >
+	</mx:VBox >
+</mx:Module>

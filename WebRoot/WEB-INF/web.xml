@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+    <display-name>FlexMap</display-name>
+    <description>BlazeDS Application</description>
+
+	<context-param>
+		<param-name>flex.class.path</param-name>
+		<param-value>/WEB-INF/flex/hotfixes,/WEB-INF/flex/jars</param-value>
+	</context-param>
+	<context-param>
+		<param-name>jwebap-config</param-name>
+		<param-value>/WEB-INF/jwebap.xml</param-value>
+	</context-param>
+	<!--context-param>
+		<param-name>brokerURI</param-name>
+		<param-value>/WEB-INF/activemq.xml</param-value>
+	</context-param-->
+	
+
+    <!-- Http Flex Session attribute and binding listener support --> 
+    <listener>
+        <listener-class>flex.messaging.HttpFlexSession</listener-class>
+    </listener>
+    
+    <listener>	
+		<listener-class>org.jwebap.startup.JwebapListener</listener-class>	
+	</listener>
+	<!--listener>
+		<listener-class>org.apache.activemq.web.SpringBrokerContextListener</listener-class>
+	</listener-->
+	  
+	<filter>
+		<filter-name>PageDetectFilter</filter-name>
+		<filter-class>org.jwebap.plugin.tracer.http.DetectFilter</filter-class>
+		<init-param>
+			<param-name>excludeUrls</param-name>
+			<param-value>/RemoteCallServlet;/detect;/detect/*;*.js;*.jpg;*.htm;*.html;*.gif;*.png;*.css;*.swf</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>PageDetectFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+    <!-- MessageBroker Servlet -->
+    <servlet>
+        <servlet-name>MessageBrokerServlet</servlet-name>
+        <display-name>MessageBrokerServlet</display-name>
+        <servlet-class>flex.messaging.MessageBrokerServlet</servlet-class>
+        <init-param>
+            <param-name>services.configuration.file</param-name>
+            <param-value>/WEB-INF/flex/services-config.xml</param-value>
+       </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+	<servlet>
+		<servlet-name>BootServlet</servlet-name> <!-- 启动类,极为重要,少了则什么都玩不成!  -->
+		<servlet-class>smartx.framework.common.bs.BootServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet>
+		<servlet-name>SynchronizerServlet</servlet-name>
+		<servlet-class>smartx.framework.common.bs.SynchronizerServlet</servlet-class>
+	</servlet>
+	<servlet>
+		<servlet-name>RemoteCallServlet</servlet-name>
+		<servlet-class>smartx.framework.common.bs.RemoteCallServlet</servlet-class>
+	</servlet>
+	<servlet>
+		<servlet-name>detect</servlet-name>
+		<servlet-class>org.jwebap.ui.controler.JwebapServlet</servlet-class>	
+	</servlet>
+	
+	
+	<servlet>
+		<servlet-name>fileUploadServlet</servlet-name>
+		<servlet-class>smartx.publics.file.FileUploadServlet</servlet-class>
+	</servlet>
+	
+	<servlet>
+		<servlet-name>fileDownloadServlet</servlet-name>
+		<servlet-class>smartx.publics.file.FileDownloadServlet</servlet-class>
+	</servlet>
+	
+	<servlet>
+		<servlet-name>apmsFileDownloadServlet</servlet-name>
+		<servlet-class>com.apms.bs.file.FileDownloadServlet</servlet-class>
+	</servlet>
+	
+	
+	<servlet-mapping>
+        <servlet-name>MessageBrokerServlet</servlet-name>
+        <url-pattern>/messagebroker/*</url-pattern>
+    </servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>SynchronizerServlet</servlet-name>
+		<url-pattern>/SynchronizerServlet</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>RemoteCallServlet</servlet-name>
+		<url-pattern>/RemoteCallServlet</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>detect</servlet-name>
+		<url-pattern>/detect/*</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>fileUploadServlet</servlet-name>
+		<url-pattern>/fileUploadServlet</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>fileDownloadServlet</servlet-name>
+		<url-pattern>/fileDownloadServlet</url-pattern>
+	</servlet-mapping>
+	
+	<servlet-mapping>
+		<servlet-name>apmsFileDownloadServlet</servlet-name>
+		<url-pattern>/apmsFileDownloadServlet</url-pattern>
+	</servlet-mapping>
+	
+	<!-- matlab webfigure begin-->
+	 <servlet>
+        <servlet-name>WebFigures</servlet-name>
+        <servlet-class>com.mathworks.toolbox.javabuilder.webfigures.WebFiguresServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WebFigures</servlet-name>
+        <url-pattern>/WebFigures/*</url-pattern>
+    </servlet-mapping>
+    
+	<servlet>
+        <servlet-name>MagicSquareServlet</servlet-name>
+        <servlet-class>com.apms.webfigure.MagicSquareServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MagicSquareServlet</servlet-name>
+        <url-pattern>/MagicSquare</url-pattern>
+    </servlet-mapping>
+
+	<servlet>
+        <servlet-name>VibrationFigureServlet</servlet-name>
+        <servlet-class>com.apms.webfigure.VibrationFigureServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>VibrationFigureServlet</servlet-name>
+        <url-pattern>/webfigure/VibrationFigure</url-pattern>
+    </servlet-mapping>
+   
+    <!-- matlab webfigure end-->
+	
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+        <welcome-file>index.htm</welcome-file>
+    </welcome-file-list>
+</web-app>

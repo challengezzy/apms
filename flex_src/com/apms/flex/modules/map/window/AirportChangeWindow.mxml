@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationCompleteHandler(event)"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="300" height="220" 
+					   title="机场地图切换" allowDrag="true" allowClose="true" 
+					   >
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			//机场
+			private var aptcode:String = "PVG";
+			
+			public var confirmFunc:Function = function():void{ };
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(aptcode == "PVG"){
+					btnPvg.selected = true;
+				}else if(aptcode == "SHA"){
+					btnSha.selected = true;
+				}
+			}
+			
+			public function set airportCode(code:String):void{
+				this.aptcode = code;
+				if(btnPvg != null){
+					if(aptcode == "PVG"){
+						btnPvg.selected = true;
+					}else if(aptcode == "SHA"){
+						btnSha.selected = true;
+					}
+				}
+				
+			}
+			
+			public function get airportCode():String{
+				return aptcode;				
+			}
+			
+			protected function onChangeMapHandler(event:MouseEvent):void
+			{
+				if(btnPvg.selected){
+					aptcode = "PVG";
+				}else if(btnSha.selected){
+					aptcode = "SHA";
+				}
+				
+				PopUpManager.removePopUp(this);
+				if(confirmFunc != null){
+					confirmFunc(aptcode);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingTop="10" paddingLeft="10" paddingRight="10" paddingBottom="10">
+		<s:HGroup width="100%" horizontalAlign="center" >
+			<mx:RadioButton id="btnPvg" label="浦东机场" groupName="aptgroup"/>
+			<s:Spacer width="10" />
+			<mx:RadioButton id="btnSha" label="虹桥机场" groupName="aptgroup"/>
+		</s:HGroup>
+		<s:Spacer width="20" />
+		<s:HGroup width="100%" horizontalAlign="center" >
+			<mx:Button id="btnClose" label="取消" click="PopUpManager.removePopUp(this);" />
+			<s:Spacer width="10" />
+			<mx:Button id="btnChange" label="切换" click="onChangeMapHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+</containers:SuperPanel>

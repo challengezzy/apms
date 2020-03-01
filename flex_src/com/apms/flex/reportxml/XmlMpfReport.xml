@@ -1,0 +1,583 @@
+<ReportSettings version="1.2">
+  <PageWidth>27</PageWidth>
+  <PageHeight>27.7</PageHeight>
+  <LeftMargin>1.7</LeftMargin>
+  <RightMargin>1.7</RightMargin>
+  <TopMargin>1</TopMargin>
+  <BottomMargin>1</BottomMargin>
+  <TableHeaderRepeat>true</TableHeaderRepeat>
+  <TableFooterRepeat>true</TableFooterRepeat>
+  <FitToPrintSize>true</FitToPrintSize>
+  <CanGrow>true</CanGrow>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting">
+      <Width>3</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>10</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.5</Width>
+    </ItemSetting>
+  </TableColumnSettings>
+  <TableHeaderSettings>
+      <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/C ID</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>DATE    GMT</Value>
+          <Style>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>FLTN</Value>
+          <Style>
+            <Border>false</Border>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>CITY</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>PAIR</Value>
+          <Style>
+            <Border>false</Border>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+      </TableCellSettings>
+      
+    </ItemSetting> 
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@机号</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>=@时间</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+          <ColSpan>2</ColSpan>
+          <Format>HH:mm:ss</Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@航班号</Value>
+          <Style>
+          	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+          <Format></Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@离港四字码</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@到港四字码</Value>
+          <Style>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>MAINTENANCE</Value>
+          <ColSpan>2</ColSpan>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>POST FLIGHT REPORT</Value>
+          <ColSpan>2</ColSpan>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        	<Style>
+        	<Border>false</Border>
+        	</Style>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/C ID</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>DATE    GMT</Value>
+          <Style>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+            <TextAlign>center</TextAlign>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>FLTN</Value>
+          <Style>
+            <Border>false</Border>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>CITY</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>PAIR</Value>
+          <Style>
+            <Border>false</Border>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+      </TableCellSettings> 
+      
+    </ItemSetting> 
+    <ItemSetting type="TableRowSetting">
+    <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@机号</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+           <Value>=@时间</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+          <ColSpan>2</ColSpan>
+          <Format>HH:mm:ss</Format>
+        </ItemSetting>
+         <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@航班号</Value>
+          <Style>
+          	<FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+          <Format></Format>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@离港四字码</Value>
+          <Style>
+            <TextAlign>left</TextAlign>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+        <Value>=@到港四字码</Value>
+          <Style>
+            <FontSize>12</FontSize>
+            <FontBold>true</FontBold>
+            <Border>false</Border>
+          </Style>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@子报表1参数</SubReportParameters>
+      <SubReportTable>=@子报表1表格</SubReportTable>
+      <GroupColumn>故障信息</GroupColumn>
+      <GroupEnabled>true</GroupEnabled>
+      <TableHeaderSettings>
+      <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=@主标题</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>6</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>GMT</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>PH</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>ATA</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value></Value>
+              <ColSpan>3</ColSpan>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+            <Style>
+            <Border>false</Border>
+            </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+            <Style>
+            <Border>false</Border>
+            </Style>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting> 
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#时间</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#序号</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+             </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#章节号</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#告警内容</Value>
+              <ColSpan>3</ColSpan>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+            <Style>
+            <Border>false</Border>
+            </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+            <Style>
+            <Border>false</Border>
+            </Style>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@子报表2参数</SubReportParameters>
+      <SubReportTable>=@子报表2表格</SubReportTable>
+      <GroupColumn>告警信息</GroupColumn>
+      <GroupEnabled>true</GroupEnabled>
+      <TableHeaderSettings>
+      <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=@主标题</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontSize>14</FontSize>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>6</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>GMT</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>PH</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>ATA</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value></Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>SOURCE   IDENT</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <FontBold>true</FontBold>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings> 
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#时间</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#序号</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#章节号</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#故障内容</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#故障源</Value>
+              <Style>
+                <TextAlign>left</TextAlign>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>2</ColSpan>
+              <MergeSameContent>false</MergeSameContent>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+  </TableHeaderSettings>
+ <!-- <PageFooterSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+      <ItemSetting type="CaptionCellSetting">
+          <Value>打印时间：</Value>
+          <Width>2.4</Width>
+          <Style>
+            <TextAlign>left</TextAlign>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@打印时间</Value>
+          <Width>20</Width>
+          <Style>
+            <TextAlign>left</TextAlign>
+          </Style>
+          <Format>yyyy-MM-dd HH:mm:ss</Format>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageFooterSettings> --> 
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting"/>
+  </TableGroupSettings>
+</ReportSettings>

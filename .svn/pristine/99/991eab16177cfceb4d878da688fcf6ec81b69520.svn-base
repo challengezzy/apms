@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"			 
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="100%" height="600" verticalGap="1" xmlns:core="smartx.flex.components.core.*"
+					   title="A06CFM报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import flash.text.engine.TabAlignment;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a06cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a06cData:Object;//译后报文内容
+			
+			private function creationComplete():void
+			{
+				a06cData = a06cvo.dataMap;	
+				telegraphContent=a06cData.tel_content;	
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A06 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+	<mx:HDividedBox id="contentBox" width="950" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+		<mx:VBox width="25%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="75%" height="100%" verticalGap="1">
+			<mx:HBox width="100%">
+				<mx:Label text="译后报文 ENGINE GAS PATH ADV REPORT (06)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="ENGINE CRUISE REPORT(06)" fontWeight="bold" />
+			</mx:HBox>
+			<report:ReportHeaderPanel headHashVo="{a06cvo}" height="190"/>
+			<mx:HBox>
+				<report:TwoValuesReportPanel   name1ToVisible="false" leftVal="EC" rightVal="EE"/>
+				<report:TwoValuesReportPanel  englishName="ESN" name1ToVisible="false" leftVal="{a06cData.esn_1}" rightVal="{a06cData.esn_2}"/>
+				<report:TwoValuesReportPanel  englishName="EHRS" name1ToVisible="false" leftVal="{a06cData.ehrs_1}" rightVal="{a06cData.ehrs_2}"/>
+				<report:TwoValuesReportPanel  englishName="ERT" name1ToVisible="false" leftVal="{a06cData.ert_1}" rightVal="{a06cData.ert_2}"/>
+				<report:TwoValuesReportPanel  englishName="ECYC" name1ToVisible="false" leftVal="{a06cData.ecyc_1}" rightVal="{a06cData.ecyc_2}"/>
+				<report:TwoValuesReportPanel  englishName="AP" name1ToVisible="false" leftVal="{a06cData.ap_1}" rightVal="{a06cData.ap_2}"/>
+				<report:TwoValuesReportPanel  englishName="TR" name1ToVisible="false" leftVal="{a06cData.tr_1}" rightVal="{a06cData.tr_2}"/>
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="LIMIT EXCEEDANCE SUMMARY" fontWeight="bold" />
+			</mx:HBox>
+			
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" valToVisible="false" rightVal="N1"/>
+				<report:TwoValuesReportPanel  englishName="E" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.e}"/>
+				<report:TwoValuesReportPanel  englishName="MAX" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.max}"/>
+				<report:TwoValuesReportPanel  englishName="LIM" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.lim}"/>
+				<report:TwoValuesReportPanel  englishName="REF" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.ref}"/>
+				<report:TwoValuesReportPanel  englishName="TOL" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.tol}"/>
+				<report:TwoValuesReportPanel  englishName="TTP" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.ttp}"/>
+				<report:TwoValuesReportPanel  englishName="Y1" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.y1}"/>
+				<report:TwoValuesReportPanel  englishName="Y2" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.y2}"/>
+				<report:TwoValuesReportPanel  englishName="PSEL" name1ToVisible="false" valToVisible="false" rightVal="{a06cData.psel}"/>
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="PRE EVENT, 'Y1' SEC INTERVAL" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S1" rightVal="T1"/>	
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s1}" rightVal="{a06cData.n1_t1}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s1}" rightVal="{a06cData.n1c_t1}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s1}" rightVal="{a06cData.n2_t1}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s1}" rightVal="{a06cData.egt_t1}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s1}" rightVal="{a06cData.ff_t1}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s1}" rightVal="{a06cData.p3_t1}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s1}" rightVal="{a06cData.t3_t1}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V1" rightVal="X1"/>			
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v1}" rightVal="{a06cData.t5_x1}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v1}" rightVal="{a06cData.p25_x1}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v1}" rightVal="{a06cData.t25_x1}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v1}" rightVal="{a06cData.pt2_x1}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v1}" rightVal="{a06cData.ecw1_x1}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v1}" rightVal="{a06cData.vsv_x1}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v1}" rightVal="{a06cData.vbv_x1}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S2" rightVal="T2"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s2}" rightVal="{a06cData.n1_t2}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s2}" rightVal="{a06cData.n1c_t2}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s2}" rightVal="{a06cData.n2_t2}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s2}" rightVal="{a06cData.egt_t2}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s2}" rightVal="{a06cData.ff_t2}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s2}" rightVal="{a06cData.p3_t2}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s2}" rightVal="{a06cData.t3_t2}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V2" rightVal="X2"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v2}" rightVal="{a06cData.t5_x2}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v2}" rightVal="{a06cData.p25_x2}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v2}" rightVal="{a06cData.t25_x2}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v2}" rightVal="{a06cData.pt2_x2}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v2}" rightVal="{a06cData.ecw1_x2}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v2}" rightVal="{a06cData.vsv_x2}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v2}" rightVal="{a06cData.vbv_x2}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S3" rightVal="T3"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s3}" rightVal="{a06cData.n1_t3}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s3}" rightVal="{a06cData.n1c_t3}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s3}" rightVal="{a06cData.n2_t3}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s3}" rightVal="{a06cData.egt_t3}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s3}" rightVal="{a06cData.ff_t3}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s3}" rightVal="{a06cData.p3_t3}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s3}" rightVal="{a06cData.t3_t3}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V3" rightVal="X3"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v3}" rightVal="{a06cData.t5_x3}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v3}" rightVal="{a06cData.p25_x3}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v3}" rightVal="{a06cData.t25_x3}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v3}" rightVal="{a06cData.pt2_x3}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v3}" rightVal="{a06cData.ecw1_x3}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v3}" rightVal="{a06cData.vsv_x3}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v3}" rightVal="{a06cData.vbv_x3}"/>
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text='AT AND POST EVENT,"Y2" SEC INTERVALS ' fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S4" rightVal="T4"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s4}" rightVal="{a06cData.n1_t4}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s4}" rightVal="{a06cData.n1c_t4}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s4}" rightVal="{a06cData.n2_t4}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s4}" rightVal="{a06cData.egt_t4}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s4}" rightVal="{a06cData.ff_t4}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s4}" rightVal="{a06cData.p3_t4}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s4}" rightVal="{a06cData.t3_t4}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V4" rightVal="X4"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v4}" rightVal="{a06cData.t5_x4}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v4}" rightVal="{a06cData.p25_x4}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v4}" rightVal="{a06cData.t25_x4}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v4}" rightVal="{a06cData.pt2_x4}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v4}" rightVal="{a06cData.ecw1_x4}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v4}" rightVal="{a06cData.vsv_x4}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v4}" rightVal="{a06cData.vbv_x4}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S5" rightVal="T5"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s5}" rightVal="{a06cData.n1_t5}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s5}" rightVal="{a06cData.n1c_t5}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s5}" rightVal="{a06cData.n2_t5}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s5}" rightVal="{a06cData.egt_t5}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s5}" rightVal="{a06cData.ff_t5}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s5}" rightVal="{a06cData.p3_t5}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s5}" rightVal="{a06cData.t3_t5}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V5" rightVal="X5"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v5}" rightVal="{a06cData.t5_x5}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v5}" rightVal="{a06cData.p25_x5}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v5}" rightVal="{a06cData.t25_x5}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v5}" rightVal="{a06cData.pt2_x5}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v5}" rightVal="{a06cData.ecw1_x5}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v5}" rightVal="{a06cData.vsv_x5}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v5}" rightVal="{a06cData.vbv_x5}"/>
+			</mx:HBox>
+			<mx:HBox>				
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S6" rightVal="T6"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s6}" rightVal="{a06cData.n1_t6}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s6}" rightVal="{a06cData.n1c_t6}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s6}" rightVal="{a06cData.n2_t6}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s6}" rightVal="{a06cData.egt_t6}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s6}" rightVal="{a06cData.ff_t6}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s6}" rightVal="{a06cData.p3_t6}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s6}" rightVal="{a06cData.t3_t6}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V6" rightVal="X6"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v6}" rightVal="{a06cData.t5_x6}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v6}" rightVal="{a06cData.p25_x6}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v6}" rightVal="{a06cData.t25_x6}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v6}" rightVal="{a06cData.pt2_x6}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v6}" rightVal="{a06cData.ecw1_x6}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v6}" rightVal="{a06cData.vsv_x6}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v6}" rightVal="{a06cData.vbv_x6}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S7" rightVal="T7"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s7}" rightVal="{a06cData.n1_t7}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s7}" rightVal="{a06cData.n1c_t7}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s7}" rightVal="{a06cData.n2_t7}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s7}" rightVal="{a06cData.egt_t7}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s7}" rightVal="{a06cData.ff_t7}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s7}" rightVal="{a06cData.p3_t7}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s7}" rightVal="{a06cData.t3_t7}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V7" rightVal="X7"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v7}" rightVal="{a06cData.t5_x7}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v7}" rightVal="{a06cData.p25_x7}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v7}" rightVal="{a06cData.t25_x7}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v7}" rightVal="{a06cData.pt2_x7}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v7}" rightVal="{a06cData.ecw1_x7}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v7}" rightVal="{a06cData.vsv_x7}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v7}" rightVal="{a06cData.vbv_x7}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S8" rightVal="T8"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s8}" rightVal="{a06cData.n1_t8}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s8}" rightVal="{a06cData.n1c_t8}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s8}" rightVal="{a06cData.n2_t8}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s8}" rightVal="{a06cData.egt_t8}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s8}" rightVal="{a06cData.ff_t8}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s8}" rightVal="{a06cData.p3_t8}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s8}" rightVal="{a06cData.t3_t8}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V8" rightVal="X8"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v8}" rightVal="{a06cData.t5_x8}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v8}" rightVal="{a06cData.p25_x8}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v8}" rightVal="{a06cData.t25_x8}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v8}" rightVal="{a06cData.pt2_x8}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v8}" rightVal="{a06cData.ecw1_x8}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v8}" rightVal="{a06cData.vsv_x8}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v8}" rightVal="{a06cData.vbv_x8}"/>
+			</mx:HBox>
+			<mx:HBox>		
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="S9" rightVal="T9"/>
+				<report:TwoValuesReportPanel  englishName="N1" name1ToVisible="false" leftVal="{a06cData.n1_s9}" rightVal="{a06cData.n1_t9}"/>
+				<report:TwoValuesReportPanel  englishName="N1C" name1ToVisible="false" leftVal="{a06cData.n1c_s9}" rightVal="{a06cData.n1c_t9}"/>
+				<report:TwoValuesReportPanel  englishName="N2" name1ToVisible="false" leftVal="{a06cData.n2_s9}" rightVal="{a06cData.n2_t9}"/>
+				<report:TwoValuesReportPanel  englishName="EGT" name1ToVisible="false" leftVal="{a06cData.egt_s9}" rightVal="{a06cData.egt_t9}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" leftVal="{a06cData.ff_s9}" rightVal="{a06cData.ff_t9}"/>
+				<report:TwoValuesReportPanel  englishName="P3" name1ToVisible="false" leftVal="{a06cData.p3_s9}" rightVal="{a06cData.p3_t9}"/>
+				<report:TwoValuesReportPanel  englishName="T3" name1ToVisible="false" leftVal="{a06cData.t3_s9}" rightVal="{a06cData.t3_t9}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" leftVal="V9" rightVal="X9"/>      
+				<report:TwoValuesReportPanel  englishName="T5" name1ToVisible="false" leftVal="{a06cData.t5_v9}" rightVal="{a06cData.t5_x9}"/>
+				<report:TwoValuesReportPanel  englishName="P25" name1ToVisible="false" leftVal="{a06cData.p25_v9}" rightVal="{a06cData.p25_x9}"/>
+				<report:TwoValuesReportPanel  englishName="T25" name1ToVisible="false" leftVal="{a06cData.t25_v9}" rightVal="{a06cData.t25_x9}"/>
+				<report:TwoValuesReportPanel  englishName="PT2" name1ToVisible="false" leftVal="{a06cData.pt2_v9}" rightVal="{a06cData.pt2_x9}"/>
+				<report:TwoValuesReportPanel  englishName="ECW1" name1ToVisible="false" leftVal="{a06cData.ecw1_v9}" rightVal="{a06cData.ecw1_x9}"/>
+				<report:TwoValuesReportPanel  englishName="VSV" name1ToVisible="false" leftVal="{a06cData.vsv_v9}" rightVal="{a06cData.vsv_x9}"/>
+				<report:TwoValuesReportPanel  englishName="VBV" name1ToVisible="false" leftVal="{a06cData.vbv_v9}" rightVal="{a06cData.vbv_x9}"/>
+			</mx:HBox>
+				
+		</mx:VBox>
+	</mx:HDividedBox>
+		<component:EngPicPanel eng_model="{a06cData.acmodel}" rptno="A06"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

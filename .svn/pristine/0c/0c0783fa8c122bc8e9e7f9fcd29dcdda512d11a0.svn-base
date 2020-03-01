@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*" xmlns:script="smartx.flex.components.util.script.*">
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			
+			private var markObj:Object;
+			
+			[Bindable]
+			private var changList1:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var changList2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var oilAddList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var allA27List1:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var allA27List2:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var oilStaChartName:String = "滑油量";
+			[Bindable]
+			private var oilRate25ChartName:String = "滑油消耗率(前后报文)";
+			[Bindable]
+			private var oilRateAirChartName:String = "滑油消耗率(空中)";
+			[Bindable]
+			private var oilRateGAChartName:String = "滑油消耗率(空+地)";
+			[Bindable]
+			private var chartTitle_left:String="";
+			[Bindable]
+			private var chartTitle_right:String="";
+			[Bindable]
+			private var beginTime:Date;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//远程服务添加监听
+				apmsService.getOilA25ChartData.addEventListener(ResultEvent.RESULT,getOilA25ChartDataHandler);
+				apmsService.getOilA25ChartData.addEventListener(FaultEvent.FAULT,getOilA25ChartDataErrorHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+			}
+			
+			
+			private function getOilA25ChartDataHandler(event:ResultEvent):void 
+			{
+				changList1 = null;
+				changList2 = null;
+				allList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				changList1 = res["changList1"];
+				changList2 = res["changList2"];
+				allList = res["allList"];
+				
+				if(allList.length < 1){
+					SmartXMessage.show("根据当前条件查询到0到数据！",SmartXMessage.MESSAGE_WARN);
+				}
+				
+				oilAddList = res["oilAddList"];
+				allA27List1 = res["allA27List1"];
+				allA27List2 = res["allA27List2"];
+				
+				var esn1:String = "";
+				var esn2:String = "";
+				
+				var i:int=0;
+				for(i=0;i<allList.length;i++){
+					var obj:Object = allList.getItemAt(0);
+					if(esn1 == "")
+						esn1 = obj["ESN_1"];
+					
+					if(esn2 == "")
+						esn2 = obj["ESN_2"];
+					
+					//查找左右发动机序号，直到找到为止
+					if(esn1 != "" && esn2 !=  "")
+						break;
+				}
+				
+				oilStaChartName = "滑油量";
+				oilRate25ChartName = "滑油消耗率(前后报文)";
+				oilRateAirChartName = "滑油消耗率(空中)";
+				oilRateGAChartName = "滑油消耗率(空+地)";
+				
+				csOilAdd1.displayName = "ENG1("+esn1+")";
+				csOilAdd2.displayName = "ENG2("+esn2+")";
+				
+				chartTitle_left=" ENG1:"+esn1;
+				chartTitle_right=" ENG2:"+esn2;
+				
+				oilState_chart.colorTipVisible=true;
+				if(allList.length>0&&oil1_ratechart!=null){
+					oil1_ratechart.colorTipVisible=true;
+					oil1_rategachart1.colorTipVisible=true;
+					oil1_rategachart2.colorTipVisible=true;
+				}
+				
+				oilState_chart.plotChart.dataTipFunction=trendTipFunc0;
+				
+				
+
+			}
+			
+			private function getOilA25ChartDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询A25计算数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( acnum == null || acnum=="" ){
+					SmartXMessage.show("请选择一个飞机！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				apmsService.getOilA25ChartData(time_begin.text,time_end.text,acnum,isKChk.selected);
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(mainChart,"滑油状态监控");
+				
+			}
+			
+			/**
+			 * 滑油量
+			 */ 
+			public function trendTipFunc0(e:HitData):String {
+				
+				return trendTipStrFunc(e,"Qt");
+			}
+			/**
+			 * 滑油消耗率（前后空文）
+			 */ 
+			public function trendTipFunc1(e:HitData):String {
+				
+				return trendTipStrFunc(e,"Qt/H");
+			}
+			/**
+			 * 滑油消耗率（空+地）
+			 */ 
+			public function trendTipFunc2(e:HitData):String {
+				
+				return trendTipStrFunc(e,"Qt/H");
+			}
+			/**
+			 * 滑油量消耗率（空中）
+			 */ 
+			public function trendTipFunc3(e:HitData):String {
+				
+				return trendTipStrFunc(e,"Qt/H");
+			}
+			
+			
+			public function trendTipStrFunc(e:HitData,unitStr:String):String {
+				var item:Object = e.item;
+				
+				var yField:String = "PDI_NEW";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					seriesName = ps.displayName;
+				}
+				var tip:String = seriesName;
+				var deta_oiq1_fwd_s:String=item["DETA_OIQ1_FWD_S"];
+				if(deta_oiq1_fwd_s=="1"){
+					tip += "(加油点)";
+				}else{
+					var deta_oiq2_fwd_s:String=item["DETA_OIQ2_FWD_S"];
+					if(deta_oiq2_fwd_s=="1"){
+						tip += "(加油点)";
+					}
+				}
+				
+				tip += "\n"+ DateUtil.dateToString(item["UTCDATE"],1);
+				tip += "\n"+ item[yField]+unitStr;
+				if(seriesName=="左发滑油"){
+					tip += "\n发动机序号:"+ item["ESN_1"];
+				}
+				if(seriesName=="右发滑油"){
+					tip += "\n发动机序号:"+ item["ESN_2"];
+				}
+				return tip;
+			} 
+			
+			
+			public function oiluseup():void{
+				if(allList.length>0){
+					oil1_ratechart.colorTipVisible=true;
+					oil1_rategachart1.colorTipVisible=true;
+					oil1_rategachart2.colorTipVisible=true;
+				}
+				
+				oil1_ratechart.plotChart.dataTipFunction=trendTipFunc1;
+				oil1_rategachart1.plotChart.dataTipFunction=trendTipFunc2;
+				oil1_rategachart2.plotChart.dataTipFunction=trendTipFunc3;
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:CheckBox id="isKChk" label="斜率计算" enabled="false" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		
+		<mx:TabNavigator width="100%"  height="100%" creationPolicy="auto" resizeToContent="true">
+			<mx:VBox label="滑油量" width="100%" height="100%">
+				<mx:HBox>
+					<!-- <mx:Label text="滑油状态" /> -->
+				</mx:HBox>
+				<component:ReportTrendDualChart id="oilState_chart" chartName="{oilStaChartName}" height="100%" width="100%"  
+											xField="UTCDATE" valField1="OIQ1_Z3" valField2="OIQ2_Z3" point1Name="左发滑油" point2Name="右发滑油"
+											changList1="{changList1}" allList1="{allList}" changList2="{changList2}" allList2="{allList}"
+											chartTitle_left="{chartTitle_left}" chartTitle_right="{chartTitle_right}" unitStr="Qt">
+				</component:ReportTrendDualChart>
+				<component:ReportTrendDualChart id="oilState_chart_sub" chartName="{oilStaChartName}" height="100%" width="100%"  
+												xField="UTCDATE" valField1="OIQ1_Z3" valField2="OIQ2_Z3" point1Name="左发滑油_分差" point2Name="右发滑油_分差"
+												changList1="{changList1}" allList1="{allList}" changList2="{changList2}" allList2="{allList}"
+												chartTitle_left="{chartTitle_left}" chartTitle_right="{chartTitle_right}" unitStr="Qt">
+				</component:ReportTrendDualChart>
+				
+				<mx:VBox label="滑油添加统计" width="100%" height="250">
+					<mx:HBox width="100%">
+						<mx:Label text="发动机滑油添加统计" />
+						<mx:Spacer width="100%"/>
+						<mx:CheckBox id="leftChk" selected="true" label="左"/>
+						<mx:CheckBox id="rightChk" selected="true" label="右"/>
+					</mx:HBox>
+					<mx:ColumnChart id="oilDayAddChart" dataProvider="{oilAddList}" height="100%" width="100%" showDataTips="true">
+						<mx:horizontalAxis>
+							<mx:CategoryAxis categoryField="OILADD_DAY"/>
+						</mx:horizontalAxis>
+						<mx:series>
+							<mx:ColumnSeries id="csOilAdd1" xField="OILADD_DAY" yField="OIQAV1_DAY" displayName="ENG1" 
+											 visible="{leftChk.selected}" labelPosition="none"/>
+							<mx:ColumnSeries id="csOilAdd2" xField="OILADD_DAY" yField="OIQAV2_DAY" displayName="ENG2" 
+											 visible="{rightChk.selected}" labelPosition="none"/>
+						</mx:series>
+					</mx:ColumnChart>
+					<mx:Legend dataProvider="{oilDayAddChart}" direction="horizontal"/>
+				</mx:VBox >
+			</mx:VBox >
+			<mx:VBox label="滑油消耗" width="100%"  height="100%" initialize="oiluseup()">
+				<mx:HBox>
+					<mx:Label text="滑油消耗量" />
+				</mx:HBox>
+				<component:ReportTrendDualChart id="oil1_ratechart" chartName="{oilRate25ChartName}" height="100%" width="100%"
+											xField="UTCDATE" isAvg5="true" 
+											valField1="DETA_OIQ1_FWDRATE" point1Name="ENG1滑油消耗率" avg5Field1="OIQ1_RATE_ROLL5"
+											pointTypeField1="OIQ1_RATE_POINTTYPE"
+											valField2="DETA_OIQ2_FWDRATE" point2Name="ENG2滑油消耗率" avg5Field2="OIQ2_RATE_ROLL5"
+											pointTypeField2="OIQ2_RATE_POINTTYPE"
+											changList1="{changList1}" allList1="{allList}" changList2="{changList2}" allList2="{allList}"
+											chartTitle_left="{chartTitle_left}" chartTitle_right="{chartTitle_right}"  unitStr="Qt/H">
+				</component:ReportTrendDualChart>
+			
+				<component:ReportTrendDualChart id="oil1_rategachart1" chartName="{oilRateGAChartName}" height="100%" width="100%"
+												xField="UTCDATE" isAvg5="true" 
+												valField1="CAL_GA_ENG1" point1Name="ENG1 空中加地面消耗率" avg5Field1="GA_ENG1_ROLL5"
+												pointTypeField1="GA_ENG1_POINTTYPE"
+												valField2="CAL_GA_ENG2" point2Name="ENG2 空中加地面消耗率" avg5Field2="GA_ENG2_ROLL5"
+												pointTypeField2="GA_ENG2_POINTTYPE"
+												allList1="{allA27List1}" allList2="{allA27List2}"
+												chartTitle_left="{chartTitle_left}" chartTitle_right="{chartTitle_right}" unitStr="Qt/H" >
+				</component:ReportTrendDualChart>
+			
+				<component:ReportTrendDualChart id="oil1_rategachart2" chartName="{oilRateAirChartName}" height="100%" width="100%"
+												xField="UTCDATE" isAvg5="true" 
+												valField1="CAL_AIR_ENG1" point1Name="ENG1 空中加地面消耗率" avg5Field1="AIR_ENG1_ROLL5"
+												pointTypeField1="AIR_ENG1_POINTTYPE"
+												valField2="CAL_AIR_ENG2" point2Name="ENG2 空中加地面消耗率" avg5Field2="AIR_ENG2_ROLL5"
+												pointTypeField2="AIR_ENG2_POINTTYPE"
+												allList1="{allA27List1}" allList2="{allA27List2}"
+												chartTitle_left="{chartTitle_left}" chartTitle_right="{chartTitle_right}" unitStr="Qt/H">
+				</component:ReportTrendDualChart>
+			
+			</mx:VBox>
+		</mx:TabNavigator>
+	</mx:VBox>
+</mx:Module>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:flight="com.apms.flex.modules.flight.*"
+			   backgroundColor="0xffffff"
+			   width="100%" height="100%" creationComplete="creationCompleteHandler(event)"
+			   preinitialize="preinitializeHandler(event)" viewSourceURL="srcview/index.html">
+	<s:layout>
+		<s:VerticalLayout paddingBottom="1" paddingTop="1" paddingLeft="3" paddingRight="3" />
+	</s:layout>
+	<fx:Style source="/style/css/Styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.hurlant.eval.CompiledESC;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.BrowserManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.util.script.ScriptExecutorFactory;
+			import smartx.flex.components.vo.SimpleComboxItemVO;
+			import smartx.flex.components.vo.SimpleHashVO;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			import smartx.flex.components.vo.TempletItemVO;
+			import smartx.flex.components.vo.TempletVO;
+			
+			[Bindable]
+			private var debugMode:Boolean = false;
+			
+			//元原模板中 执行脚本用 begin
+			private var nsef:ScriptExecutorFactory;
+			private var nsu:ScriptUtil;
+			private var esc:CompiledESC = new CompiledESC;
+			//执行脚本用 end
+			
+			private var scio:SimpleComboxItemVO;
+			private var shv:SimpleHashVO;
+			private var srv:SimpleRefItemVO;
+			private var tio:TempletItemVO;
+			private var tv:TempletVO;
+			
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				var endpoint:String = FlexGlobals.topLevelApplication.parameters["endpoint"];
+				var polling_point:String = FlexGlobals.topLevelApplication.parameters["endpoint_polling"];
+				var streaming_point:String = FlexGlobals.topLevelApplication.parameters["endpoint_streaming"];
+				var webroot:String = FlexGlobals.topLevelApplication.parameters["webroot"];
+				
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_SERVICE_ENDPOINT,endpoint);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_SERVICE_ENDPOINT_POLLING,polling_point);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_SERVICE_ENDPOINT_STREAMING,streaming_point);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_SERVICE_WEBROOT,webroot);
+				
+				if(endpoint == null && endpoint == ""){
+					SmartXMessage.show("endpoint未解析出，请查看网页是否正确！");
+				}
+				
+				var debugModeStr:String = FlexGlobals.topLevelApplication.parameters["debugmode"];
+				if(debugModeStr == "true")
+					debugMode = true;
+				
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_GLOBAL_DEBUGMODE,debugMode);
+				
+				BrowserManager.getInstance().setTitle("航班动态监控");
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<!-- <s:Label text="航班动态查询" /> -->
+	<flight:FlightScheduleUnionMonitor width="100%" height="100%" >
+		
+	</flight:FlightScheduleUnionMonitor>
+</s:Application>

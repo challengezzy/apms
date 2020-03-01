@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   creationComplete="creationComplete()"
+			   showCloseButton="true"
+			   title="APU管理附件管理"
+			   width="900" height="400" verticalGap="2"
+			   close="PopUpManager.removePopUp(this);"
+			   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.fdimu.ApuFdimuFileUpload;
+			import com.apms.flex.modules.fdimu.FileDownloadWindow;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var destination:String = ApmsUIConst.APMS_SERVICE;
+			private var formService:RemoteObject=new RemoteObject;
+			private var endpoint:String  = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+
+			[Bindable]
+			private var dataGridWith:int=900/6;
+			[Bindable]  
+			private var arr0:ArrayCollection;
+			[Bindable]
+			public var selObj:Object;
+			[Bindable]
+			private var selDownObj:Object;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var listPanel:AdvDataGridPanel;
+			private var wid:Number;
+			private function creationComplete():void
+			{	
+				
+				fileListDg.simpleQueryPanel.height=0;
+				querySql = "select t1.id,t1.origin_id,t1.origin_table,t1.filename,t1.filetype,to_char(t1.filetime,'YYYY-MM-DD HH24:MI:SS') filetime,t1.downloadurl,'APU' sourcetype,'1'   tempFlag,'' fault_desc,null swap_date_str,"
+				    +" t1.update_man,to_char(t1.update_date,'YYYY-MM-DD HH24:MI:SS') update_date from b_fileinfo t1,b_apu b where t1.origin_table='B_APU' and t1.origin_id=b.id and b.id="+selObj["ID"]
+					+" union all"
+					+" select t2.id,t2.origin_id,t2.origin_table,t2.filename,t2.filetype,to_char(t2.filetime,'YYYY-MM-DD HH24:MI:SS') filetime,t2.downloadurl,'拆换日志' sourcetype,'2'   tempFlag,l.fault_desc,l.swap_date_str,"
+					+" t2.update_man,to_char(t2.update_date,'YYYY-MM-DD HH24:MI:SS') update_date from b_fileinfo t2,l_apu_swaplog l"
+					+" where t2.origin_table='L_APU_SWAPLOG' and t2.origin_id=l.id and l.apuid="+selObj["ID"]+" order by tempFlag asc,update_date desc ";
+				fileListDg.refresh();
+				
+				formService = new RemoteObject(destination);
+				if(endpoint != null)
+					formService.endpoint = endpoint;
+				
+				formService.downloadFdimuFile.addEventListener(ResultEvent.RESULT,fileDownloadHandler);
+				formService.downloadFdimuFile.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				formService.deleteFdimuFile.addEventListener(ResultEvent.RESULT,fileDelHandler);
+				formService.deleteFdimuFile.addEventListener(FaultEvent.FAULT,delFaultHandler);
+				
+			}
+			
+			private function fileDelHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				fileListDg.refresh();
+				SmartXMessage.show("文件删除成功");
+				//listPanel.query();
+			}
+			
+			private function delFaultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("文件删除失败");
+			}
+			
+			private function fileDownloadHandler(event:ResultEvent):void{
+				var url:String = event.result as String;
+				navigateToURL(new URLRequest(encodeURI(url)), "_blank");
+				OperatingTipUtil.endOperat();
+				//listPanel.query();
+			}
+			private function faultHandler(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("文件下载失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function downloadHandler(event:MouseEvent):void
+			{
+				selDownObj=this.fileListDg.getSelectedRowValue();
+			
+				if(selDownObj==null){
+					SmartXMessage.show("请先选择一条下载信息!");
+				}
+				else{
+					SmartXMessage.show("确认要下载该文件？",SmartXMessage.MESSAGE_CONFIRM,null,fileListDg,confirmHandler);
+				}
+			}
+			private function confirmHandler(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					OperatingTipUtil.startOperat("正在下载..	....",fileListDg);
+					formService.downloadFdimuFile(selDownObj["id"],selDownObj["filename"]);
+				}
+			}
+			
+			protected function uploadHandler(event:MouseEvent):void
+			{
+			    var fileUpload:ApuFdimuFileUpload=new ApuFdimuFileUpload();
+				fileUpload.uploadUser=user;
+				fileUpload.fdimuId=selObj["ID"];
+				fileUpload.tableName="B_APU";
+				fileUpload.fileListDg=this.fileListDg;
+				PopUpManager.addPopUp(fileUpload,desktop,true);
+				PopUpManager.centerPopUp(fileUpload);
+				
+			}
+			protected function deleteHandler(event:MouseEvent):void
+			{
+				selDownObj=this.fileListDg.getSelectedRowValue();
+				
+				if(selDownObj==null){
+					SmartXMessage.show("请先选择一条删除信息!");
+				}
+				else{
+					SmartXMessage.show("确认要删除该文件？",SmartXMessage.MESSAGE_CONFIRM,null,fileListDg,confirmDelHandler);
+				}
+			}
+			private function confirmDelHandler(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					OperatingTipUtil.startOperat("正在删除..	....",fileListDg);
+					formService.deleteFdimuFile(selDownObj["id"],selDownObj["downloadurl"],selDownObj["filename"]);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+		
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>	
+<mx:VBox verticalGap="2">
+	<mx:HBox>
+		<s:Spacer width="2%"/>
+	</mx:HBox>
+	<mx:HBox horizontalCenter="true" horizontalAlign="center">
+		<s:Button id="viewBt" label="上传" toolTip="上传附件" icon="smartx/flex/modules/assets/images/up.png" click="uploadHandler(event)"/>
+		<s:Button id="downloadBtn" label="下载" toolTip="下载附件" icon="smartx/flex/modules/assets/images/down.png" click="downloadHandler(event)" />
+		<s:Button id="deleteBtn" label="删除" toolTip="删除附件" icon="" click="deleteHandler(event)" />
+	</mx:HBox>
+	<s:Spacer height="2%"/>
+	<mx:HBox>
+	<component:AdvDataGridPanel id="fileListDg" width="850" height="300" sql="{querySql}" dataSource="{apmsDs}">
+		<component:columns>			
+			<mx:DataGridColumn dataField="filename" headerText="文件名" width="{dataGridWith*2}" />
+			<mx:DataGridColumn dataField="filetype" headerText="文件类型" width="{dataGridWith/2}" />
+			<mx:DataGridColumn dataField="sourcetype" headerText="文件来源表" width="{dataGridWith/2}" />
+			<mx:DataGridColumn dataField="filetime" headerText="报告产生时间" width="{dataGridWith}" />
+			<mx:DataGridColumn dataField="update_man" headerText="更新人" width="{dataGridWith/2}"/>
+			<mx:DataGridColumn dataField="update_date" headerText="更新时间" width="{dataGridWith}"/>
+			<mx:DataGridColumn dataField="downloadurl" headerText="下载地址" width="{dataGridWith}" />
+		</component:columns>
+	</component:AdvDataGridPanel>
+	</mx:HBox>
+	<s:Spacer height="2%"/>
+</mx:VBox>
+</mx:TitleWindow>

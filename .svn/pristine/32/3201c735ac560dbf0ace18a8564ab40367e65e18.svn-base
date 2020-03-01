@@ -1,0 +1,1 @@
+ant -logfile c:\antLog.log

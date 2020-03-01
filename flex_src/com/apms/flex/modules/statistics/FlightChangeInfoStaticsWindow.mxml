@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			public var codeArr:ArrayCollection;
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				codeArr=new ArrayCollection([{val:""},{val:"PVG"},{val:"SHA"},{val:"HGH"}]);
+				changeListDg.simpleQueryPanel.height=0;
+				queryColumns.push("flightno");
+				queryColumns.push("changetype_name");
+				beginTime = DateUtil.moveDay(new Date(),-7);
+				dep_aptOrArr_apt.selectedIndex=0;
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql ="";
+				querySql += " select id, flightid, flightno, acnum, acmodel, dep_apt, arr_apt, ctd, cta, flightdate, flightdate_short";
+				querySql += " , changetype_name, changetype, changetime, changetime_str, needboardcast, isboardcast";
+				querySql += " , needboardcast_name, isboardcast_name, changecontent, recipient,boardcasttime_str";
+				querySql += " , comments, updatetime, updateuser  ";
+				querySql += " from v_flt_changelog_monitor f ";
+				querySql += " where f.flightdate>= to_date('"+dateBegin.text+"','yyyy-mm-dd hh24:mi:ss')";
+				querySql +=" and f.flightdate<=to_date('"+dateEnd.text+"','yyyy-mm-dd hh24:mi:ss')";
+				querySql += " and f.changetime =(select max(changetime) from V_FLT_CHANGELOG_MONITOR fc where fc.FLIGHTID =f.FLIGHTID and fc.ISBOARDCAST=0 and fc.NEEDBOARDCAST=1)";
+				if(dep_aptOrArr_apt.textInput.text!=""){
+					querySql +=" and (f.dep_apt='"+dep_aptOrArr_apt.textInput.text+"' or f.arr_apt='"+dep_aptOrArr_apt.textInput.text+"')";
+				}
+				if(flightno.text!=""){
+					querySql +=" and f.flightno like '%"+flightno.text+"%'";
+				}
+				if(acnum.text!=""){
+					querySql +=" and f.acnum like '%"+acnum.text+"%'";
+				}
+				changeListDg.sql = querySql;
+				changeListDg.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(changeListDg.dataListGrid as DataGrid,"最新航班变动信息");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航站:"/>  
+			<s:ComboBox id="dep_aptOrArr_apt" dataProvider="{codeArr}" labelField="val" width="80"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="航班号:"/> 
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="飞机号:"/> 
+			<s:TextInput id="acnum"/>
+			<mx:Label text="日期" />
+			<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="2"/>
+			<mx:Label text="->" />
+			<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="2"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="changeListDg" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}">
+			<component:columns>
+				<mx:DataGridColumn dataField="flightdate_short" headerText="航班日期" width="80"/>
+				<mx:DataGridColumn dataField="flightno" headerText="航班号" width="70"/>
+				<mx:DataGridColumn dataField="isboardcast_name" headerText="已报时" width="60"/>
+				<mx:DataGridColumn dataField="changetype_name" headerText="变动类型" width="80"/>
+				<mx:DataGridColumn dataField="changecontent" headerText="变动内容" width="700"/>
+				<mx:DataGridColumn dataField="changetime_str" headerText="变动时间" width="100"/>
+				<mx:DataGridColumn dataField="needboardcast_name" headerText="需要报时" width="60"/>
+				<mx:DataGridColumn dataField="acnum" headerText="机号" width="60"/>
+				<mx:DataGridColumn dataField="acmodel" headerText="机型" width="60"/>
+				<mx:DataGridColumn dataField="recipient" headerText="接收人" width="70"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

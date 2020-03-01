@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   width="880" height="550" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   initialize="initHandler(event)" layout="vertical" title="告警消息处理"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			import smartx.flex.components.vo.TempletItemVO;
+
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			[Bindable]
+			private var initCondition:String;
+			
+			public var messageno:String = "";//消息号
+			
+			public var alartMsgObj:Object;//选择的新APU对象
+			
+			[Bindable]
+			private var enentArr:ArrayCollection = new ArrayCollection([
+				{value:"0",desc:"正常点"},
+				{value:"1",desc:"维修点"},
+				{value:"2",desc:"坏点"}]);
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				messageno = alartMsgObj["DATAVIEWPK_VALUE"];
+				
+				initCondition = " DATAVIEWPK_VALUE =" + messageno;
+			}
+			
+			private function creationComplete():void
+			{
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//远程服务添加监听
+				apmsService.updateAlarmMessageStatus.addEventListener(ResultEvent.RESULT,dealOkHandler);
+				apmsService.updateAlarmMessageStatus.addEventListener(FaultEvent.FAULT,dealFaultHandler);
+				
+				msgListPanel.query();
+			}
+			
+			private function dealOkHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				
+				SmartXMessage.show("消息处理成功！");
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function dealFaultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("消息标记为已处理时异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function confirmBtn_clickHandler(event:MouseEvent):void
+			{
+				if( memoArea.text == null || memoArea.text == ""){
+					
+					SmartXMessage.show("处理说明不能为空！！");
+					return;
+				}
+				
+				var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+				var dealObj:Object = new Object();
+				dealObj["DEALER"] = user;
+				dealObj["DEALDESC"] = memoArea.text;
+				dealObj["MSG_NO"] = messageno;
+				dealObj["EVENTTYPE"] = eventCmb.selectedItem.value;
+				
+				apmsService.updateAlarmMessageStatus(dealObj);				
+				OperatingTipUtil.startOperat("数据处理中...");
+			}
+			
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top" paddingTop="5">
+		<mx:VBox width="100%" paddingLeft="5" paddingRight="5" verticalAlign="middle">
+			<mx:HBox width="100%" paddingLeft="10">
+				<mx:Label text="将此条报文产生的所有相关的告警消息标记为已处理!" color="red" />
+			</mx:HBox>
+			<mx:HBox width="100%" paddingLeft="10">
+				<mx:Label text="报文点类型" />
+				<mx:ComboBox id="eventCmb" dataProvider="{enentArr}" labelField="desc" />
+			</mx:HBox>
+			<mx:VBox horizontalAlign="left" verticalAlign="top" width="100%" height="100%" paddingLeft="10" paddingBottom="1">
+				<mx:Label text="处理说明:" fontWeight="bold" />
+				<mx:TextArea width="600" height="100" id="memoArea" ></mx:TextArea>
+			</mx:VBox>
+		</mx:VBox>
+		<mx:VBox width="100%" height="100%">
+			<core:BillListPanel endpoint="{endpoint}" width="100%" height="100%" id="msgListPanel" 
+								templetCode="T_ALARMMESSAGE_SHOW" debugMode="false"
+								initQueryCondition="{initCondition}"
+								showPageBox="false" rowCountPerPage="100"
+								showDataAfterInit="true" showQuickQueryPanel="false"
+								editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+		</mx:VBox>
+		<mx:HBox width="100%" horizontalAlign="center">
+			<mx:Button id="confirmBtn" label="确定" click="confirmBtn_clickHandler(event)"/>
+			<mx:Button id="cancelBtn" label="取消" click="cancelBtn_clickHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

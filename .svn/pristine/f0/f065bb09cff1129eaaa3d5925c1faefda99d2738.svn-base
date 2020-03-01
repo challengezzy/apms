@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   preinitialize="preinitializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*" xmlns:report="com.apms.flex.modules.report.*" 
+		   xmlns:bill="com.cool.components.bill.*">
+	
+	<fx:Declarations>
+		<mx:SolidColor id="color_green" color="0x99CC33"/>
+		<mx:DateTimeAxis id="dayXAxis" labelUnits="days" dataUnits="days" /> 
+		<mx:LinearAxis id="lineYAxis" baseAtZero="false" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.renderers.DiamondItemRenderer;
+			import mx.charts.renderers.TriangleItemRenderer;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.LineSeriesItem;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.graphics.IFill;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var formService:RemoteObject = new RemoteObject;
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apuDest:String = ApmsUIConst.APU_SERVICE;
+			private var apuService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var apuid:String ;//APUID
+			private var apusn:String; //apu序列号
+			private var acmodel:String;
+			
+			[Bindable]
+			private var basicInfo:Object;
+			[Bindable]
+			private var cfdInfo:Object;
+			
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			
+			[Bindable]
+			private var user1:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			[Bindable]
+			private var allList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var modelAvgHourStr:String = "";
+			[Bindable]
+			private var warnList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var faultList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var faultRunStatisticsList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var weekRunStatisticsList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var workMhSumList:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var costTypeSumList:ArrayCollection = new ArrayCollection();
+			
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function preinitializeHandler(event:FlexEvent):void
+			{
+				/**Flex 4.6 unable load module, if it contains a chart component 
+				 var styleObjects:Array = FlexGlobals.topLevelApplication.styleManager.selectors;
+				 for each(var styleObj:String in styleObjects)  {
+				 var style:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration(styleObj);
+				 styleManager.setStyleDeclaration(styleObj, style, true);
+				 }
+				 **/
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-5);
+				
+				apuService.endpoint = endpoint;
+				apuService.destination = apuDest;
+				formService.endpoint = endpoint;
+				formService.destination = smartxDest;
+				//远程服务添加监听
+				apuService.getOverviewData.addEventListener(ResultEvent.RESULT,getOverviewDataHandler);
+				apuService.getOverviewData.addEventListener(FaultEvent.FAULT,getOverviewDataErrorHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,am.model APUMODEL#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M,b_apu_model am WHERE M.ID=A.ACMODELID and A.APU_MODELID=am.id;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+						acmodel = acRefPanel.returnVO.code;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="ACNUM";
+				apuItemVO.refdesc="SELECT A.ID ID#,M.MODEL ACMODEL#,APUSN APU序列号,M.MODEL APU型号 FROM B_APU A,B_APU_MODEL M WHERE M.ID=A.APUMODELID;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						apusn = apuRefPanel.returnVO.name;
+						apuid = apuRefPanel.returnVO.id;
+						acmodel = apuRefPanel.returnVO.code;
+					}else{
+						apusn = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				apuBox.addChild(apuRefPanel);
+				
+			}
+			
+			private function getOverviewDataHandler(event:ResultEvent):void 
+			{
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				basicInfo = res["basicInfo"];
+				cfdInfo = res["cfdInfo"];
+				
+				faultList = res["most3FaultList"];
+				warnList = res["most3WarntList"];
+				faultRunStatisticsList = res["faultRunStatisticsList"];
+				weekRunStatisticsList = res["weekRunStatisticsList"];
+				workMhSumList = res["workMhSumList"];
+				costTypeSumList = res["costTypeSumList"];
+				
+				modelAvgHourStr ="["+basicInfo["APUMODEL"]+"]平均故障拆下前运行:" +  basicInfo["MODELAVGHOUR"] + " 小时";
+				
+				warnListPanel.dataListGrid.dataProvider = warnList;
+				faultListPanel.dataListGrid.dataProvider = faultList;
+			}
+			
+			private function getOverviewDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询APU概览数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			//用来将string型的时间换算成Date型，以便在X轴上正确显示
+			private function parseToDate(s:String):Date{
+				var newDate:Date = new Date();
+				if(s.indexOf("-") > 0){
+					//s = "2007-10-15 20:15" 
+					var temp:Array = s.split(" ");   
+					var datepart:String = temp[0];   
+					var datearray:Array = datepart.split("-");   
+					var timepart:String = temp[1];   
+					var timearray:Array = timepart.split(":");
+					newDate = new Date(datearray[0],datearray[1]-1,datearray[2],timearray[0],timearray[1]); 
+				}else{
+					//毫秒数
+					newDate.setTime(Number(s));
+				}
+				
+				return newDate;   
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( (acnum == null || acnum=="") && (apusn == null || apusn=="") ){
+					SmartXMessage.show("请选择一个飞机或APU！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				apuService.getOverviewData(time_begin.text,time_end.text,acnum,apusn);
+				
+				llpListPanel.initQueryCondition = " apusn = '"+ apusn +"'";
+				llpListPanel.query(false,false);
+				
+				compListPanel.initQueryCondition = " asn = '"+ apusn +"'";
+				compListPanel.query(false,false);
+				
+				overhaulListPanel.initQueryCondition = " asn = '"+ apusn +"'";
+				overhaulListPanel.query(false,false);
+				
+				repairListPanel.initQueryCondition = " asn = '"+ apusn +"'";
+				repairListPanel.query(false,false);
+				
+				swapListPanel.initQueryCondition = " APUID = "+ apuid +"";
+				swapListPanel.query(false,false);
+				
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(apuPerformanceChart,"APU运行数据总览");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="apuPerformanceChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="50" paddingTop="5" paddingRight="50" borderStyle="none" borderSides="top bottom" >
+			<report:NameValueVBox namecn="APU序号" valuecn="{basicInfo.APUSN}" width="80"/>
+			<report:NameValueVBox namecn="飞机号" valuecn="{basicInfo.ACNUM}" width="80" />
+			<report:NameValueVBox namecn="APU型号" valuecn="{basicInfo.APUMODEL}" width="100" />
+			<report:NameValueVBox namecn="TSN" valuecn="{basicInfo.TOTALTIME_HOUR}" width="70" />
+			<report:NameValueVBox namecn="CSN" valuecn="{basicInfo.TOTALCYCLE}" width="70" />
+			<report:NameValueVBox namecn="TSR" valuecn="{basicInfo.TSR}" width="70" />
+			<report:NameValueVBox namecn="CSR" valuecn="{basicInfo.CSR}" width="70" />
+			<report:NameValueVBox namecn="最新数据时间" valuecn="{basicInfo.DATATIME_STR}" width="145" />
+			<report:NameValueVBox namecn="功能状态" valuecn="{basicInfo.FUNCSTATUS_CN}" width="80" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="50" paddingBottom="5" paddingRight="50" borderStyle="none" borderSides="top bottom" >
+			<report:NameValueVBox namecn="" valuecn="时间范围内" width="90"/>
+			<report:NameValueVBox namecn="运行小时" valuecn="{basicInfo.SUM_HOUR}" width="70" />
+			<report:NameValueVBox namecn="运行循环" valuecn="{basicInfo.SUM_CYCLE}" width="70" />
+			<report:NameValueVBox namecn="燃油消耗KG" valuecn="{basicInfo.SUM_FUELUSED}" width="100" />
+			<report:NameValueVBox namecn="平均每小时燃油消耗KG" valuecn="{basicInfo.PERHOUR_FUELUSED}" width="140" />
+		</mx:HBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%">
+			<mx:VBox width="50%" height="260">
+				<mx:ColumnChart id="modelRunStatisticsChart" height="100%" width="100%" 
+								dataProvider="{faultRunStatisticsList}" showDataTips="true">
+					<mx:horizontalAxis>
+						<mx:CategoryAxis categoryField="HOURSCOPE"/>
+					</mx:horizontalAxis>
+					<mx:series>
+						<mx:ColumnSeries xField="HOURSCOPE" yField="AMOUNT" 
+										 displayName="频次" labelPosition="outside"/>
+					</mx:series>
+				</mx:ColumnChart>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="故障前运行小时分布" />
+					<mx:Label text="{modelAvgHourStr}" color="red"/>
+				</mx:HBox>
+			</mx:VBox >
+			<mx:VBox width="50%" height="260">
+				<mx:ColumnChart id="weekRunStatisticsChart" height="100%" width="100%" 
+								dataProvider="{weekRunStatisticsList}" showDataTips="true">
+					<mx:horizontalAxis>
+						<mx:CategoryAxis categoryField="PERIODSTR"/>
+					</mx:horizontalAxis>
+					<mx:series>
+						<mx:ColumnSeries xField="PERIODSTR" yField="HOUR_SUM" displayName="小时" labelPosition="outside"/>
+						<mx:ColumnSeries xField="PERIODSTR" yField="CYCLE_SUM" displayName="循环" labelPosition="outside"/>
+					</mx:series>
+				</mx:ColumnChart>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="APU每周小时循环 " />
+					<mx:Legend dataProvider="{weekRunStatisticsChart}" direction="horizontal"/>
+				</mx:HBox>
+			</mx:VBox >
+		</mx:HBox>
+		
+		<mx:HRule width="100%" />
+		<mx:VBox paddingLeft="50" paddingRight="50" width="100%">
+			<s:Label text="APU寿命件清单" color="blue" fontWeight="bold" />
+			<bill:BillListPanel id="llpListPanel" width="100%" height="200" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+								templetCode="T_B_APU_LLPPARTS" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:VBox paddingLeft="50" paddingRight="50" width="100%">
+			<s:Label text="APU组件清单" color="blue" fontWeight="bold" />
+			<bill:BillListPanel id="compListPanel" width="100%" height="200" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+								templetCode="T_O_APUCOMPONENT" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%">
+			<mx:HBox width="50%" height="260" horizontalAlign="center">
+				<mx:VBox  width="100%" height="100%" horizontalAlign="center">
+					<mx:PieChart id="workPie" showDataTips="true" showAllDataTips="true" width="100%" height="100%" dataProvider="{workMhSumList}" >
+						<mx:series>
+							<mx:PieSeries nameField="NRWORK" labelField="NRWORK" field="MH_SUM" dataProvider="{workMhSumList}">
+							</mx:PieSeries>
+						</mx:series>
+					</mx:PieChart>
+					<mx:Label text="维修工作类型占比分析" color="blue" />
+				</mx:VBox>
+				<mx:Legend dataProvider="{workPie}" direction="vertical" width="150" />
+			</mx:HBox >
+			<mx:HBox width="50%" height="260" horizontalAlign="center">
+				<mx:VBox  width="100%" height="100%" horizontalAlign="center">
+					<mx:PieChart id="costPie" showDataTips="true" showAllDataTips="true" width="100%" height="100%" dataProvider="{costTypeSumList}" >
+						<mx:series>
+							<mx:PieSeries nameField="COSTTYPE" labelField="COSTTYPE" field="COST" dataProvider="{costTypeSumList}">
+							</mx:PieSeries>
+						</mx:series>
+					</mx:PieChart>
+					<mx:Label text="运维成本占比" color="blue" />
+				</mx:VBox>
+				<mx:Legend dataProvider="{costPie}" direction="vertical" width="150" />
+			</mx:HBox >
+		</mx:HBox>
+		<mx:HRule width="100%" />
+		<mx:VBox paddingLeft="50" paddingRight="50" width="100%">
+			<s:Label text="APU大修履历" color="blue" fontWeight="bold" />
+			<bill:BillListPanel id="overhaulListPanel" width="100%" height="140" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+								templetCode="T_O_APU_OVERHAUL_LOG" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:VBox paddingLeft="50" paddingRight="50" width="100%">
+			<s:Label text="APU小修履历" color="blue" fontWeight="bold" />
+			<bill:BillListPanel id="repairListPanel" width="100%" height="200" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+								templetCode="T_O_APU_REPAIR_LOG" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" paddingLeft="50" paddingTop="5" paddingRight="50" borderStyle="solid" borderSides="top" >
+			<report:NameValueVBox namecn="CFD故障数" valuecn="{cfdInfo.CFDFAULTNUM}" width="100" />
+			<report:NameValueVBox namecn="平均100小时故障数" valuecn="{cfdInfo.CFDFAULT100HOUR}" width="170" />
+			<report:NameValueVBox namecn="CFD告警数" valuecn="{cfdInfo.CFDWARNNUM}" width="100" />
+			<report:NameValueVBox namecn="平均100小时告警数" valuecn="{cfdInfo.CFDWARN100HOUR}" width="170" />
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="50" paddingRight="50">
+			<component:AdvDataGridPanel id="faultListPanel" width="100%" height="100%" dataMode="0" showPageBox="false">
+				<component:columns>
+					<mx:DataGridColumn headerText="故障内容" dataField="FAULT_CONTENT" width="300"/>
+					<mx:DataGridColumn headerText="故障数" dataField="AMOUNT" width="100"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+			<component:AdvDataGridPanel id="warnListPanel" width="100%" height="100%"  dataMode="0" showPageBox="false">
+				<component:columns>
+					<mx:DataGridColumn headerText="告警内容" dataField="WARN_CONTENT" width="300"/>
+					<mx:DataGridColumn headerText="告警数" dataField="AMOUNT" width="100"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:HBox>
+		<mx:HRule width="100%" />
+		<mx:VBox paddingLeft="50" paddingRight="50" paddingTop="5" width="100%">
+			<s:Label text="APU拆换记录" color="blue" fontWeight="bold" />
+			<bill:BillListPanel id="swapListPanel" width="100%" height="150" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+								templetCode="T_APU_SWAPLOG" debugMode="{debugMode}" showQuickQueryPanel="false"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+			</bill:BillListPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

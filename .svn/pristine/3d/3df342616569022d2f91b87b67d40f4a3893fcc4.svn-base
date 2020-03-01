@@ -1,0 +1,932 @@
+<ReportSettings version="1.2">
+  <LeftMargin>1</LeftMargin>
+  <RightMargin>1</RightMargin>
+  <TopMargin>1.5</TopMargin>
+  <BottomMargin>1.5</BottomMargin>
+  <PageHeaderRepeat>false</PageHeaderRepeat>
+  <TableHeaderRepeat>true</TableHeaderRepeat>
+  <ShowPageNumber>true</ShowPageNumber>
+  <PageNumberFormat>【第{0}页 共{1}页】</PageNumberFormat>
+  <PageHeaderSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.9</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>中国国际航空公司</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <TextColor>#ff0000</TextColor>
+            <FontName>KaiTi_GB2312</FontName>
+            <FontSize>18</FontSize>
+            <FontBold>true</FontBold>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>非例行工作单Non-ROUTINE JOB CARD</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>22</FontSize>
+            <FontBold>true</FontBold>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>9</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>请输入内容...</Value>
+          <Width>0</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=Concat("编号NO:",@CODE)</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.4</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>机型A/C TYPE</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@ACMODEL</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <PrintOutput>true</PrintOutput>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>维护级别CHECK TYPE</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.3</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@CHECKTYPE</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <PrintOutput>true</PrintOutput>
+          <Width>2.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>章节</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>请输入内容...</Value>
+          <Width>0</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>机号A/C REG NO</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@ACNUM</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.4</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.4</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>主专业SKILL</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@SKILL</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <PrintOutput>true</PrintOutput>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>工作指令号WORK ORDER NO</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.3</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@WORKORDERNO</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <PrintOutput>true</PrintOutput>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>源头文件号ORIGINATING DOC</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@ORGINDOC</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.4</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>故障标识号（如适用）MARK NO:（IF APPLICABLE）</Value>
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>10</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>故障区域/站位（如适用）ZONE/STATION(IF APPLICABLE)</Value>
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>9</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.6</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>10</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>9</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>基本故障描述:</Value>
+          <Style>
+            <FontBold>true</FontBold>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+          </Style>
+          <Width>19</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>5.4</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@FAULTDESC</Value>
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>19</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>项次ITEM</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>更换部件名称PART NAME</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>数量QTY</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>件号（上）P/N（ON）</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>序号/批次号（上）S/N/BACH NO.（ON）</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>件号（下）P/N（OFF）</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>序号/批次号（下）S/N/BACH NO.（OFF）</Value>
+          <Style>
+            <FontName>SimHei</FontName>
+            <FontSize>10</FontSize>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.11</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>4.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>1.1</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>2.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Style>
+            <Border>true</Border>
+            <LeftBorder>true</LeftBorder>
+            <RightBorder>true</RightBorder>
+            <TopBorder>true</TopBorder>
+            <BottomBorder>true</BottomBorder>
+          </Style>
+          <Width>3.6</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>2.6</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>请输入内容...</Value>
+          <Width>19</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>2</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>请输入内容...3</Value>
+          <Width>19</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>2.8</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>请输入内容...3</Value>
+          <Width>19</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageHeaderSettings>
+  <PageFooterSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>CCA-MD-090</Value>
+          <Width>5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>国航股份工程技术分公司Air China Technic</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+          </Style>
+          <Width>13</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageFooterSettings>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting"/>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1</Width>
+    </ItemSetting>
+  </TableColumnSettings>
+  <TableHeaderSettings>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>ID</Value>
+          <Style>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>名称</Value>
+          <Style>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>数量</Value>
+          <Style>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>金额</Value>
+          <Style>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>日期</Value>
+          <Style>
+            <FontBold>true</FontBold>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>E</Value>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>E</Value>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableHeaderSettings>
+  <TableDetailSettings>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#ID</Value>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#名称</Value>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#数量</Value>
+          <Format>0.##</Format>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#金额</Value>
+          <Format>C2</Format>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#日期</Value>
+          <Format>yyyy-MM-dd</Format>
+          <PrintOutput>true</PrintOutput>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#日期</Value>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableDetailSettings>
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting"/>
+  </TableGroupSettings>
+</ReportSettings>

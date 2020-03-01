@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="1000" height="500"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="航班维护种类确认"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" xmlns:component="com.apms.flex.component.*" 
+					   >
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightMaintainTypeConfirm" result="result4flightMaintainTypeConfirm(event)" 
+					   fault="fault4flightMaintainTypeConfirm(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.flight.vo.FlightConstVo;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var flightObj:Object;
+			
+			//航班相关信息
+			public var fltpk:String = "";
+			[Bindable]
+			public var acnum:String = "";
+			[Bindable]
+			public var acmodel:String = "";
+			[Bindable]
+			public var flightno:String = "";
+			[Bindable]
+			public var depApt:String = "";
+			[Bindable]
+			public var arrApt:String = "";
+			[Bindable]
+			public var maintainType:String="";
+			[Bindable]
+			public var confirmState:String = "0";
+			
+			[Bindable]
+			public var isLockedIn:Boolean = false;
+			
+			public var flightInOutType:String = "DEP";
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var qrysql:String = "";
+			
+			public var flightListPanel:BillListPanel;
+			
+			[Bindable]
+			private var typeArr:ArrayCollection = new ArrayCollection([
+				{value:"",desc:""},{value:"AF",desc:"AF"},{value:"PF",desc:"PF"},
+				{value:"TR",desc:"TR"},{value:"AF+PF",desc:"AF+PF"}		]);
+			
+			private var newMaintainType:String = "";
+			private var maintainColumn:String = "FLTTYPE_DEP";
+			private var newIsLocked:String = "0";
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				queryColumns.push("flightno");
+				
+				for each(var obj:Object in typeArr){
+					if(obj.value == maintainType){
+						cmbMaintainType.selectedItem = obj;
+						break;
+					}
+				}
+				
+				flighAdg.refresh();
+			}
+			
+			public function set flightValue(value:Object):void{
+				this.flightObj = value;
+				acnum = flightObj["ACNUM"];
+				acmodel = flightObj["ACMODEL"];
+				flightno = flightObj["FLIGHTNO"];
+				depApt = flightObj["DEP_APT_NAME"];
+				arrApt = flightObj["ARR_APT_NAME"];
+				fltpk = flightObj["FLT_PK"];
+				
+				if(flightInOutType == FlightConstVo.FLIGHTINOUT_IN){
+					maintainType = flightObj["FLTTYPE_ARR_SHOW"];
+					maintainColumn = "FLTTYPE_ARR";
+				}else{
+					maintainType = flightObj["FLTTYPE_DEP"];
+					maintainColumn = "FLTTYPE_DEP";
+				}
+				
+				confirmState = flightObj["ISCONFIRMED"];
+				isLockedIn = flightObj["ISLOCKEDIN"].id=="1"?true:false;
+				
+				qrysql =  " select t.flt_pk, t.flightno, t.dep_apt_name,t.arr_apt_name";
+				qrysql += " ,to_char(flt_date,'yy-mm-dd') flt_date,to_char(ctd,'mm-dd hh24:mi') ctd,to_char(cta,'mm-dd hh24:mi') cta";
+				qrysql += " ,t.flttype_dep,t.flttype_arr_show,t.memo";
+				qrysql += ",decode(t.isconfirmed,0,'已确认',1,'未确认') confirm_state ";
+				qrysql += ",(select d.valuecn from b_dictionary d where d.classname='FLIGHTSCHEDULE' AND d.attributename='ACSTATE' AND D.VALUE=T.AC_STATE) ac_state"
+				qrysql += ",t.acmodel";
+				qrysql += "  from v_flight_schedule t ";
+				qrysql += "  where t.cancel_flag='0' and t.ctd>sysdate-2 and t.ctd<sysdate+2     "; //查询3天内的航班
+				qrysql += "    and acnum='"+acnum+"' ";
+				qrysql += "  order by t.ctd desc ";
+				
+				if(flighAdg != null){
+					flighAdg.refresh();
+					
+					for each(var obj:Object in typeArr){
+						if(obj.value == maintainType){
+							cmbMaintainType.selectedItem = obj;
+							break;
+						}
+					}
+				}
+			}
+			
+			
+			protected function onOkClickHandler(event:MouseEvent):void
+			{
+				if(cmbMaintainType.selectedItem != null){
+					newMaintainType = cmbMaintainType.selectedItem.value;
+				}
+				
+				if(cbLocked.selected){
+					newIsLocked = "1";
+				}
+				
+				//TODO 后续判断提示下更改的类型是否正确
+				if(flightInOutType=="DEP"){
+					if(newMaintainType=="AF"){
+						SmartXMessage.show("起飞维护类型不能为AF！");
+						return;
+					}
+				}else if(flightInOutType=="ARR"){
+					if(newMaintainType=="PF"){
+						SmartXMessage.show("落地维护类型不能为PF！");
+						return;
+					}
+				}
+				srvFlight.flightMaintainTypeConfirm("1", newMaintainType, maintainColumn,newIsLocked,fltpk);
+				OperatingTipUtil.startOperat("正在保存!");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightMaintainTypeConfirm(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("确认航班["+flightno+"]维护类型为["+newMaintainType+"]失败！",SmartXMessage.MESSAGE_ERROR);
+			}	
+			
+			private function result4flightMaintainTypeConfirm(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("确认航班["+flightno+"]维护类型为["+newMaintainType+"]成功！");
+				PopUpManager.removePopUp(this);
+				
+				flightListPanel.query(false,false);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" horizontalAlign="center" verticalAlign="middle" height="100%" paddingTop="10" paddingBottom="5" paddingLeft="10">
+			
+			<mx:HBox width="100%" height="100%" horizontalAlign="center">
+				<component:AdvDataGridPanel id="flighAdg" width="100%" height="100%" sql="{qrysql}" searchCondVisible="true" 
+											dataSource="{ApmsUIConst.DATASOURCE_APMS}" queryColumns="{queryColumns}" >
+					<component:columns> 
+						<mx:DataGridColumn dataField="flt_date" headerText="航班日期" width="90"/>
+						<mx:DataGridColumn dataField="flightno" headerText="航班号" width="60"/>
+						<mx:DataGridColumn dataField="dep_apt_name" headerText="起飞机场" width="60"/>
+						<mx:DataGridColumn dataField="arr_apt_name" headerText="落地机场" width="60"/>
+						<mx:DataGridColumn dataField="ctd" headerText="起飞时间" width="100"/>
+						<mx:DataGridColumn dataField="cta" headerText="落地时间" width="100"/>
+						<mx:DataGridColumn dataField="flttype_dep" headerText="起飞维护" width="60"/>
+						<mx:DataGridColumn dataField="flttype_arr_show" headerText="落地维护" width="60"/>
+						<mx:DataGridColumn dataField="ac_state" headerText="飞机状态" width="60"/>
+						<mx:DataGridColumn dataField="confirm_state" headerText="确认状态" width="50"/>
+						<mx:DataGridColumn dataField="acmodel" headerText="机型" width="70"/>
+						<mx:DataGridColumn dataField="memo" headerText="航班备注" width="100"/>
+					</component:columns>
+				</component:AdvDataGridPanel>
+			</mx:HBox>
+			
+			<mx:HRule width="100%" />
+			<s:Spacer height="15" />
+			<mx:HBox width="100%">
+				<mx:Label text="航班号" width="60" />
+				<mx:TextInput editable="false" width="80" text="{flightno}" fontWeight="bold" />
+				<s:Spacer width="10" />
+				<mx:Label text="飞机号" width="60" />
+				<mx:TextInput editable="false" width="80" text="{acnum}" fontWeight="bold" />
+				<s:Spacer width="10" />
+				<mx:Label text="起飞" width="60" />
+				<mx:TextInput editable="false" width="80" text="{depApt}" />
+				<s:Spacer width="10" />
+				<mx:Label text="落地" width="60" />
+				<mx:TextInput editable="false" width="80" text="{arrApt}" />
+			</mx:HBox>
+			<mx:HBox width="100%" height="35" verticalAlign="middle">
+				<mx:Label text="是否确认" width="60" />
+				<mx:TextInput editable="false" width="80" text="{confirmState}"  fontWeight="bold" color="red"/>
+				<s:Spacer width="10" />
+				<mx:Label text="维护种类" width="60" color="red"/>
+				<mx:ComboBox id="cmbMaintainType" dataProvider="{typeArr}" labelField="desc" color="red" />
+				
+				<s:Spacer width="10" />
+				<mx:CheckBox id="cbLocked" label="维护种类锁定" color="red" selected="false" />
+			</mx:HBox>
+			
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button label="确认航班类型" click="onOkClickHandler(event)" />
+			<mx:Button label="取消" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

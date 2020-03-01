@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="500" verticalGap="1"  
+					   xmlns:core="smartx.flex.components.core.*"
+					   title="处理信息查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			public var defectremindid:String;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			private function creationComplete():void
+			{
+				var chgFilter:String=" remindid="+defectremindid+" order by updatetime desc";
+				wrnListPanel.initQueryCondition = chgFilter;
+				wrnListPanel.query(false,false);
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<core:BillListPanel id="wrnListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+							templetCode="T_REMINDINS_MNG" debugMode="{debugMode}" showQuickQueryPanel="false"
+							cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+		</core:BillListPanel>
+	</mx:VBox>
+</containers:SuperPanel>

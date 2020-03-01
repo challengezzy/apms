@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="com/apms/flex/modules/MaintenanceManage/testUI.mxml" projectUUID="11f21d54-29e5-43db-a6dc-7fc1b21fa5fd" version="10">
+  <compiler additionalCompilerArguments="-services &quot;D:/workspace/apms/WebRoot/WEB-INF/flex/services-config.xml&quot; -locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="WebRoot" removeUnusedRSL="false" rootURL="http://localhost:8080/apms" sourceFolderPath="flex_src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="flex_libs"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="FlexTest.mxml"/>
+    <application path="ChartTest.mxml"/>
+    <application path="apms.mxml"/>
+    <application path="com/apms/flex/modules/MaintenanceManage/testUI.mxml"/>
+  </applications>
+  <modules>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/ApuPerformanceChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/ApuPerformanceChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/wavhealth/WavStatusChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/wavhealth/WavStatusChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/oxygen/OxygenBottleChangeForecast.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/oxygen/OxygenBottleChangeForecast.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/vibration/VibrationFreqChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/vibration/VibrationFreqChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/ApuRunStatisticsChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/ApuRunStatisticsChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/ApmsCustomLibrary.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/ApmsCustomLibrary.as"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/ApuStructPartMng.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/ApuStructPartMng.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/aircond/GndsysChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/aircond/GndsysChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/ApuRunStatisticsView.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/ApuRunStatisticsView.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/oxygen/OxyPressMonitorChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/oxygen/OxyPressMonitorChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/engine/A04EGTMonitorChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/engine/A04EGTMonitorChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/aircond/AircondChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/aircond/AircondChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/oil/OilStatusChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/oil/OilStatusChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/engine/EngineStructPartMng.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/engine/EngineStructPartMng.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/oil/OilAddChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/oil/OilAddChart.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/llp/ApuLlpManage.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/llp/ApuLlpManage.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/apu/ApuCWMonitor.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/apu/ApuCWMonitor.mxml"/>
+    <module application="flex_src/apms.mxml" destPath="com/apms/flex/modules/aircond/AirbleedChart.swf" optimize="false" sourcePath="flex_src/com/apms/flex/modules/aircond/AirbleedChart.mxml"/>
+    <module application="flex_src/com/apms/flex/modules/MaintenanceManage/testUI.mxml" destPath="com/apms/flex/modules/MaintenanceManage/UserScheduling.swf" optimize="true" sourcePath="flex_src/com/apms/flex/modules/MaintenanceManage/UserScheduling.mxml"/>
+    <module application="flex_src/com/apms/flex/modules/MaintenanceManage/testUI.mxml" destPath="com/apms/flex/modules/MaintenanceManage/CrewScheduling.swf" optimize="true" sourcePath="flex_src/com/apms/flex/modules/MaintenanceManage/CrewScheduling.mxml"/>
+  </modules>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>

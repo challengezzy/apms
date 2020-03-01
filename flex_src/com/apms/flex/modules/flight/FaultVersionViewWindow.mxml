@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="500" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="故障信息版本" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			public var faultVersion:ArrayCollection;//各版本的故障提醒信息
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var defectremindid:String;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var dataGridWith:int=900/5;
+			private function creationComplete():void
+			{
+				faultVersionDg.simpleQueryPanel.height=0;
+				querySql="SELECT DEFECTREMINDID,VERSIONNO,REMINDDESC,COMMENTS," +
+					"TO_CHAR(t.UPDATETIME,'YYYY-MM-DD HH24:MI:SS') updatetime,UPDATEUSER " +
+					"from W_DEFECTREMIND_VERSION t where defectremindid='"+defectremindid+"' ORDER BY VERSIONNO DESC";
+				faultVersionDg.refresh();
+//				var obj:Object=faultVersionDg.getSelectedRowValue();
+//				faultVersionDg.addEventListener(MouseEvent.CLICK, GetPreviewInventoryDetail);
+			}
+			/**
+			 * 单击列表中一行在textArea中展示数据
+			 */ 
+			private function DataGrid_Click():void{
+				
+				var obj:Object=this.faultVersionDg.getSelectedRowValue();
+				if(obj!=null){
+					reminddesc.text=obj.reminddesc;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<component:AdvDataGridPanel id="faultVersionDg" width="100%" height="50%" sql="{querySql}" dataSource="{apmsDs}" click="DataGrid_Click()">
+			<component:columns>			
+				<mx:DataGridColumn dataField="versionno" headerText="版本号" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="reminddesc" headerText="故障信息描述" width="{dataGridWith*3}"/>
+				<mx:DataGridColumn dataField="comments" headerText="备注" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="updatetime" headerText="更新时间" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="{dataGridWith/4}"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<mx:VBox  width="100%" height="50%">
+			<mx:Label text="故障信息描述："/>
+			<s:TextArea id="reminddesc" width="100%" height="100%"/>
+		</mx:VBox>
+	</mx:VBox>
+</containers:SuperPanel>

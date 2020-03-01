@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   creationComplete="creationComplete()" 
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="960" height="600" verticalGap="1"  
+					   title="不正常航班快报"
+					   visible="false"
+					   >
+	<fx:Declarations>	
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			
+			import myreport.ReportViewer;
+			
+			import smartx.flex.components.vo.SimpleComboxItemVO;
+			[Bindable]
+			private var eightWordsLen:Number;
+			[Bindable]
+			public var unusualReportVo:Object;
+			
+			
+			private function creationComplete():void{
+				PreviewReport();
+			}
+			
+			private function PreviewReport():void
+			{
+				//source支持url:String，xml:XML，null参数类型
+				myreport.ReportViewer.Instance.Show("com/apms/flex/reportxml/XmlUnusualFlightReport.xml", GetTableData(), GetParameterData());
+			}
+			private function GetTableData():ArrayCollection
+			{
+				var solution:String=unusualReportVo["SOLUTION"];//处理措施
+				var solutionandcauseanalysis:String="";
+				if(solution==null){
+					solutionandcauseanalysis="";
+				}else{
+					solutionandcauseanalysis="处理措施："+solution;
+				}
+				var causeanalysis:String=unusualReportVo["CAUSEANALYSIS"];//原因分析
+				if(causeanalysis==null){
+					solutionandcauseanalysis=solutionandcauseanalysis+"";
+				}else{
+					solutionandcauseanalysis=solutionandcauseanalysis+"\n"+"原因分析："+causeanalysis;
+				}
+				
+				//类型
+				var type:Number=-1;
+				var typeObj:SimpleComboxItemVO=unusualReportVo["TYPE"] as  SimpleComboxItemVO;
+				type=Number(typeObj["id"]);//类别
+				var fanhang:Number=0;//类别
+				var gaihang:Number=0;
+				var huahui:Number=0;
+				var huanji:Number=0;
+				var huojing:Number=0;
+				var dimiantingche:Number=0;
+				var kongzhongtingche:Number=0;
+				var yanwu:Number=0;
+				var quxiao:Number=0;
+				var chongchupaodao:Number=0;
+				var zhongzhiqifei:Number=0;
+				var zhongduanqifei:Number=0;
+				var qita_type:Number=0;
+				switch(type){
+					case 0:fanhang=1;break;
+					case 1:gaihang=1;break;
+					case 2:huahui=1;break;
+					case 3:huanji=1;break;
+					case 4:huojing=1;break;
+					case 5:dimiantingche=1;break;
+					case 6:kongzhongtingche=1;break;
+					case 7:yanwu=1;break;
+					case 8:quxiao=1;break;
+					case 9:chongchupaodao=1;break;
+					case 10:zhongzhiqifei=1;break;
+					case 11:zhongduanqifei=1;break;
+					case 12:qita_type=1;break;
+				}
+				
+				//发生阶段
+				var occurphase:Number=-1;
+				occurphase=Number(unusualReportVo["OCCURPHASE"]["id"]);
+				var dimian:Number=0;
+				var qifei:Number=0;
+				var xunhang:Number=0;
+				var zhuolu:Number=0;
+				var huaxing:Number=0;
+				var pasheng:Number=0;
+				var xiajiang:Number=0;
+				var qita_fashengjieduan:Number=0;
+				switch(occurphase){
+					case 0:dimian=1;break;
+					case 1:qifei=1;break;
+					case 2:xunhang=1;break;
+					case 3:zhuolu=1;break;
+					case 4:huaxing=1;break;
+					case 5:pasheng=1;break;
+					case 6:xiajiang=1;break;
+					case 7:qita_fashengjieduan=1;break;
+				}
+				
+				var hangqian:Number=0;
+				var guozhan:Number=0;
+				var hanghou:Number=0;
+				var dingjian:Number=0;
+				var zhiling:Number=0;
+				var qita_weixiujibie:Number=0;
+				var maintenancelevel:Number=-1;
+				maintenancelevel=Number(unusualReportVo["MAINTENANCELEVEL"]["id"]);//维修级别
+				switch(maintenancelevel){
+					case 0:hangqian=1;break;
+					case 1:guozhan=1;break;
+					case 2:hanghou=1;break;
+					case 3:dingjian=1;break;
+					case 4:zhiling=1;break;
+					case 5:qita_weixiujibie=1;break;
+				}
+				
+				//是否属于三次故障
+				var isthirdfault:Number=-1;
+				isthirdfault=Number(unusualReportVo["ISTHIRDFAULT"]["id"]);
+				var shi:Number=0;
+				var fou:Number=0;
+				var busheji:Number=0;
+				switch(isthirdfault){
+					case 0:shi=1;break;
+					case 1:fou=1;break;
+					case 2:busheji=1;break;
+				}
+				
+				var list:ArrayCollection = new ArrayCollection();
+				list.addItem(
+					{
+						航班号:unusualReportVo["FLT_NO"]==null?"":unusualReportVo["FLT_NO"],
+						日期:unusualReportVo["STD"]==null?"":unusualReportVo["STD"].substr(0,10),
+						实际开门时间:unusualReportVo["OPENTIME"]==null?"":unusualReportVo["OPENTIME"],
+						实际关门时间:unusualReportVo["CLOSETIME"]==null?"":unusualReportVo["CLOSETIME"],
+						计划起飞时间:unusualReportVo["STD"]==null?"":unusualReportVo["STD"],
+						机号:unusualReportVo["ACNUM"]==null?"":unusualReportVo["ACNUM"],
+						机型:unusualReportVo["ACMODEL"]==null?"":unusualReportVo["ACMODEL"],
+						延误时间:unusualReportVo["DALAYTIME"]==null?"":unusualReportVo["DALAYTIME"],
+						拆下件号:unusualReportVo["REMOVENUM"]==null?"":unusualReportVo["REMOVENUM"],
+						拆下序号:unusualReportVo["FITONNUM"]==null?"":unusualReportVo["FITONNUM"],
+						装上件号:unusualReportVo["REMOVENO"]==null?"":unusualReportVo["REMOVENO"],
+						装上序号:unusualReportVo["FITONNO"]==null?"":unusualReportVo["FITONNO"],
+						发生航站:unusualReportVo["AIRPORTNAME"]==null?"":unusualReportVo["AIRPORTNAME"],
+						
+						//类型
+						返航:fanhang,
+						改航:gaihang,
+						滑回:huahui,
+						换机:huanji,
+						火警:huojing,
+						地面停车:dimiantingche,
+						空中停车:kongzhongtingche,
+						延误:yanwu,
+						取消:quxiao,
+						冲出跑道:chongchupaodao,
+						中止起飞:zhongzhiqifei,
+						中断起飞:zhongduanqifei,
+						其它:qita_type,
+						
+						//维修级别
+						航前:hangqian,
+						过站:guozhan,
+						航后:hanghou,
+						定检:dingjian,
+						指令:zhiling,
+						其它:qita_weixiujibie,
+						
+						上次航后完成基地:unusualReportVo["AP_LASTAP"]==null?"":unusualReportVo["AP_LASTAP"],
+						
+						//发生阶段
+						地面:dimian,
+						起飞:qifei,
+						巡航:xunhang,
+						着陆:zhuolu,
+						滑行:huaxing,
+						爬升:pasheng,
+						下降:xiajiang,
+						其它:qita_fashengjieduan,
+						
+						//是否为三次故障
+						是:shi,
+						否:fou,
+						不涉及:busheji,
+						
+						事件描述:unusualReportVo["EVENTDESC"]==null?"":unusualReportVo["EVENTDESC"],
+						事件处理及原因分析:solutionandcauseanalysis,
+						报告单位:unusualReportVo["REPORTER_DEPT"]==null?"":unusualReportVo["REPORTER_DEPT"],
+						MCC填报人:unusualReportVo["REPORTER"]==null?"":unusualReportVo["REPORTER"],
+						报告时间:unusualReportVo["UPDATETIME"]==null?"":unusualReportVo["UPDATETIME"]
+						
+					}
+				);
+				
+				return list;
+			}
+			private function GetParameterData():Dictionary
+			{
+				var dict:Dictionary = new Dictionary();
+				dict["主标题"] = "不正常航班快报";
+				dict["打印时间"] = new Date();
+				
+				return dict;
+			}
+		]]>
+	</fx:Script>
+</containers:SuperPanel>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DataGrid xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx"
+			 creationComplete="creationCompleteHandler(event)"  
+			 horizontalScrollPolicy="on" styleName="adv1" 
+			 width="100%" height="100%">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.ToolTip;
+			import mx.events.FlexEvent;
+			import mx.resources.ResourceManager;
+			
+			private var paramIo4periodBegin:int = -1;
+			private var paramIo4periodEnd:int = -1;
+			private var prvVar4arrDataColumns:ArrayCollection = new ArrayCollection();
+			//初始化方法    
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.prvVar4arrDataColumns = new ArrayCollection();
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue00 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue01 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue02 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue03 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue04 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue05 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue06 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue07 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue08 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue09 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue10 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue11 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue12 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue13 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue14 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue15 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue16 );			
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue17 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue18 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue19 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue20 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue21 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue22 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue23 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue24 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue25 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue26 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue27 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue28 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue29 );	
+				
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue30 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue31 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue32 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue33 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue34 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue35 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue36 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue37 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue38 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue39 );
+				
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue40 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue41 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue42 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue43 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue44 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue45 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue46 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue47 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue48 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue49 );		
+				
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue50 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue51 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue52 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue53 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue54 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue55 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue56 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue57 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue58 );
+				this.prvVar4arrDataColumns.addItem( this.columnPeriodDataValue59 );
+				
+			}		
+			
+			public function setHeadText(startDate:Date,number:int):void{
+				for(var i:int=0;i<number;i++){
+					var headTextVal:String=DateUtil.dateToString(DateUtil.moveDay(startDate,i),2).toString()+"\n";
+					
+					switch(DateUtil.moveDay(startDate,i).day){
+						case 0:headTextVal=headTextVal+"    星期日";break;
+						case 1:headTextVal=headTextVal+"    星期一";break;
+						case 2:headTextVal=headTextVal+"    星期二";break;
+						case 3:headTextVal=headTextVal+"    星期三";break;
+						case 4:headTextVal=headTextVal+"    星期四";break;
+						case 5:headTextVal=headTextVal+"    星期五";break;
+						case 6:headTextVal=headTextVal+"    星期六";break;
+					}
+					DataGridColumn( this.prvVar4arrDataColumns.getItemAt(i) ).headerText=headTextVal;
+					DataGridColumn( this.prvVar4arrDataColumns.getItemAt(i) ).visible = true;
+					DataGridColumn( this.prvVar4arrDataColumns.getItemAt(i) ).width=100;
+				}
+				if(300+number*100>1350){
+					nullColumn.visible=false;
+				}
+				this.validateSize( true );
+				this.validateNow();	
+			}
+//			/**
+//			 * 导出的时候设置一下headText
+//			 */
+//			public function setHeadTextWhenExport(number:int):void{
+//				for(var i:int=0;i<number;i++){
+//					var headTextVal:String=DateUtil.dateToString(DateUtil.moveDay(startDate,i),2).toString();
+//					DataGridColumn( this.prvVar4arrDataColumns.getItemAt(i) ).headerText=headTextVal;
+//					
+//				}
+//			}
+			/**
+			 * 初始化dataGrid的界面
+			 * */
+			public function initHeadText(number:int):void{
+				nullColumn.visible=true;
+				for(var i:int=0;i<number;i++){
+					
+					DataGridColumn( this.prvVar4arrDataColumns.getItemAt(i) ).visible = false;
+				}
+			}
+		]]>
+	</fx:Script>	
+	<mx:columns>		
+		<mx:DataGridColumn id="orgidline"			headerText="车间" 			dataField="name" 		width="150"/>
+		<mx:DataGridColumn id="columnPeriodDataValue00"			headerText="" 	dataField="periodDataValue00" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue01"			headerText="" 	dataField="periodDataValue01" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue02"			headerText="" 	dataField="periodDataValue02" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue03"			headerText="" 	dataField="periodDataValue03" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue04"			headerText="" 	dataField="periodDataValue04" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue05"			headerText="" 	dataField="periodDataValue05" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue06"			headerText="" 	dataField="periodDataValue06" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue07"			headerText="" 	dataField="periodDataValue07" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue08"			headerText="" 	dataField="periodDataValue08" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue09"			headerText="" 	dataField="periodDataValue09" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue10"			headerText="" 	dataField="periodDataValue10" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue11"			headerText="" 	dataField="periodDataValue11" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue12"			headerText="" 	dataField="periodDataValue12" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue13"			headerText="" 	dataField="periodDataValue13" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue14"			headerText="" 	dataField="periodDataValue14" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue15"			headerText="" 	dataField="periodDataValue15" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue16"			headerText="" 	dataField="periodDataValue16" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue17"			headerText="" 	dataField="periodDataValue17" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue18"			headerText="" 	dataField="periodDataValue18" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue19"			headerText="" 	dataField="periodDataValue19" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue20"			headerText="" 	dataField="periodDataValue20" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue21"			headerText="" 	dataField="periodDataValue21" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue22"			headerText="" 	dataField="periodDataValue22" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue23"			headerText="" 	dataField="periodDataValue23" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue24"			headerText="" 	dataField="periodDataValue24" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue25"			headerText="" 	dataField="periodDataValue25" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue26"			headerText="" 	dataField="periodDataValue26" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue27"			headerText="" 	dataField="periodDataValue27" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue28"			headerText="" 	dataField="periodDataValue28" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue29"			headerText="" 	dataField="periodDataValue29" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue30"			headerText="" 	dataField="periodDataValue30" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue31"			headerText="" 	dataField="periodDataValue31" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue32"			headerText="" 	dataField="periodDataValue32" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue33"			headerText="" 	dataField="periodDataValue33" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue34"			headerText="" 	dataField="periodDataValue34" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue35"			headerText="" 	dataField="periodDataValue35" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue36"			headerText="" 	dataField="periodDataValue36" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue37"			headerText="" 	dataField="periodDataValue37" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue38"			headerText="" 	dataField="periodDataValue38" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue39"			headerText="" 	dataField="periodDataValue39" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue40"			headerText="" 	dataField="periodDataValue40" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue41"			headerText="" 	dataField="periodDataValue41" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue42"			headerText="" 	dataField="periodDataValue42" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue43"			headerText="" 	dataField="periodDataValue43" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue44"			headerText="" 	dataField="periodDataValue44" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue45"			headerText="" 	dataField="periodDataValue45" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue46"			headerText="" 	dataField="periodDataValue46" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue47"			headerText="" 	dataField="periodDataValue47" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue48"			headerText="" 	dataField="periodDataValue48" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue49"			headerText="" 	dataField="periodDataValue49" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue50"			headerText="" 	dataField="periodDataValue50" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue51"			headerText="" 	dataField="periodDataValue51" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue52"			headerText="" 	dataField="periodDataValue52" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue53"			headerText="" 	dataField="periodDataValue53" visible="false" textAlign="left"	width="100"/>		
+		<mx:DataGridColumn id="columnPeriodDataValue54"			headerText="" 	dataField="periodDataValue54" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue55"			headerText="" 	dataField="periodDataValue55" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue56"			headerText="" 	dataField="periodDataValue56" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue57"			headerText="" 	dataField="periodDataValue57" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue58"			headerText="" 	dataField="periodDataValue58" visible="false" textAlign="left"	width="100"/>
+		<mx:DataGridColumn id="columnPeriodDataValue59"			headerText="" 	dataField="periodDataValue59" visible="false" textAlign="left"	width="100"/>	
+		<mx:DataGridColumn id="nullColumn"			headerText="" 	dataField="" />
+	</mx:columns>	
+</mx:DataGrid>

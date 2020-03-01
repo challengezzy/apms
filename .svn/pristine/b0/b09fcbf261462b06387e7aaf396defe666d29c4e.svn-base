@@ -1,0 +1,119 @@
+<root>
+  <headitem acmodel="A319">
+    <s13s46press_redlinevalue upperlimitvalue="1900" lowerlimitvalue="1600" />
+    <s46kvalue_redlinevalue upperlimitvalue="0" lowerlimitvalue="-15" />
+    <a21pf_redlinevalue upperlimitvalue="0.7" lowerlimitvalue="0.45" />
+    <a21cot_redlinevalue upperlimitvalue="200" lowerlimitvalue="110" />
+    <a21pbv_redlinevalue upperlimitvalue="60" lowerlimitvalue="20" />
+     <a24pf_redlinevalue upperlimitvalue="0.55" lowerlimitvalue="0.3" />
+     <a24cot_redlinevalue upperlimitvalue="150" lowerlimitvalue="60" />
+     <a24pbv_redlinevalue upperlimitvalue="50" lowerlimitvalue="2" />
+  </headitem>
+  
+  <headitem acmodel="A320">
+    <a21pf_redlinevalue upperlimitvalue="0.6" lowerlimitvalue="0.35" />
+    <a21cot_redlinevalue upperlimitvalue="195" lowerlimitvalue="100" />
+    <a21pbv_redlinevalue upperlimitvalue="50" lowerlimitvalue="17" />
+     <a24pf_redlinevalue upperlimitvalue="0.6" lowerlimitvalue="0.35" />
+     <a24cot_redlinevalue upperlimitvalue="180" lowerlimitvalue="70" />
+     <a24pbv_redlinevalue upperlimitvalue="52" lowerlimitvalue="2" />
+  </headitem>
+  
+  <headitem acmodel="A321">
+    <a21pf_redlinevalue upperlimitvalue="0.55" lowerlimitvalue="0.3" />
+    <a21cot_redlinevalue upperlimitvalue="190" lowerlimitvalue="90" />
+    <a21pbv_redlinevalue upperlimitvalue="50" lowerlimitvalue="17" />
+     <a24pf_redlinevalue upperlimitvalue="0.7" lowerlimitvalue="0.4" />
+     <a24cot_redlinevalue upperlimitvalue="190" lowerlimitvalue="80" />
+     <a24pbv_redlinevalue upperlimitvalue="55" lowerlimitvalue="2" />
+  </headitem>
+  
+  <defaultconfig> 
+    <cfm_a01egt_redlinevalue upperlimitvalue="680" lowerlimitvalue="550" />
+    <cfm_a01ff_redlinevalue upperlimitvalue="1650" lowerlimitvalue="1200" />
+    <cfm_a01n2_redlinevalue upperlimitvalue="96" lowerlimitvalue="91" />
+    <cfm_a01egt_margin_redlinevalue upperlimitvalue="120" lowerlimitvalue="90" />
+
+    <cfm_a04egt_redlinevalue upperlimitvalue="860" lowerlimitvalue="660" />
+    <cfm_a04ff_redlinevalue upperlimitvalue="4200" lowerlimitvalue="3200" />
+    <cfm_a04n2_redlinevalue upperlimitvalue="100" lowerlimitvalue="94" />
+    <cfm_a04egt_margin_redlinevalue upperlimitvalue="70" lowerlimitvalue="40" />
+
+    <iae_a01egt_redlinevalue upperlimitvalue="460" lowerlimitvalue="350" />
+    <iae_a01ff_redlinevalue upperlimitvalue="1600" lowerlimitvalue="1200" />
+    <iae_a01n1_redlinevalue upperlimitvalue="81" lowerlimitvalue="72" />
+    <iae_a01n2_redlinevalue upperlimitvalue="87" lowerlimitvalue="82" />
+
+    <iae_a04egt_redlinevalue upperlimitvalue="600" lowerlimitvalue="450" />
+    <iae_a04ff_redlinevalue upperlimitvalue="4000" lowerlimitvalue="3200" />
+    <iae_a04n1_redlinevalue upperlimitvalue="92" lowerlimitvalue="82" />
+    <iae_a04n2_redlinevalue upperlimitvalue="93" lowerlimitvalue="88" />
+    <a21pf_redlinevalue upperlimitvalue="0.6" lowerlimitvalue="0.35" />
+    <a21pbv_redlinevalue upperlimitvalue="50" lowerlimitvalue="17" />
+    <a21tp_redlinevalue upperlimitvalue="40" lowerlimitvalue="-20" />
+    <a21tw_redlinevalue upperlimitvalue="42" lowerlimitvalue="4" />
+    <a21ri_redlinevalue upperlimitvalue="20" lowerlimitvalue="5" />
+    <a21d1_redlinevalue upperlimitvalue="30" lowerlimitvalue="4" />
+    <a21d1_tw1_redlinevalue upperlimitvalue="5"  lowerlimitvalue="-5" />
+    <a21d1_tw2_redlinevalue upperlimitvalue="5"  lowerlimitvalue="-5" />
+    <a21pd_redlinevalue upperlimitvalue="50" lowerlimitvalue="39" />
+    <a21hpv_redlinevalue upperlimitvalue="105" lowerlimitvalue="85" />
+    <a21prv_redlinevalue upperlimitvalue="70" lowerlimitvalue="37" />
+    <a21tpo_redlinevalue upperlimitvalue="205" lowerlimitvalue="175" />
+    <a21n1_redlinevalue upperlimitvalue="90" lowerlimitvalue="70" />
+    <a21n2_redlinevalue upperlimitvalue="90" lowerlimitvalue="80" />
+    <a21p3_redlinevalue upperlimitvalue="190" lowerlimitvalue="110" />
+    <a21t3_redlinevalue upperlimitvalue="480" lowerlimitvalue="400" />
+    <a21pf_redlinevalue upperlimitvalue="0.55" lowerlimitvalue="0.3" />
+    <a21cot_redlinevalue upperlimitvalue="185" lowerlimitvalue="110" />
+    <a21pbv_redlinevalue upperlimitvalue="37" lowerlimitvalue="21" />
+    <a24zcb_redlinevalue upperlimitvalue="8000" lowerlimitvalue="2500" />
+    <a24tat_redlinevalue upperlimitvalue="10" lowerlimitvalue="-30" />
+    <a24sat_redlinevalue upperlimitvalue="-10" lowerlimitvalue="-55" />
+    <a21zcb_redlinevalue upperlimitvalue="8000" lowerlimitvalue="2500" />
+    <a21tat_redlinevalue upperlimitvalue="10" lowerlimitvalue="-30" />
+    <a21sat_redlinevalue upperlimitvalue="-10" lowerlimitvalue="-55" />
+    <a21g1_redlinevalue upperlimitvalue="26.5" lowerlimitvalue="4.5" />
+    <a21sc1_redlinevalue upperlimitvalue="28" lowerlimitvalue="15" />
+    <a21sc2_redlinevalue upperlimitvalue="26.5" lowerlimitvalue="22.5" />
+    <a21sc3_redlinevalue upperlimitvalue="26.5" lowerlimitvalue="22.5" />
+    <a21sc1_div_redlinevalue upperlimitvalue="+5" lowerlimitvalue="-5" />
+    <a21sc2_div_redlinevalue upperlimitvalue="+5" lowerlimitvalue="-5" />
+    <a21sc3_div_redlinevalue upperlimitvalue="+5" lowerlimitvalue="-5" />
+    <a21ovp_redlinevalue upperlimitvalue="10" lowerlimitvalue="4" />
+    <a21duct_redlinevalue upperlimitvalue="35" lowerlimitvalue="5" />
+    
+    <a24tp_redlinevalue upperlimitvalue="10" lowerlimitvalue="-10" />
+    <a24tw_redlinevalue upperlimitvalue="45" lowerlimitvalue="0" />
+    <a24ri_redlinevalue upperlimitvalue="98" lowerlimitvalue="7" />
+    <a24d1_redlinevalue upperlimitvalue="30" lowerlimitvalue="0" />
+    <a24d1_tw1_redlinevalue upperlimitvalue="5"  lowerlimitvalue="-5" />
+    <a24d1_tw2_redlinevalue upperlimitvalue="5"  lowerlimitvalue="-5" />
+    <a24pf_redlinevalue upperlimitvalue="0.6" lowerlimitvalue="0.3" />
+    <a24cot_redlinevalue upperlimitvalue="185" lowerlimitvalue="85" />
+    <a24pbv_redlinevalue upperlimitvalue="26.5" lowerlimitvalue="2" />
+    <a24pd_redlinevalue upperlimitvalue="27" lowerlimitvalue="11" />
+    <a24g1_redlinevalue upperlimitvalue="27" lowerlimitvalue="3" />
+    <a24sc1_redlinevalue upperlimitvalue="28" lowerlimitvalue="15" />
+    <a24sc2_redlinevalue upperlimitvalue="28" lowerlimitvalue="15" />
+    <a24sc3_redlinevalue upperlimitvalue="28" lowerlimitvalue="15" />
+    <a24sc1_div_redlinevalue upperlimitvalue="5" lowerlimitvalue="-5" />
+    <a24sc2_div_redlinevalue upperlimitvalue="5" lowerlimitvalue="-5" />
+    <a24sc3_div_redlinevalue upperlimitvalue="5" lowerlimitvalue="-5" />
+    <a24ovp_redlinevalue upperlimitvalue="100" lowerlimitvalue="95" />
+    <a24duct_redlinevalue upperlimitvalue="28" lowerlimitvalue="4" />    
+    
+    <a39ff1ff2avg_redlinevalue upperlimitvalue="1100" lowerlimitvalue="1800"/>
+    <a39ff1ff2std_redlinevalue upperlimitvalue="70" lowerlimitvalue="140"/>
+    <a39pd1pd2avg_redlinevalue upperlimitvalue="39" lowerlimitvalue="48"/>
+    <a39pd1pd2std_redlinevalue upperlimitvalue="0.7" lowerlimitvalue="3.3"/>
+    <a39n21n22avg_redlinevalue upperlimitvalue="82" lowerlimitvalue="88"/>
+    <a39n21n22std_redlinevalue upperlimitvalue="0.7" lowerlimitvalue="1.7"/>
+    <a39sub_ff1ff2avg_redlinevalue upperlimitvalue="-14" lowerlimitvalue="4"/>
+    <a39sub_ff1ff2std_redlinevalue upperlimitvalue="1.7" lowerlimitvalue="3.6"/>
+    <a39sub_pd1pd2avg_redlinevalue upperlimitvalue="-2" lowerlimitvalue="7"/>
+    <a39sub_pd1pd2std_redlinevalue upperlimitvalue="1.5" lowerlimitvalue="2.6"/>
+    <a39sub_n21n22avg_redlinevalue upperlimitvalue="-0.5" lowerlimitvalue="-0.22"/>
+    <a39sub_n21n22std_redlinevalue upperlimitvalue="0.028" lowerlimitvalue="0.06"/>
+  </defaultconfig>
+</root>

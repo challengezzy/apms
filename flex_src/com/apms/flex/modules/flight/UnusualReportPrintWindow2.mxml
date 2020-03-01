@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   creationComplete="creationComplete()" 
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="960" height="600" verticalGap="1"  
+					   title="不正常航班快报"
+					   allowDrag="true" allowClose="true" 
+					   allowMaximize="true"  allowMinimize="true" allowResize="true" 
+					   >
+	<fx:Declarations>	
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.core.Application;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.vo.SimpleComboxItemVO;
+			
+			import spark.components.Application;
+			[Bindable]
+			private var eightWordsLen:Number;
+			[Bindable]
+			public var unusualReportVo:Object;
+			
+			
+			private function creationComplete():void{
+				FlexGlobals.topLevelApplication.setStyle("backgroundColor","0xffffff");
+				eightWordsLen=70;
+				
+				acmodel.text=unusualReportVo["ACMODEL"];//机型
+				var flt_time:String="";
+				flt_time=unusualReportVo["STD"];//计划起飞时间
+				std.text=flt_time;
+				if(flt_time!=""){
+					flt_date.text=flt_time.substr(0,10);//日期
+				}
+				code.text=unusualReportVo["CODE"];//编号
+				acnum.text=unusualReportVo["ACNUM"];//机号
+				flt_no.text=unusualReportVo["FLT_NO"];//航班号
+				dalaytime.text=unusualReportVo["DALAYTIME"];//延误时间
+				opentime.text=unusualReportVo["OPENTIME"];//实际开门时间
+				closetime.text=unusualReportVo["CLOSETIME"];//实际关门时间
+				airportname.text=unusualReportVo["AIRPORTNAME"];//发生航站
+				removenum.text=unusualReportVo["REMOVENUM"];
+				fitonnum.text=unusualReportVo["FITONNUM"];
+				removeno.text=unusualReportVo["REMOVENO"];
+				fitonno.text=unusualReportVo["FITONNO"];
+				var type:Number=-1;
+				var typeObj:SimpleComboxItemVO=unusualReportVo["TYPE"] as  SimpleComboxItemVO;
+				type=Number(typeObj["id"]);//类别
+				ap_lastap.text=unusualReportVo["AP_LASTAP"];//上次航后基地
+				var occurphase:Number=-1;
+				occurphase=Number(unusualReportVo["OCCURPHASE"]["id"]);//发生阶段
+				var maintenancelevel:Number=-1;
+				maintenancelevel=Number(unusualReportVo["MAINTENANCELEVEL"]["id"]);//维修级别
+				eventdesc.text=unusualReportVo["EVENTDESC"];//事件描述
+				var isthirdfault:Number=-1;
+				isthirdfault=Number(unusualReportVo["ISTHIRDFAULT"]["id"]);//是否三次维修
+				var solution:String=unusualReportVo["SOLUTION"];//处理措施
+				if(solution==null){
+					solutionandcauseanalysis.text="";
+				}else{
+					solutionandcauseanalysis.text="处理措施："+solution;
+				}
+				var causeanalysis:String=unusualReportVo["CAUSEANALYSIS"];//原因分析
+				if(causeanalysis==null){
+					solutionandcauseanalysis.text=solutionandcauseanalysis.text+"";
+				}else{
+					solutionandcauseanalysis.text=solutionandcauseanalysis.text+"\n"+"原因分析："+causeanalysis;
+				}
+				var maintenancereasontype:Number=-1;
+				maintenancereasontype=Number(unusualReportVo["MAINTENANCEREASONTYPE"]["id"]);//工程机务分类
+				reporter_dept.text=unusualReportVo["REPORTER_DEPT"];//报告单位
+				reporter.text=unusualReportVo["REPORTER"];//报告人
+				updatetime.text=unusualReportVo["UPDATETIME"];//报告时间
+				switch(type){
+					case 0:fanhang.selected=true;break;
+					case 1:gaihang.selected=true;break;
+					case 2:huahui.selected=true;break;
+					case 3:huanji.selected=true;break;
+					case 4:huojing.selected=true;break;
+					case 5:dimiantingche.selected=true;break;
+					case 6:kongzhongtingche.selected=true;break;
+					case 7:yanwu.selected=true;break;
+					case 8:quxiao.selected=true;break;
+					case 9:chongchupaodao.selected=true;break;
+					case 10:zhongzhiqifei.selected=true;break;
+					case 11:zhongduanqifei.selected=true;break;
+					case 12:qita_type.selected=true;break;
+				}
+				switch(occurphase){
+					case 0:dimian.selected=true;break;
+					case 1:qifei.selected=true;break;
+					case 2:xunhang.selected=true;break;
+					case 3:zhuolu.selected=true;break;
+					case 4:huaxing.selected=true;break;
+					case 5:pasheng.selected=true;break;
+					case 6:xiajiang.selected=true;break;
+					case 7:qita_fashengjieduan.selected=true;break;
+				}
+				switch(maintenancelevel){
+					case 0:hangqian.selected=true;break;
+					case 1:guozhan.selected=true;break;
+					case 2:hanghou.selected=true;break;
+					case 3:dingjian.selected=true;break;
+					case 4:zhiling.selected=true;break;
+					case 5:qita_weixiujibie.selected=true;break;
+				}
+				switch(isthirdfault){
+					case 0:shi.selected=true;break;
+					case 1:fou.selected=true;break;
+					case 2:busheji.selected=true;break;
+				}
+				switch(maintenancereasontype){
+					case 0:jiexieguzhang.selected=true;break;
+					case 1:weixiubudang.selected=true;break;
+					case 2:shengchanjihua.selected=true;break;
+					case 3:shebeishishi.selected=true;break;
+					case 4:renli.selected=true;break;
+					case 5:hangcai.selected=true;break;
+					case 6:gongcheng.selected=true;break;
+					case 7:zhiliang.selected=true;break;
+				}
+				
+				
+			}
+			
+			protected function print():void{
+				var print:CoolPrintJob = new CoolPrintJob();
+				print.clearPrintObject();
+				print.addPrintObject(unusualReportWindow);
+				print.print();
+			}
+			
+			protected function printPreview():void{
+				var print:CoolPrintJob = new CoolPrintJob();
+				//smartPrint.container = this;
+				print.clearPrintObject();
+				print.addPrintObject(unusualReportWindow);
+				print.preview();
+			}
+			/**
+			 *导出图片
+			 */
+			protected function exportHandler(event:MouseEvent):void{
+				PictureExportUtil.exportChart(unusualReportWindow,"不正常航班快报");
+			}
+		]]>
+	</fx:Script>
+		<mx:HBox width="910" height="100%"> 
+			<mx:Spacer width="100%"/>
+			<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			<mx:Button label="打印" click="printPreview()"/>
+		</mx:HBox>
+		
+		<mx:VBox id="unusualReportWindow" width="100%" height="100%" paddingLeft="15" paddingRight="15">
+			<s:Spacer height="60"/>
+			<mx:HBox width="910"  horizontalAlign="center">
+				<mx:Label text="国航工程技术分公司维修基地航班不正常快报" fontSize="20" fontWeight="bold"   paddingTop="10"/>	
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<s:Spacer width="728"/>
+				<mx:Label text="编号："/>
+				<mx:Label id="code"/>
+			</mx:HBox>
+			<mx:Grid width="910" height="100%"   paddingLeft="15" paddingRight="15" horizontalGap="0" verticalGap="0" verticalAlign="middle" horizontalAlign="center" >
+				<mx:GridRow width="100%" height="30">
+					<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="航班号"/>
+					</mx:GridItem>
+					<mx:GridItem width="9%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="flt_no"/>
+					</mx:GridItem>
+					<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="日期"/>
+					</mx:GridItem>
+					<mx:GridItem width="9%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="flt_date"/>
+					</mx:GridItem>
+					<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="实际开门时间"/>
+					</mx:GridItem>
+					<mx:GridItem width="200"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="opentime"/>
+					</mx:GridItem>
+					<mx:GridItem width="100"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="计划起飞时间"/>
+					</mx:GridItem>
+					<mx:GridItem width="200"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label id="std"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30">
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="机号"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="acnum"/>
+					</mx:GridItem>
+					<mx:GridItem  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="机型"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label   id="acmodel"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="实际关门时间"/>
+					</mx:GridItem>
+					<mx:GridItem  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="closetime"/>
+					</mx:GridItem>
+					<mx:GridItem width="10%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="延误时间"/>
+					</mx:GridItem>
+					<mx:GridItem width="13%"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label width="{eightWordsLen}" id="dalaytime"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30"  >
+					<mx:GridItem   borderStyle="solid"   verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="拆下件号"/>
+					</mx:GridItem>
+					<mx:GridItem  colSpan="3"   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="removenum"    textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="拆下序号"/>
+					</mx:GridItem>
+					<mx:GridItem   colSpan="3" borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="removeno"   textAlign="center"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30"  >
+					<mx:GridItem   borderStyle="solid"   verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="装上件号"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="3"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="fitonnum"  textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="装上序号"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="3"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label id="fitonno"    textAlign="center" />
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="60"   >
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="发生航站" />
+					</mx:GridItem>
+					<mx:GridItem  colSpan="3"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:TextArea id="airportname" height="100%"  width="100%" borderStyle="none"  />
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="类别"/>
+					</mx:GridItem>
+					<mx:GridItem  colSpan="3" width="100%" borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox horizontalAlign="left">
+							<mx:HBox>
+								<mx:CheckBox label="返航" id="fanhang"/>
+								<mx:CheckBox label="改航" id="gaihang"/>
+								<mx:CheckBox label="滑回" id="huahui"/>
+								<mx:CheckBox label="换机" id="huanji"/>
+								<mx:CheckBox label="火警" id="huojing"/>
+								<mx:CheckBox label="地面停车" id="dimiantingche"/>
+								<mx:CheckBox label="空中停车" id="kongzhongtingche"/>
+							</mx:HBox>
+							<mx:HBox>
+								<mx:CheckBox label="延误" id="yanwu"/>
+								<mx:CheckBox label="取消" id="quxiao"/>
+								<mx:CheckBox label="冲出跑道" id="chongchupaodao"/>
+								<mx:CheckBox label="中止起飞" id="zhongzhiqifei"/>
+								<mx:CheckBox label="中断起飞" id="zhongduanqifei"/>
+								<mx:CheckBox label="其它" id="qita_type"/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="60">
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox>
+							<mx:Label text="上次航后"/>
+							<mx:Label text="完成基地"/>
+						</mx:VBox>
+					</mx:GridItem>
+					<mx:GridItem  colSpan="3" borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:TextArea width="100%" height="100%" id="ap_lastap"  borderStyle="none"  />
+					</mx:GridItem>
+					<mx:GridItem    borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox horizontalAlign="center">
+							<mx:Label text="发生阶段"/>
+							<mx:HRule width="100%" />
+							<mx:Label text="维修级别" paddingLeft="0"/>
+						</mx:VBox>
+					</mx:GridItem>
+					<mx:GridItem colSpan="3"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox horizontalAlign="left">
+							<mx:HBox verticalAlign="bottom" paddingBottom="0">
+								<mx:CheckBox label="地面" paddingLeft="0" id="dimian"/>
+								<mx:CheckBox label="起飞" paddingLeft="0" id="qifei"/>
+								<mx:CheckBox label="巡航" paddingLeft="0" id="xunhang"/>
+								<mx:CheckBox label="着陆" paddingLeft="0" id="zhuolu"/>
+								<mx:CheckBox label="滑行" paddingLeft="0" id="huaxing"/>
+								<mx:CheckBox label="爬升" paddingLeft="0" id="pasheng"/>
+								<mx:CheckBox label="下降" paddingLeft="0" id="xiajiang"/>
+								<mx:CheckBox label="其它" paddingLeft="0" id="qita_fashengjieduan"/>
+							</mx:HBox>
+							<mx:HBox verticalAlign="top" paddingTop="0">
+								<mx:CheckBox label="航前" paddingLeft="0" id="hangqian"/>
+								<mx:CheckBox label="过站" paddingLeft="0" id="guozhan"/>
+								<mx:CheckBox label="航后" paddingLeft="0" id="hanghou"/>
+								<mx:CheckBox label="定检" paddingLeft="0" id="dingjian"/>
+								<mx:CheckBox label="指令" paddingLeft="0" id="zhiling"/>
+								<mx:CheckBox label="其它" paddingLeft="0" id="qita_weixiujibie"/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>  
+				<mx:GridRow width="100%" height="185">
+					<mx:GridItem colSpan="8"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox width="100%" height="100%" verticalAlign="bottom" paddingTop="0">
+							<mx:Label text="事件描述:"/>
+							<mx:TextArea width="100%" height="125"   id="eventdesc" borderStyle="none" />
+							<mx:HBox verticalAlign="bottom">
+								<mx:Label text="此故障是否属于三次故障："/>
+								<mx:CheckBox  label="是" id="shi"/>
+								<mx:CheckBox  label="否" id="fou"/>
+								<mx:CheckBox  label="不涉及" id="busheji"/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="190">
+					<mx:GridItem colSpan="8"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:VBox width="100%" height="100%">
+							<mx:HBox>
+								<mx:Label text="事件处理及原因分析："/>
+								<mx:Label text="(若延误达到或超过小时请详细描述生产现场,组织每60分钟时间段所采取措施的情况)"/>
+							</mx:HBox>
+							<mx:TextArea width="100%" height="130" id="solutionandcauseanalysis"  borderStyle="none" />
+							<mx:HBox verticalAlign="bottom">
+								<mx:CheckBox label="原因不详"/>
+								<mx:Label text=",于4小时内以续报形式进行补充说明"/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30">
+					<mx:GridItem colSpan="8"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="left">
+						<mx:HBox verticalAlign="bottom" >
+							<mx:Label text="不属于工程机务原因："/>
+							<mx:CheckBox  label="当地责任界定主管部门已认可"/>
+						</mx:HBox>
+					</mx:GridItem>
+				</mx:GridRow>	
+				<mx:GridRow width="100%" height="120">
+					<mx:GridItem colSpan="8"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="left">
+						<mx:VBox verticalAlign="bottom">
+							<mx:HBox verticalAlign="bottom" >
+								<mx:Label text="不属于工程机务原因："/>
+								<mx:CheckBox  label="当地责任界定主管部门未认可"/>
+							</mx:HBox>
+							<mx:HBox verticalAlign="bottom">
+								<mx:CheckBox label="符合MEL"/>
+								<mx:CheckBox label="符合CDL"/>
+								<mx:Label text="章节："/>
+							</mx:HBox>
+							<mx:HBox>
+								<mx:CheckBox label="其它经批准的技术文件："/>
+							</mx:HBox>
+							<mx:HBox>
+								<mx:CheckBox label="其他情况："/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="60">
+					<mx:GridItem  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="工程机务分类："/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="7"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="left">
+						<mx:VBox >
+							<mx:HBox verticalAlign="top" >
+								<mx:CheckBox label="机械故障" id="jiexieguzhang" />
+								<mx:CheckBox label="维修不当" id="weixiubudang"/>
+								<mx:CheckBox label="生产计划" id="shengchanjihua"/>
+								<mx:CheckBox label="设备实施" id="shebeishishi"/>
+							</mx:HBox>
+							<mx:HBox verticalAlign="top" horizontalAlign="left">
+								<mx:CheckBox label="质量" id="zhiliang" borderColor="0x000000" textSelectedColor="0x000000"/>
+								<mx:CheckBox label="人力" id="renli"/>
+								<mx:CheckBox label="航材" id="hangcai"/>
+								<mx:CheckBox label="工程" id="gongcheng"/>
+							</mx:HBox>
+						</mx:VBox>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30">
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle"  borderColor="0x000000" horizontalAlign="center">
+						<mx:Label text="报告单位"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle"  borderColor="0x000000" horizontalAlign="center">
+						<mx:Label  id="reporter_dept"/>
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle"  borderColor="0x000000" horizontalAlign="center">
+						<mx:Label text="MCC填报人" />
+					</mx:GridItem>
+					<mx:GridItem   borderStyle="solid"  verticalAlign="middle"  borderColor="0x000000" horizontalAlign="center">
+						<mx:Label id="reporter"/>
+					</mx:GridItem>
+					<mx:GridItem  colSpan="2"  borderStyle="solid" borderColor="0x000000"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  text="报告时间"/>
+					</mx:GridItem>
+					<mx:GridItem  colSpan="2"  borderStyle="solid"  borderColor="0x000000"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label  id="updatetime"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow width="100%" height="30">
+					<mx:GridItem  colSpan="8"  borderStyle="solid"  verticalAlign="middle" horizontalAlign="center">
+						<mx:Label text="声明：此表代表MCC经理向执管维修基地报告事件情况，可由MCC值班人员填写，其责任由MCC经理负责！"/>
+					</mx:GridItem>
+				</mx:GridRow>
+			</mx:Grid>
+			<mx:HBox paddingLeft="15" width="910">
+				<s:Label text="报：对于非执管基地飞机，报执管基地MCC；对于执管飞机，报AMC。"/>
+				<s:Spacer width="40%"/>
+				<s:Label text="FAX:____________"/>
+			</mx:HBox>
+			<s:Label text="(CCA-MD-009)" paddingLeft="15"/>
+			<s:Spacer height="90"/>
+		</mx:VBox>
+</containers:SuperPanel>

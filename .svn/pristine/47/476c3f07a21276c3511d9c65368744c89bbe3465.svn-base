@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="920" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A15报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a15vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a15Data:Object;//译后报文内容
+					
+			
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var flap_1:String;
+			[Bindable]
+			private var slat_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ap_2:String;
+			[Bindable]
+			private var flap_2:String;
+			[Bindable]
+			private var slat_2:String;
+			[Bindable]
+			private var max:String;
+			[Bindable]
+			private var lim:String;
+			[Bindable]
+			private var count:String;
+			
+			[Bindable]
+			private var ralt_s1:String;
+			[Bindable]
+			private var ralr_s1:String;
+			[Bindable]
+			private var ptch_s1:String;
+			[Bindable]
+			private var ptcr_s1:String;
+			[Bindable]
+			private var roll_s1:String;
+			[Bindable]
+			private var rolr_s1:String;
+			[Bindable]
+			private var yaw_s1:String;
+			[Bindable]
+			private var ralt_s2:String;
+			[Bindable]
+			private var ralr_s2:String;
+			[Bindable]
+			private var ptch_s2:String;
+			[Bindable]
+			private var ptcr_s2:String;
+			[Bindable]
+			private var roll_s2:String;
+			[Bindable]
+			private var rolr_s2:String;
+			[Bindable]
+			private var yaw_s2:String;
+			[Bindable]
+			private var ralt_t1:String;
+			[Bindable]
+			private var ralr_t1:String;
+			[Bindable]
+			private var ptch_t1:String;
+			[Bindable]
+			private var ptcr_t1:String;
+			[Bindable]
+			private var roll_t1:String;
+			[Bindable]
+			private var rolr_t1:String;
+			[Bindable]
+			private var yaw_t1:String;
+			[Bindable]
+			private var ralt_t2:String;
+			[Bindable]
+			private var ralr_t2:String;
+			[Bindable]
+			private var ptch_t2:String;
+			[Bindable]
+			private var ptcr_t2:String;
+			[Bindable]
+			private var roll_t2:String;
+			[Bindable]
+			private var rolr_t2:String;
+			[Bindable]
+			private var yaw_t2:String;
+			
+			[Bindable]
+			private var vrta_s3:String;
+			[Bindable]
+			private var lona_s3:String;
+			[Bindable]
+			private var lata_s3:String;
+			[Bindable]
+			private var vrta_s4:String;
+			[Bindable]
+			private var lona_s4:String;
+			[Bindable]
+			private var lata_s4:String;
+			
+			[Bindable]
+			private var vrta_t3:String;
+			[Bindable]
+			private var lona_t3:String;
+			[Bindable]
+			private var lata_t3:String;
+			[Bindable]
+			private var vrta_t4:String;
+			[Bindable]
+			private var lona_t4:String;
+			[Bindable]
+			private var lata_t4:String;
+			
+			private function creationComplete():void
+			{
+				a15Data = a15vo.dataMap;
+							
+				esn_1 = a15Data['esn_1'];
+				ehrs_1 = a15Data['ehrs_1'];
+				ap_1 = a15Data['ap_1'];
+				flap_1 = a15Data['flap_1'];
+				slat_1 = a15Data['slat_1'];
+				
+				esn_2 = a15Data['esn_2'];
+				ehrs_2 = a15Data['ehrs_2'];
+				ap_2 = a15Data['ap_2'];
+				flap_2 = a15Data['flap_2'];
+				slat_2 = a15Data['slat_2'];
+				
+				max = a15Data['max_e1'];
+				lim = a15Data['lim_e1'];
+				count = a15Data['count'];
+				
+				ralt_s1 = a15Data['ralt_s1'];
+				ralr_s1 = a15Data['ralr_s1'];
+				ptch_s1 = a15Data['ptch_s1'];
+				ptcr_s1 = a15Data['ptcr_s1'];
+				roll_s1 = a15Data['roll_s1'];
+				rolr_s1 = a15Data['rolr_s1'];
+				yaw_s1 = a15Data['yaw_s1'];
+				
+				ralt_s2 = a15Data['ralt_s2'];
+				ralr_s2 = a15Data['ralr_s2'];
+				ptch_s2 = a15Data['ptch_s2'];
+				ptcr_s2 = a15Data['ptcr_s2'];
+				roll_s2 = a15Data['roll_s2'];
+				rolr_s2 = a15Data['rolr_s2'];
+				yaw_s2 = a15Data['yaw_s2'];
+				
+				vrta_s3 = a15Data['vrta_s3'];
+				lona_s3 = a15Data['lona_s3'];
+				lata_s3 = a15Data['lata_s3'];
+				
+				vrta_s4 = a15Data['vrta_s4'];
+				lona_s4 = a15Data['lona_s4'];
+				lata_s4 = a15Data['lata_s4'];
+				
+				ralt_t1 = a15Data['ralt_t1'];
+				ralr_t1 = a15Data['ralr_t1'];
+				ptch_t1 = a15Data['ptch_t1'];
+				ptcr_t1 = a15Data['ptcr_t1'];
+				roll_t1 = a15Data['roll_t1'];
+				rolr_t1 = a15Data['rolr_t1'];
+				yaw_t1 = a15Data['yaw_t1'];
+				
+				ralt_t2 = a15Data['ralt_t2'];
+				ralr_t2 = a15Data['ralr_t2'];
+				ptch_t2 = a15Data['ptch_t2'];
+				ptcr_t2 = a15Data['ptcr_t2'];
+				roll_t2 = a15Data['roll_t2'];
+				rolr_t2 = a15Data['rolr_t2'];
+				yaw_t2 = a15Data['yaw_t2'];
+				
+				vrta_t3 = a15Data['vrta_t3'];
+				lona_t3 = a15Data['lona_t3'];
+				lata_t3 = a15Data['lata_t3'];
+				
+				vrta_t4 = a15Data['vrta_t4'];
+				lona_t4 = a15Data['lona_t4'];
+				lata_t4 = a15Data['lata_t4'];
+				
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A15 报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" >
+		<mx:HDividedBox width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT15" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="A320 LOAD REPORT (15)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a15vo}" height="190"/>
+			
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="AP" color="red" width="80"/><mx:Label text="FLAP" color="red" width="60"/><mx:Label text="SLAT" color="red" width="60"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="小时" color="blue" width="60"/>
+	                <mx:Label text="自动驾驶状态" color="blue" width="80"/><mx:Label text="襟翼角度" color="blue" width="60"/><mx:Label text="缝翼角度" color="blue" width="60"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ap_1}" width="80"/><mx:Label text="{flap_1}" width="60"/><mx:Label text="{slat_1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ap_2}" width="80"/><mx:Label text="{flap_2}" width="60"/><mx:Label text="{slat_2}" width="60"/>
+				</mx:HBox>
+				
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="LIMIT EXCEEDANCE AND SPOILER EXT SUMMARY" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="MAX" color="red" width="105"/><mx:Label text="LIM" color="red" width="70"/>
+					<mx:Label text="COUNTS" color="red" width="90"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="超限参数的最大值" color="blue" width="105"/><mx:Label text="参数门槛值" color="blue" width="70"/>
+					<mx:Label text="5个扰流板参数" color="blue" width="90"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="E1" width="30"/><mx:Label text="{max}" width="105"/><mx:Label text="{lim}"  width="70"/>
+					<mx:Label text="{count}" width="90"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="VALUES AT 1 SEC BEFORE LAND/EVENT" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="RALT" color="red" width="70"/><mx:Label text="RALR" color="red" width="90"/>
+					<mx:Label text="PTCH" color="red" width="60"/><mx:Label text="PTCR" color="red" width="60"/><mx:Label text="ROLL" color="red" width="60"/>
+					<mx:Label text="ROLR" color="red" width="60"/><mx:Label text="YAW" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="无线电高度" color="blue" width="70"/><mx:Label text="无线电垂直速率" color="blue" width="90"/>
+					<mx:Label text="俯仰角度" color="blue" width="60"/><mx:Label text="俯仰速率" color="blue" width="60"/><mx:Label text="滚转角度" color="blue" width="60"/>
+					<mx:Label text="滚转速率" color="blue" width="60"/><mx:Label text="偏航速率" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{ralt_s1}" width="70"/><mx:Label text="{ralr_s1}" width="90"/>
+					<mx:Label text="{ptch_s1}" width="60"/><mx:Label text="{ptcr_s1}" width="60"/><mx:Label text="{roll_s1}" width="60"/>
+					<mx:Label text="{rolr_s1}" width="60"/><mx:Label text="{yaw_s1}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="VALUES AT LAND/EVENT" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S2" width="30"/><mx:Label text="{ralt_s2}" width="70"/><mx:Label text="{ralr_s2}" width="90"/>
+					<mx:Label text="{ptch_s2}" width="60"/><mx:Label text="{ptcr_s2}" width="60"/><mx:Label text="{roll_s2}" width="60"/>
+					<mx:Label text="{rolr_s2}" width="60"/><mx:Label text="{yaw_s2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="MAX/MIN 1 SEC TO 3 SEC INTERVAL" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="VRTA" color="red" width="60"/><mx:Label text="LONA" color="red" width="60"/>
+					<mx:Label text="LATA" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="垂直载荷" color="blue" width="60"/><mx:Label text="纵向载荷" color="blue" width="60"/>
+					<mx:Label text="横向载荷" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S3" width="30"/><mx:Label text="{vrta_s3}" width="60"/><mx:Label text="{lona_s3}" width="60"/>
+					<mx:Label text="{lata_s3}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S4" width="30"/><mx:Label text="{vrta_s4}" width="60"/><mx:Label text="{lona_s4}" width="60"/>
+					<mx:Label text="{lata_s4}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="VALUES AT 1 SEC BEFORE BOUNCED" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="RALT" color="red" width="70"/><mx:Label text="RALR" color="red" width="90"/>
+					<mx:Label text="PTCH" color="red" width="60"/><mx:Label text="PTCR" color="red" width="60"/><mx:Label text="ROLL" color="red" width="60"/>
+					<mx:Label text="ROLR" color="red" width="60"/><mx:Label text="YAW" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="无线电高度" color="blue" width="70"/><mx:Label text="无线电垂直速率" color="blue" width="90"/>
+					<mx:Label text="俯仰角度" color="blue" width="60"/><mx:Label text="俯仰速率" color="blue" width="60"/><mx:Label text="滚转角度" color="blue" width="60"/>
+					<mx:Label text="滚转速率" color="blue" width="60"/><mx:Label text="偏航速率" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T1" width="30"/><mx:Label text="{ralt_t1}" width="70"/><mx:Label text="{ralr_t1}" width="90"/>
+					<mx:Label text="{ptch_t1}" width="60"/><mx:Label text="{ptcr_t1}" width="60"/><mx:Label text="{roll_t1}" width="60"/>
+					<mx:Label text="{rolr_t1}" width="60"/><mx:Label text="{yaw_t1}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="VALUES AT BOUNCED" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T2" width="30"/><mx:Label text="{ralt_t2}" width="70"/><mx:Label text="{ralr_t2}" width="90"/>
+					<mx:Label text="{ptch_t2}" width="60"/><mx:Label text="{ptcr_t2}" width="60"/><mx:Label text="{roll_t2}"  width="60"/>
+					<mx:Label text="{rolr_t2}" width="60"/><mx:Label text="{yaw_t2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="MAX/MIN 1 SEC TO 3 SEC INTERVAL" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="VRTA" color="red" width="60"/><mx:Label text="LONA" color="red" width="60"/>
+					<mx:Label text="LATA" color="red" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="垂直载荷" color="blue" width="60"/><mx:Label text="纵向载荷" color="blue" width="60"/>
+					<mx:Label text="横向载荷" color="blue" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T3" width="30"/><mx:Label text="{vrta_t3}" width="60"/><mx:Label text="{lona_t3}" width="60"/>
+					<mx:Label text="{lata_t3}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T4" width="30"/><mx:Label text="{vrta_t4}" width="60"/><mx:Label text="{lona_t4}" width="60"/>
+					<mx:Label text="{lata_t4}" width="60"/>
+				</mx:HBox>
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

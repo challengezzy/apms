@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.component.CellColorRender;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var apusn:String; //apu序列号
+			private var orgName:String; //飞机执管基地的名称
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var querySql:String = "";
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="ACNUM";
+				apuItemVO.refdesc="SELECT A.ID ID#,AIRCRAFTID ACID#,APUSN APU序列号,M.MODEL APU型号 FROM B_APU A,B_APU_MODEL M WHERE M.ID=A.APUMODELID;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						apusn = apuRefPanel.returnVO.name;
+					}else{
+						apusn = null;
+					}
+				});	
+				
+				var orgItemVO:TempletItemVO = new TempletItemVO();
+				orgItemVO.itemtype="参照";
+				orgItemVO.itemname="选择飞机执管基地";
+//				orgItemVO.itemkey="ACNUM";
+				orgItemVO.refdesc="select  org.id ID#, ORG.CODE,ORG.NAME 基地名称  from  b_organization org where org.orglevel=1;ds=datasource_apms";
+				var orgRefPanel:ItemRefPanel = new ItemRefPanel(orgItemVO,smartxDest,endpoint,false,false);
+				orgRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(orgRefPanel.returnVO != null){
+						//获取参照的返回值
+						orgName = orgRefPanel.returnVO.name;
+					}else{
+						orgName = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				apuBox.addChild(apuRefPanel);
+				orgBox.addChild(orgRefPanel);
+				
+				addDataGridColumn();
+			}
+			
+			private function addDataGridColumn():void{
+				/*
+				<mx:DataGridColumn headerText="报文时间" dataField="rptdate" width="155"/>
+					<mx:DataGridColumn headerText="机号" dataField="acnum" width="100"/>
+					<mx:DataGridColumn headerText="APU号" dataField="asn" width="100" />
+					<mx:DataGridColumn headerText="行头" dataField="rowtitle" width="100" />
+					<mx:DataGridColumn headerText="控制字" dataField="acwx" width="100" />
+					<mx:DataGridColumn headerText="消息编号" dataField="msg_no" width="100" />
+					<mx:DataGridColumn headerText="机型" dataField="acmodel" width="100" />
+				*/
+				
+				var colArr:Array = new Array();
+				
+				var gridColumn:DataGridColumn = new DataGridColumn();
+				gridColumn.headerText = "报文时间";
+				gridColumn.dataField = "rptdate";
+				gridColumn.width = 155;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "机号";
+				gridColumn.dataField = "acnum";
+				gridColumn.width = 70;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "飞机执管基地";
+				gridColumn.dataField = "org";
+				gridColumn.width = 100;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "APU号";
+				gridColumn.dataField = "asn";
+				gridColumn.width = 70;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "行头";
+				gridColumn.dataField = "rowtitle";
+				gridColumn.width = 45;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "控制字";
+				gridColumn.dataField = "acwx";
+				gridColumn.width = 75;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "报文值";
+				gridColumn.dataField = "cwvalue";
+				gridColumn.width = 75;
+				colArr = colArr.concat(gridColumn);
+				
+				for(var i:int=1;i<=20;i++) {
+					
+					var bitCol:String = "bit"+i;
+					var bitDescCol:String = "bit_desc"+i;
+					var bitColorCol:String = "bit_warning"+i;
+					
+					var bitColumn:DataGridColumn= new DataGridColumn();
+					bitColumn.dataField = bitCol;
+					bitColumn.headerText = "BIT"+i;
+					bitColumn.width = 46;
+					
+					var render:ClassFactory = new ClassFactory(CellColorRender);
+					render.properties = {dataTipField:bitDescCol,dataField:bitCol,colorField:bitColorCol,colorFunc:getColor};					
+					bitColumn.itemRenderer = render;
+					
+					colArr = colArr.concat(bitColumn);
+				}
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "消息编号";
+				gridColumn.dataField = "msg_no";
+				gridColumn.width = 100;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "机型";
+				gridColumn.dataField = "acmodel";
+				gridColumn.width = 100;
+				colArr = colArr.concat(gridColumn);
+				
+				acwListPanel.columns = colArr;
+			}
+					
+			//获取染色值
+			private function getColor(dataField:String,value:Object,colorField:String):uint{
+				if(value[dataField] == "1" && value[colorField]== "1" ){
+					return 0xFF0000;//红色
+				}else if(value[dataField] == "1" && value[colorField]== "0"){
+					return 0x008000;//纯绿
+				}else{
+					return undefined;//白色
+				}
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql = "select d.id,d.acmodel,d.msg_no,d.acnum,d.rptno,d.rowtitle,d.acwx,d.cwvalue,l.asn,"
+						   + "(select name from b_organization org,b_aircraft air where org.id=air.baseorgid and air.aircraftsn=d.acnum) org,"
+						   + "l.date_utc,to_char(l.date_utc,'YYYY-MM-DD hh24:mi:ss') rptdate,"
+					       + "m.bit_desc1, d.bit1,m.bit_warning1, m.bit_desc2, d.bit2,m.bit_warning2, m.bit_desc3, d.bit3,m.bit_warning3, m.bit_desc4,d.bit4,m.bit_warning4, " 
+						   + "m.bit_desc5, d.bit5,m.bit_warning5, m.bit_desc6, d.bit6,m.bit_warning6, m.bit_desc7, d.bit7,m.bit_warning7, m.bit_desc8,d.bit8,m.bit_warning8,  "
+						   + "m.bit_desc9, d.bit9,m.bit_warning9, m.bit_desc10,d.bit10,m.bit_warning10,m.bit_desc11,d.bit11,m.bit_warning11,m.bit_desc12,d.bit12,m.bit_warning12,"
+						   + "m.bit_desc13,d.bit13,m.bit_warning13,m.bit_desc14,d.bit14,m.bit_warning14,m.bit_desc15,d.bit15,m.bit_warning15,m.bit_desc16,d.bit16,m.bit_warning16,"
+						   + "m.bit_desc17,d.bit17,m.bit_warning17,m.bit_desc18,d.bit18,m.bit_warning18,m.bit_desc19,d.bit19,m.bit_warning19,m.bit_desc20,d.bit20,m.bit_warning20,"
+						   + "d.recdatetime "
+						   + " from a_dfd_acw_decode d,a_dfd_acw_map m,a_dfd_a13_list l "
+						   + " where m.acmodel=d.acmodel and m.acwx=d.acwx and m.rptno=d.rptno "
+						   + " and l.msg_no=d.msg_no ";
+					
+				//querySql += " and l.msg_no = 102214580";//测试用
+				
+				if(apusn != null && apusn != ""){
+					querySql += " AND L.ASN='"+apusn+"'";
+				}
+				
+				if(orgName != null && orgName != ""){
+					querySql += " AND '"+orgName+"'=(select name from b_organization org, b_aircraft air where org.id = air.baseorgid and air.aircraftsn = d.acnum)";
+				}
+				
+				if(acnum != null && acnum != ""){
+					querySql += " AND L.ACNUM='"+acnum+"'";
+				}
+				//是否进行排序,如根据时间进行排序
+				querySql += " AND L.date_utc >= TO_DATE('" + time_begin.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				querySql += " AND L.date_utc <= TO_DATE('" + time_end.text + "','YYYY-MM-DD HH24:MI:SS') ";
+				
+				if( alterFilter.selected ) {
+					querySql += " AND (bit1*bit_warning1 +bit2*bit_warning2 +bit3*bit_warning3 +bit4*bit_warning4 +bit5*bit_warning5 +bit6*bit_warning6 +bit7*bit_warning7 +bit8*bit_warning8 +bit9*bit_warning9 +bit10*bit_warning10 ";
+					querySql += " +bit11*bit_warning11 +bit12*bit_warning12 +bit13*bit_warning13 +bit14*bit_warning14 +bit15*bit_warning15 +bit16*bit_warning16 +bit17*bit_warning17 +bit18*bit_warning18 +bit19*bit_warning19 +bit20*bit_warning20) > 0";
+				}
+				
+				if(sortChk.selected){
+					querySql += " ORDER BY L.date_utc DESC ";
+				}
+				
+				acwListPanel.sql = querySql;
+				acwListPanel.refresh();
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				acwListPanel.exportAllData("大发启动报文A13控制字");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间"/>
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="orgBox">
+				<mx:Label text="飞机执管基地"/>
+			</mx:HBox>
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:CheckBox id="sortChk" selected="false" label="时间倒序" toolTip="如果查询数据量大，排序性能会极大降低，慎用！"/>
+			<mx:CheckBox id="alterFilter" selected="false" label="告警过滤" toolTip="只显示告警数据，正常数据不显示"/>
+		</mx:HBox>
+		<mx:VBox label="APU小时循环统计" width="100%" height="100%">
+			<component:AdvDataGridPanel id="acwListPanel" width="100%" height="100%"  minColumnWidth="100"  searchCondVisible="false"
+										pageSize="200"
+										sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

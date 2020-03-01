@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" width="100%" height="100%" xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.component.CellColorRender;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsService:RemoteObject = new RemoteObject;
+			
+			private var baseOrgId:String ;//所属基地id
+			private var apumodel:String;
+			
+			private var periodSpan:Number;//预测周期
+			private var repairSpan:Number;//修理周期
+			private var backupNum:Number;//备件数量
+			private var pdiLimit:Number;//拆换门限值
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				apmsService.endpoint = endpoint;
+				apmsService.destination = ApmsUIConst.APUFUEL_SERVICE;
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//远程服务添加监听
+				apmsService.getApuChangeForecastData.addEventListener(ResultEvent.RESULT,getApuChangeForecastDataOkHandler);
+				apmsService.getApuChangeForecastData.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				//添加参照控件
+				var orgItemVO:TempletItemVO = new TempletItemVO();
+				orgItemVO.itemtype="参照";
+				orgItemVO.itemname="选择飞机属性基地";
+				orgItemVO.itemkey="ACNUM";
+				orgItemVO.refdesc="SELECT ID ID#,CODE CODE#,NAME FROM B_ORGANIZATION WHERE ORGLEVEL=1;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(orgItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取组织ID
+						baseOrgId = acRefPanel.returnVO.id;
+					}else{
+						baseOrgId = null;
+					}
+				});	
+				
+				var apItemVo:TempletItemVO = new TempletItemVO();
+				apItemVo.itemtype="参照";
+				apItemVo.itemname="选择APU型号";
+				apItemVo.itemkey="APUMODEL";
+				apItemVo.refdesc="SELECT SUBMODEL ID#,MODEL 父型号,SUBMODEL 型号 FROM B_APU_MODEL;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apItemVo,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取机场的3字代码
+						apumodel = apuRefPanel.returnVO.id;
+					}else{
+						apumodel = null;
+					}
+				});	
+				
+				baseBox.addChild(acRefPanel);
+				modelBox.addChild(apuRefPanel);
+				
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				periodSpan = new Number(periodSpanTxt.text);
+				repairSpan = new Number(repairSpanTxt.text);
+				backupNum = new Number(backupNumTxt.text);
+				pdiLimit = new Number(pdiLimitTxt.text);
+					
+				if( ( apumodel == null || apumodel =="") ){
+					SmartXMessage.show("必须选择APU型号和维修基地！");
+					return;
+				}
+				
+				var condObj:Object = new Object();
+				condObj["APUMODEL"] = apumodel;
+				condObj["BASEORGID"] = baseOrgId;
+				condObj["PERIODSPAN"] = periodSpan;
+				condObj["REPAIRSPAN"] = repairSpan;
+				condObj["BACKUPNUM"] = backupNum;
+				condObj["PDILIMIT"] = pdiLimit;
+				
+				var dataArr:ArrayCollection = new ArrayCollection();
+				listPanel.dataArray = dataArr;
+				
+				apmsService.getApuChangeForecastData(condObj);
+				OperatingTipUtil.startOperat("正在进行APU拆换预测计算....",this);
+			}
+			
+			private function getDataDateColor(dataField:String,value:Object,colorField:String):uint{
+				if( value[colorField] == "1" ){
+					return 0x00DC47; //绿色
+				}else{
+					return 0xFFFFFF;//白色
+				}
+			}
+			
+			//获取染色值
+			private function getColor(dataField:String,value:Object,colorField:String):uint{
+				if( value[colorField]== "1" ){
+					return 0xFF0000;//红色
+				}else{
+					var pdi:Number = new Number(value[dataField]);
+					if(pdi > pdiLimit){
+						return 0xFF9900;//橙色
+					}
+					return 0xFFFFFF;//白色
+				}
+			}
+			
+			private function getApuChangeForecastDataOkHandler(event:ResultEvent):void 
+			{
+				var res:Object = event.result;
+				
+				var exitflag:String = res["EXITFLAG"];				
+				if(exitflag != "1"){
+					var outputmsg:String = res["OUTPUTMSG"];
+					SmartXMessage.show("规划求解失败，可能无解，请调整预测参数,EXITFLAG="+ exitflag ,SmartXMessage.MESSAGE_WARN,outputmsg);
+				}
+				
+				var colArr:Array = new Array();
+				var gridColumn:DataGridColumn = new DataGridColumn();
+				gridColumn.headerText = "所属基地";
+				gridColumn.dataField = "BASEORGNAME";
+				gridColumn.width = 100;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "APU序号";
+				gridColumn.dataField = "ASN";
+				gridColumn.width = 66;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "机号";
+				gridColumn.dataField = "ACNUM";
+				gridColumn.width = 65;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "APU数据日期";
+				gridColumn.dataField = "LASTDATATIME";
+				gridColumn.width = 95;
+				colArr = colArr.concat(gridColumn);
+				
+				gridColumn = new DataGridColumn();
+				gridColumn.headerText = "计划起始日";
+				gridColumn.dataField = "CURDATE";
+				gridColumn.width = 95;
+				var render1:ClassFactory = new ClassFactory(CellColorRender);
+				render1.properties = {dataField:"CURDATE",dataTipField:"CURDATE",colorField:"LOWDATA",colorFunc:getDataDateColor};					
+				gridColumn.itemRenderer = render1;
+				
+				colArr = colArr.concat(gridColumn);
+				
+				var dataArr:ArrayCollection = res["DATALIST"];
+				var fobj:Object = dataArr.getItemAt(0); //取第一行数据
+				for(var i:int=1;i<=periodSpan;i++) {
+					
+					var colorField:String = "CHG"+i;
+					var dataTipField:String = "TIP"+i;
+					var dataFieldKey:String = "PDATA"+i;
+					
+					var dataColumn:DataGridColumn= new DataGridColumn();
+					dataColumn.dataField = dataFieldKey;
+					dataColumn.headerText = fobj["HEAD"+i];
+					dataColumn.width = 100;
+					
+					var render:ClassFactory = new ClassFactory(CellColorRender);
+					render.properties = {dataField:dataFieldKey,dataTipField:dataTipField ,colorField:colorField,colorFunc:getColor};					
+					dataColumn.itemRenderer = render;
+					
+					colArr = colArr.concat(dataColumn);
+				}
+				listPanel.columns = colArr;
+				listPanel.lockedColumnCount = 5;
+				
+				listPanel.dataArray = dataArr;
+				listPanel.refresh();
+				
+				OperatingTipUtil.endOperat();
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("拆换预测计算时异常！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				listPanel.exportAllData("APU更换计划预测");
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" horizontalGap="10" width="100%" height="30" paddingLeft="1">
+			<mx:HBox id="baseBox" >
+				<mx:Label text="所属基地"/>
+			</mx:HBox>
+			<mx:HBox id="modelBox">
+				<mx:Label text="APU型号"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="预测周期数:"/>
+				<mx:TextInput id="periodSpanTxt" restrict="0-9" width="36" text="12"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="修理周期数:"/>
+				<mx:TextInput id="repairSpanTxt" restrict="0-9" width="36" text="4" toolTip="APU修理需要的周期数"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="备件数量:"/>
+				<mx:TextInput id="backupNumTxt" restrict="0-9" width="36" text="2"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="PDI阀值:"/>
+				<mx:TextInput id="pdiLimitTxt" restrict="0-9\." width="48" text="1" />
+			</mx:HBox>
+			
+			<mx:Button label="拆换策略计算" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<mx:VBox label="APU拆换预测结果" width="100%" height="100%">
+			<component:AdvDataGridPanel id="listPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100"
+										dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+				<component:columns>
+					<mx:DataGridColumn headerText="所属基地" dataField="BASEORGNAME" width="100"/>
+					<mx:DataGridColumn headerText="APU序号" dataField="ASN" width="100"/>
+					<mx:DataGridColumn headerText="机号" dataField="ACNUM" width="100"/>
+					<mx:DataGridColumn headerText="APU数据日期" dataField="LASTDATATIME" width="100"/>
+					<mx:DataGridColumn headerText="数据预测日期" dataField="CURDATE" width="100"/>
+				</component:columns>
+			</component:AdvDataGridPanel>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Module>

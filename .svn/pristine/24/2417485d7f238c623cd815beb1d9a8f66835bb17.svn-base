@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="100%" height="100%" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A25报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*"
+			   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a25vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a25Data:Object;//译后报文内容		
+			
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ehr_ga_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ehr_ga_2:String;
+			
+			[Bindable]
+			private var ehr_ga_t1:String;
+			[Bindable]
+			private var ehr_air_t1:String;
+			[Bindable]
+			private var ehr_ga_t2:String;
+			[Bindable]
+			private var ehr_air_t2:String;
+			
+			[Bindable]
+			private var oiq1_s1:String;
+			[Bindable]
+			private var oiq2_s1:String;
+			[Bindable]
+			private var sd_s1:String;
+			[Bindable]
+			private var engai_s1:String;
+			[Bindable]
+			private var time_s1:String;
+			[Bindable]
+			private var oiq1_s2:String;
+			[Bindable]
+			private var oiq2_s2:String;
+			[Bindable]
+			private var sd_s2:String;
+			[Bindable]
+			private var engai_s2:String;
+			[Bindable]
+			private var time_s2:String;
+			[Bindable]
+			private var oik1_k0:String;
+			[Bindable]
+			private var oik2_k0:String;
+			[Bindable]
+			private var oip_1:String;
+			[Bindable]
+			private var oit_1:String;
+			[Bindable]
+			private var oiq_1:String;
+			[Bindable]
+			private var n2_1:String;
+			[Bindable]
+			private var p3_1:String;
+			[Bindable]
+			private var oik_1:String;
+			[Bindable]
+			private var oip_2:String;
+			[Bindable]
+			private var oit_2:String;
+			[Bindable]
+			private var oiq_2:String;
+			[Bindable]
+			private var n2_2:String;
+			[Bindable]
+			private var p3_2:String;
+			[Bindable]
+			private var oik_2:String;
+			
+			[Bindable]
+			private var time_v1:String;
+			[Bindable]
+			private var sd_v1:String;
+			[Bindable]
+			private var engai_v1:String;
+			[Bindable]
+			private var oilstb_v1:String;
+			
+			[Bindable]
+			private var oiq1_w1:String;
+			[Bindable]
+			private var oiq2_w1:String;
+			[Bindable]
+			private var time_w1:String;
+			[Bindable]
+			private var sd_w1:String;
+			[Bindable]
+			private var engai_w1:String;
+			[Bindable]
+			private var oik1_k1:String;
+			[Bindable]
+			private var oik2_k1:String;
+			
+			[Bindable]
+			private var oiq1_z1:String;
+			[Bindable]
+			private var oiq2_z1:String;
+			[Bindable]
+			private var time_z1:String;
+			[Bindable]
+			private var sd_z1:String;
+			[Bindable]
+			private var engai_z1:String;
+			[Bindable]
+			private var oiq1_z2:String;
+			[Bindable]
+			private var oiq2_z2:String;
+			[Bindable]
+			private var time_z2:String;
+			[Bindable]
+			private var sd_z2:String;
+			[Bindable]
+			private var engai_z2:String;
+			[Bindable]
+			private var oiq1_z3:String;
+			[Bindable]
+			private var oiq2_z3:String;
+			[Bindable]
+			private var time_z3:String;
+			[Bindable]
+			private var sd_z3:String;
+			[Bindable]
+			private var engai_z3:String;
+					
+			
+			private function creationComplete():void
+			{
+				a25Data = a25vo.dataMap;
+								
+				esn_1 = a25Data['esn_1']
+				ehrs_1 = a25Data['ehrs_1'];
+				ecyc_1 = a25Data['ecyc_1'];
+				ehr_ga_1 = a25Data['ehr_ga_1'];			
+				esn_2 = a25Data['esn_2']
+				ehrs_2 = a25Data['ehrs_2'];
+				ecyc_2 = a25Data['ecyc_2'];
+				ehr_ga_2 = a25Data['ehr_ga_2'];
+				
+				ehr_ga_t1 = a25Data['ehr_ga_t1'];
+				ehr_air_t1 = a25Data['ehr_air_t1'];
+				ehr_ga_t2 = a25Data['ehr_ga_t2'];
+				ehr_air_t2 = a25Data['ehr_air_t2'];
+				
+				oiq1_s1 = a25Data['oiq1_s1'];
+				oiq2_s1 = a25Data['oiq2_s1'];
+				sd_s1 = a25Data['sd_s1'];
+				engai_s1 = a25Data['engai_s1'];
+				var dtUtc_s1:Date = a25Data['time_s1'] as Date;
+				time_s1 = DateUtil.dateToString(dtUtc_s1,1);
+				oiq1_s2 = a25Data['oiq1_s2'];
+				oiq2_s2 = a25Data['oiq2_s2'];
+				sd_s2 = a25Data['sd_s2'];
+				engai_s2 = a25Data['engai_s2'];
+				var dtUtc_s2:Date = a25Data['time_s2'] as Date;
+				time_s2 = DateUtil.dateToString(dtUtc_s2,1);
+				
+				oik1_k0 = a25Data['oik1_k0'];
+				oik2_k0 = a25Data['oik2_k0'];
+				
+				oip_1 = a25Data['oip_1'];
+				oit_1 = a25Data['oit_1'];
+				oiq_1 = a25Data['oiq_1']; 
+				n2_1 = a25Data['n2_1']; 
+				p3_1 = a25Data['p3_1']; 
+				oik_1 = a25Data['oik_1']; 
+				
+				oip_2 = a25Data['oip_2'];
+				oit_2 = a25Data['oit_2'];
+				oiq_2 = a25Data['oiq_2']; 
+				n2_2 = a25Data['n2_2']; 
+				p3_2 = a25Data['p3_2']; 
+				oik_2 = a25Data['oik_2']; 
+				
+				var dtUtc_v1:Date = a25Data['time_v1'] as Date;
+				time_v1 = DateUtil.dateToString(dtUtc_v1,1);
+				sd_v1 = a25Data['sd_v1'];
+				engai_v1 = a25Data['engai_v1']; 
+				oilstb_v1 = a25Data['oilstb_v1']; 
+				oiq1_w1 = a25Data['oiq1_w1']; 
+				oiq2_w1 = a25Data['oiq2_w1'];
+				var dtUtc_w1:Date = a25Data['time_w1'] as Date;
+				time_w1 = DateUtil.dateToString(dtUtc_w1,1);
+				
+				sd_w1 = a25Data['sd_w1'];
+				engai_w1 = a25Data['engai_w1'];
+				oik1_k1 = a25Data['oik1_k1'];
+				oik2_k1 = a25Data['oik2_k1'];
+				
+				oiq1_z1 = a25Data['oiq1_z1'];
+				oiq2_z1 = a25Data['oiq2_z1'];
+				var dtUtc_z1:Date = a25Data['time_z1'] as Date;
+				time_z1 = DateUtil.dateToString(dtUtc_z1,1);
+				sd_z1 = a25Data['sd_z1'];
+				engai_z1 = a25Data['engai_z1'];
+				oiq1_z2 = a25Data['oiq1_z2'];
+				oiq2_z2 = a25Data['oiq2_z2'];
+				var dtUtc_z2:Date = a25Data['time_z2'] as Date;
+				time_z2 = DateUtil.dateToString(dtUtc_z2,1);
+				sd_z2 = a25Data['sd_z2'];
+				engai_z2 = a25Data['engai_z2'];
+				oiq1_z3 = a25Data['oiq1_z3'];
+				oiq2_z3 = a25Data['oiq2_z3'];
+				var dtUtc_z3:Date = a25Data['time_z3'] as Date;
+				time_z3 = DateUtil.dateToString(dtUtc_z3,1);
+				sd_z3 = a25Data['sd_z3'];
+				engai_z3 = a25Data['engai_z3'];
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A25 报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+	
+		<mx:HDividedBox id="contentBox" width="950" height="600"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="1">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT25" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="ENGINE OIL MONI (25)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a25vo}" height="190"/>
+			
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/><mx:Label text="EHR(G+A)" color="red" width="180"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="序号" color="blue" width="60"/><mx:Label text="小时" color="blue" width="60"/>
+	                <mx:Label text="循环" color="blue" width="60"/><mx:Label text="本航段发动机小时(空中+地面)" color="blue" width="180"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="CF" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ecyc_1}" width="60"/><mx:Label text="{ehr_ga_1}" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="CG" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ecyc_2}" width="60"/><mx:Label text="{ehr_ga_2}" width="100"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="TIME SINCE LAST OIL ADDING(Hrs)" fontWeight="bold" />
+				</mx:HBox>
+										
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="EHR(G+A)" color="red" width="180"/><mx:Label text="EHR*(AIR)" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="自上次加油累计时间" color="blue" width="180"/><mx:Label text="自上次加油累计时间" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="  (空中+地面)" color="blue" width="180"/><mx:Label text=" （空中）" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="TL" width="30"/><mx:Label text="{ehr_ga_t1}" width="180"/><mx:Label text="{ehr_air_t1}"  width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="TR" width="30"/><mx:Label text="{ehr_ga_t2}" width="180"/><mx:Label text="{ehr_air_t2}"  width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="5 SECONDS PER ENGINE START" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIQ1" color="red" width="70"/><mx:Label text="OIQ2" color="red" width="70"/>
+					<mx:Label text="SD" color="red" width="95"/><mx:Label text="ENGAI" color="red" width="85"/><mx:Label text="TIME" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油量" color="blue" width="70"/><mx:Label text="右发滑油量" color="blue" width="70"/>
+					<mx:Label text="发动机关车状态 " color="blue" width="95"/><mx:Label text="大于慢车状态 " color="blue" width="85"/><mx:Label text="采样数据时间" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S1" width="30"/><mx:Label text="{oiq1_s1}" width="70"/><mx:Label text="{oiq2_s1}"  width="70"/><mx:Label text="{sd_s1}"  width="95"/>
+					<mx:Label text="{engai_s1}"  width="85"/><mx:Label text="{time_s1}"  width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="TAXI OUT AT BOTH ENGINES IDLE" fontWeight="bold" />
+				</mx:HBox>		
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIQ1" color="red" width="70"/><mx:Label text="OIQ2" color="red" width="70"/>
+					<mx:Label text="SD" color="red" width="95"/><mx:Label text="ENGAI" color="red" width="85"/><mx:Label text="TIME" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油量" color="blue" width="70"/><mx:Label text="右发滑油量" color="blue" width="70"/>
+					<mx:Label text="发动机关车状态 " color="blue" width="95"/><mx:Label text="大于慢车状态 " color="blue" width="85"/><mx:Label text="采样数据时间" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="S2" width="30"/><mx:Label text="{oiq1_s2}" width="70"/><mx:Label text="{oiq2_s2}"  width="70"/><mx:Label text="{sd_s2}"  width="95"/>
+					<mx:Label text="{engai_s2}"  width="85"/><mx:Label text="{time_s2}"  width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIK1" color="red" width="180"/><mx:Label text="OIK2" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油修正量" color="blue" width="180"/><mx:Label text="右发滑油修正量" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="KO" width="30"/><mx:Label text="{oik1_k0}" width="180"/><mx:Label text="{oik2_k0}"  width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="DURING ENGINE CURISE" fontWeight="bold" />
+				</mx:HBox>	
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIP" color="red" width="60"/><mx:Label text="OIT" color="red" width="60"/>
+					<mx:Label text="OIQ" color="red" width="60"/><mx:Label text="N2" color="red" width="60"/><mx:Label text="P3" color="red" width="60"/>
+					<mx:Label text="OIK" color="red" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="滑油压力" color="blue" width="60"/><mx:Label text="滑油温度" color="blue" width="60"/>
+					<mx:Label text="滑油量" color="blue" width="60"/><mx:Label text="N2转速" color="blue" width="60"/><mx:Label text="P3压力" color="blue" width="60"/>
+					<mx:Label text="修正滑油压力" color="blue" width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T1" width="30"/><mx:Label text="{oip_1}" width="60"/><mx:Label text="{oit_1}"  width="60"/><mx:Label text="{oiq_1}"  width="60"/>
+					<mx:Label text="{n2_1}" width="60"/><mx:Label text="{p3_1}" width="60"/><mx:Label text="{oik_1}"  width="100"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="T2" width="30"/><mx:Label text="{oip_2}" width="60"/><mx:Label text="{oit_2}"  width="60"/><mx:Label text="{oiq_2}"  width="60"/>
+					<mx:Label text="{n2_2}" width="60"/><mx:Label text="{p3_2}" width="60"/><mx:Label text="{oik_2}"  width="100"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="SD" color="red" width="95"/><mx:Label text="ENGAI" color="red" width="70"/>
+					<mx:Label text="OILSTB" color="red" width="70"/><mx:Label text="TIME" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="发动机关车状态" color="blue" width="95"/><mx:Label text="油门杆状态" color="blue" width="70"/>
+					<mx:Label text="发动机稳态 " color="blue" width="70"/><mx:Label text="采样数据时间 " color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="V1" width="30"/><mx:Label text="{sd_v1}"  width="95"/><mx:Label text="{engai_v1}" width="70"/>
+					<mx:Label text="{oilstb_v1}" width="70"/><mx:Label text="{time_v1}" width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="TAXI IN 5 SECOND PER ENGIN SHUT" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIQ1" color="red" width="70"/><mx:Label text="OIQ2" color="red" width="70"/>
+					<mx:Label text="SD" color="red" width="90"/><mx:Label text="ENGAI" color="red" width="80"/><mx:Label text="TIME" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油量" color="blue" width="70"/><mx:Label text="右发滑油量" color="blue" width="70"/>
+					<mx:Label text="发动机关车状态" color="blue" width="90"/><mx:Label text="大于慢车状态" color="blue" width="80"/><mx:Label text="采样数据时间" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="W1" width="30"/><mx:Label text="{oiq1_w1}" width="70"/><mx:Label text="{oiq2_w1}" width="70"/>
+					<mx:Label text="{sd_w1}" width="90"/><mx:Label text="{engai_w1}"  width="80"/><mx:Label text="{time_w1}" width="180"/>
+				</mx:HBox>			
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIK1" color="red" width="180"/><mx:Label text="OIK2" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油修正量" color="blue" width="180"/><mx:Label text="右发滑油修正量" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="KI" width="30"/><mx:Label text="{oik1_k1}" width="180"/><mx:Label text="{oik2_k1}"  width="180"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="POST ENGINE SHUT DOWN FOR 3 MINs 1 MIN INTERVAL (3 TIMEs)" fontWeight="bold" />
+				</mx:HBox>
+				
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="OIQ1" color="red" width="70"/><mx:Label text="OIQ2" color="red" width="70"/>
+					<mx:Label text="SD" color="red" width="90"/><mx:Label text="ENGAI" color="red" width="80"/><mx:Label text="TIME" color="red" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="左发滑油量" color="blue" width="70"/><mx:Label text="右发滑油量" color="blue" width="70"/>
+					<mx:Label text="发动机关车状态" color="blue" width="90"/><mx:Label text="大于慢车状态" color="blue" width="80"/><mx:Label text="采样数据时间" color="blue" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="Z1" width="30"/><mx:Label text="{oiq1_z1}" width="70"/><mx:Label text="{oiq2_z1}" width="70"/>
+					<mx:Label text="{sd_z1}" width="90"/><mx:Label text="{engai_z1}"  width="80"/><mx:Label text="{time_z1}" width="180"/>
+				</mx:HBox>	
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="Z2" width="30"/><mx:Label text="{oiq1_z2}" width="70"/><mx:Label text="{oiq2_z2}" width="70"/>
+					<mx:Label text="{sd_z2}" width="90"/><mx:Label text="{engai_z2}"  width="80"/><mx:Label text="{time_z2}" width="180"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="Z3" width="30"/><mx:Label text="{oiq1_z3}" width="70"/><mx:Label text="{oiq2_z3}" width="70"/>
+					<mx:Label text="{sd_z3}" width="90"/><mx:Label text="{engai_z3}"  width="80"/><mx:Label text="{time_z3}" width="180"/>
+				</mx:HBox>
+																										   
+			
+			</mx:VBox>
+		</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a25Data.acmodel}" rptno="A25"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

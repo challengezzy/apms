@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="1000" height="560"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="运行提示单"
+					   initialize="initializeHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" xmlns:component="com.apms.flex.component.*" xmlns:bill="com.cool.components.bill.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.event.BillListPanelEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleComboxItemVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var acid:String = "XXX";
+			
+			[Bindable]
+			private var condStr:String = " 1=2 ";
+			
+			public function setAcnumFltpk(_acnum:String,fltpk_a:String,fltpk_d:String):void{
+				this.acid = _acnum;
+				
+				
+				var fltidCondStr:String = "-1";
+				if(fltpk_a != null && fltpk_a != ""){
+					fltidCondStr += "," +fltpk_a + "";
+					
+				}
+				if(fltpk_d != null && fltpk_d != ""){
+					fltidCondStr += "," +fltpk_d + "";
+					
+				}
+				
+				condStr = " flightid =ANY("+fltidCondStr+" )";
+				if(listPanel != null && listPanel.isInitComplete == true ){
+					listPanel.query(false,false,true);
+					clearTextContent();
+				}
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				listPanel.addEventListener(BillListPanelEvent.INITCOMPLETE,onBillListInitCompleteHandler);
+				
+			}
+			
+			private function onBillListInitCompleteHandler(event:BillListPanelEvent):void{
+				listPanel.dataGrid.addEventListener(ListEvent.CHANGE,onListPanelItemClickHandler);
+			}
+			
+			private function onListPanelItemClickHandler(event:ListEvent):void{
+				var selectedObj:Object = listPanel.getSelectedRowValue();
+				
+				txtRemindDesc.text = selectedObj["REMINDDESC"];
+				txtFeedback.text = selectedObj["FEEDBACK"];
+				txtDealer.text = selectedObj["DEALER"];
+				txtComments.text = selectedObj["COMMENTS"];
+				
+				var statesvo:SimpleComboxItemVO =  selectedObj["STATUS"] as SimpleComboxItemVO;
+				var status:String = statesvo.id;
+				
+				if(status == "1"){ //已处理
+					dateDeal.text = selectedObj["DEALTIME"];
+					addBtn.enabled = false;
+				}else{
+					dateDeal.text = DateUtil.dateToString(new Date(),1);
+					addBtn.enabled = true;
+				}
+			}
+			
+			private function clearTextContent():void{
+				txtFeedback.text = "";
+				txtRemindDesc.text = "";
+				txtDealer.text = "";
+				txtComments.text = "";
+				dateDeal.nowTime = new Date();
+			}
+			
+			protected function addBtn_clickHandler(event:MouseEvent):void
+			{
+				var insObj:Object = listPanel.getSelectedRowValue();
+				if(insObj == null ){
+					SmartXMessage.show("请选择一条提醒信息!");
+					return;
+				}
+				
+				if(txtDealer.text == null || txtDealer.text == ""){
+					SmartXMessage.show("处理人不能为空!");
+					return;
+				}
+				if(dateDeal.text == null || dateDeal.text == ""){
+					SmartXMessage.show("处理时间不能为空!");
+					return;
+				}
+				
+				var tipObj:Object = new Object;
+				tipObj["ID"] = insObj["ID"];
+				tipObj["FLIGHTID"] = insObj["FLIGHTID"];
+				tipObj["REMINDID"] = insObj["REMINDID"];
+				tipObj["DEALER"] = txtDealer.text;
+				tipObj["COMMENTS"] = txtComments.text;
+				tipObj["DEALTIME"] = dateDeal.text;
+
+				srvFlight.flightRemindConfirm(user, tipObj);
+				OperatingTipUtil.startOperat("确认数据保存中...");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightRemindConfirm(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("信息确认失败！",SmartXMessage.MESSAGE_ERROR, event.fault.faultString);
+			}	
+			
+			private function result4flightRemindConfirm(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("提醒信息确认成功！");
+				listPanel.query(false,false,true);
+				clearTextContent();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightRemindConfirm" result="result4flightRemindConfirm(event)" 
+					   fault="fault4flightRemindConfirm(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%" paddingLeft="5" paddingRight="5">
+		<mx:VDividedBox width="100%" height="100%">
+			<bill:BillListPanel id="listPanel" height="210" width="100%" initQueryCondition="{condStr}" showDataAfterInit="true"
+								cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="200"
+								showQuickQueryPanel="false" showLoadingWindow="true" showPageBox="false"
+								endpoint="{endpoint}" templetCode="T_REMINDINS_FLIGHTMONITOR" >
+			</bill:BillListPanel>
+			<mx:HBox width="100%" height="100%" >
+				<mx:VBox width="100%" height="100%">
+					<mx:HBox width="100%" verticalAlign="middle">
+						<mx:Label text="提示信息" width="60" />
+						<mx:TextArea id="txtRemindDesc" width="400" height="100" editable="false"/>
+					</mx:HBox>
+					<mx:HBox width="100%" verticalAlign="middle">
+						<mx:Label text="措施" width="60" />
+						<mx:TextArea id="txtFeedback" width="400" height="80" editable="false"/>
+					</mx:HBox>
+				</mx:VBox>
+				<mx:VRule height="95%" />
+				<mx:VBox width="100%" height="100%" paddingLeft="20">
+					<mx:HBox width="100%" height="35" verticalAlign="middle">
+						<mx:Label text="处理时间" width="60" />
+						<component:DateTimeChooser id="dateDeal" editable="true" formatterType="1"/>
+					</mx:HBox>
+					<mx:HBox width="100%" height="35" verticalAlign="middle">
+						<mx:Label text="处理人" width="60" />
+						<mx:TextInput id="txtDealer" width="140"  />
+					</mx:HBox>
+					<mx:HBox width="100%" verticalAlign="middle">
+						<mx:Label text="处理说明" width="60" />
+						<mx:TextArea id="txtComments" width="250" height="100"/>
+					</mx:HBox>
+					<s:Spacer height="10" />
+					<mx:HBox width="100%" >
+						<mx:Button icon="{AssetsFileLib.okIcon}"  id="addBtn" label="提醒项通报并确认" click="addBtn_clickHandler(event)" />
+					</mx:HBox>
+				</mx:VBox>
+			</mx:HBox>
+		</mx:VDividedBox>
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.closeIcon}"  label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

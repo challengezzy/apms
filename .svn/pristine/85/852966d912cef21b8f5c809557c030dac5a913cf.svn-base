@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  xmlns:component="com.apms.flex.component.*"
+		  xmlns:core="smartx.flex.components.core.*"
+		  initialize="initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.StringUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			[Bindable]
+			private var startDate:Date;
+			[Bindable]
+			private var endDate:Date;
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			public var isrelated:ArrayCollection;
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				var today:Date=new Date();
+				startDate=DateUtil.moveDay(today,-2);
+				endDate=today;
+				isrelated=new ArrayCollection([{val:""},{val:"是"},{val:"否"}]);
+			}
+			protected function onArrFlightQuery():void{
+				
+				var chgFilter:String =" REPORTTIME>=TO_DATE('"+start_date.text+"','YYYY-MM-DD hh24:mi:ss') AND REPORTTIME<=TO_DATE('"+end_date.text+"','YYYY-MM-DD hh24:mi:ss')";
+				if(StringUtil.StringReplaceAll(baseord.text," ","")!=""){
+					chgFilter=chgFilter+" and baseorg like '%"+baseord.text+"%'";
+				}
+				if(StringUtil.StringReplaceAll(airline.text," ","")!=""){
+					chgFilter=chgFilter+" and airline like '%"+airline.text+"%'";
+				}
+				if(StringUtil.StringReplaceAll(flightno.text," ","")!=""){
+					chgFilter=chgFilter+" and flightno='"+flightno.text+"'";
+				}
+				if(StringUtil.StringReplaceAll(acnum.text," ","")!=""){
+					chgFilter=chgFilter+" and acnum='"+acnum.text+"'";
+				}
+				if(StringUtil.StringReplaceAll(atano_major.text," ","")!=""){
+					chgFilter=chgFilter+" and atano_major='"+atano_major.text+"'";
+				}
+				if(isrelate.textInput.text!=""){
+					if(isrelate.textInput.text=="是"){
+						chgFilter=chgFilter+" and isrelated=1";
+					}else{
+						chgFilter=chgFilter+" and isrelated=0";
+					}
+				}
+				flrListPanel.initQueryCondition = chgFilter;
+				flrListPanel.query(false,false);
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		
+	</fx:Declarations>
+	<mx:VBox height="100%" width="100%">
+		<mx:HBox width="100%" verticalAlign="middle" >
+			<mx:Label text="所属基地:" width="{sixWordsWidth.width}"   />
+			<s:TextInput id="baseord"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="所属航空公司:"  id="sixWordsWidth"   />
+			<s:TextInput id="airline"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="航班号:"   />
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="机号:"   />
+			<s:TextInput id="acnum"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="主章节:"   />
+			<s:TextInput id="atano_major"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="是否关联航班ID"   />
+			<s:ComboBox id="isrelate" dataProvider="{isrelated}" labelField="val" width="50"/>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:Label text="开始报文时间:"   />
+			<component:DateTimeChooser id="start_date" nowTime="{startDate}"  formatterType="1"/>
+			<s:Spacer width="35"/>
+			<mx:Label text="结束报文时间:"   />
+			<component:DateTimeChooser id="end_date" nowTime="{endDate}"  formatterType="1"/>
+			<s:Spacer width="584"/>
+			<mx:Button label="查询" width="100" click="onArrFlightQuery()" />
+		</mx:HBox>
+		<core:BillListPanel id="flrListPanel" width="100%" height="100%" endpoint="{endpoint}" showPageBox="false" rownumWidth="30"
+							templetCode="T_V_A_CFD_FAULT" debugMode="{debugMode}" showQuickQueryPanel="false"
+							cacheMode="{BillListPanel.CACHE_MODE_NO}" rowCountPerPage="400">
+		</core:BillListPanel>
+		
+	</mx:VBox>
+</mx:Module>

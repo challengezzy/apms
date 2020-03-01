@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   width="100%" height="100%" allowClose="true" allowDrag="true" allowMinimize="true"  allowResize="true"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"   title="自定义列表"
+					   creationComplete="creationCompleteHandler(event)" 
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   close="PopUpManager.removePopUp(this)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.XMLListCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			private var so:SharedObject;
+			[Bindable]
+			private var columnList:XMLListCollection = new XMLListCollection();
+			[Bindable]
+			private var content:String = "初始内容";
+			private var initDgColumns:Array;
+			
+			public var loginname:String ="";//当前登录用户名 
+			public var flightDgRefresh:Function= function():void{}; 
+			private var isFirstSet:Boolean = true;
+			[Bindable]
+			public var contentXml:XML = <root>
+							<login>
+								<!-- 记录登录用户的信息，便于自动登录 -->
+								<username value=""/>
+								<password value=""/>
+							</login>
+							<datagrid_set>
+								<columns>
+									<!-- 记录每个列的顺序、宽度、和是否显示  -->
+									<column headerText="分公司" dataField="co_seq_name" width="50" visible="false" />
+									<column headerText="航班日期" dataField="flt_date_str" width="90" visible="true"/>
+									<column headerText="航班号" dataField="flightno_union" width="130" visible="true"/>
+									<column headerText="机号" dataField="acnum" width="65" visible="true"/>
+									<column headerText="机型" dataField="acmodel" width="90"  visible="true"/>
+									<column headerText="所属基地" dataField="baseorg" width="100" visible="true"/>
+									<column headerText="经停航站" dataField="apt_union" width="140"  visible="true"/>
+									<column headerText="维护" dataField="maintaintype" width="55"  visible="true"/>
+									<column headerText="次日外站" dataField="outsidefornight" width="65" visible="true"/>
+									<column headerText="计划到达/起飞" dataField="stda" width="120"  visible="true"/>
+									<column headerText="机位" dataField="ac_stop" width="45"  visible="true"/>
+									<column headerText="预达" dataField="t_eta" width="65"  visible="true"/>
+									<column headerText="CDM" dataField="t_cdmout" width="65"  visible="true"/>
+									<column headerText="预起" dataField="t_etd" width="65"  visible="true"/>
+									<column headerText="到达剩余" dataField="remain_min_arr" width="55" visible="true"/>
+									<column headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc" visible="true"/>
+									<column headerText="工作状态" dataField="workforce_state_name" width="70"  visible="true"/>
+									<column headerText="DD" dataField="flag_ddm" width="40"  visible="true"/>
+									<column headerText="提醒单" dataField="flag_tip" width="55"  visible="true"/>
+									<column headerText="故障" dataField="ishavefault" width="70"   visible="true"/>
+									<column headerText="告警" dataField="ishavewarning" width="70"  visible="true"/>
+									<column headerText="放行人" dataField="release_user" width="70"  visible="true"/>
+									<column headerText="维修人" dataField="maintain_user" width="70"  visible="true"/>
+									<column headerText="勤务人" dataField="duty_user" width="70"  visible="true"/>
+									<column headerText="接机人" dataField="guardian_user" width="70"  visible="true"/>
+									<column headerText="出港人" dataField="handover_user" width="70"  visible="true"/>
+									<column headerText="接机组" dataField="pickupcrew_user" width="70"  visible="true"/>
+									<column headerText="清洁" dataField="clean_user" width="70"  visible="true"/>
+									<column headerText="污水车" dataField="sewage_user" width="70"  visible="true"/>
+									<column headerText="实际到达" dataField="t_in_time" width="65" visible="true"/>
+									<column headerText="实际起飞" dataField="t_out_time" width="65" visible="true"/>
+									<column headerText="电源车" dataField="auto_power" width="70" visible="true" />
+									<column headerText="气源车" dataField="auto_airsrc" width="70" visible="true"/>
+									<column headerText="空调车" dataField="auto_aircond" width="70" visible="true"/>
+									<column headerText="拖车" dataField="auto_trailer" width="70" visible="true"/>
+									<column headerText="除雪车" dataField="auto_snowrm" width="70" visible="true"/>
+									<column headerText="客梯车" dataField="auto_lift" width="70" visible="true"/>
+									<column headerText="测量气压" dataField="airpress_user" width="70" visible="true"/>
+									<column headerText="通电" dataField="poweron_user" width="70" visible="true"/>
+									<column headerText="双签" dataField="sign2_user" width="70" visible="true"/>
+									<column headerText="区域负责" dataField="area_user" width="70" visible="true"/>
+									<column headerText="维修工作" dataField="mtwork" width="80" visible="true"/>
+									<column headerText="起飞剩余" dataField="remain_min_dep" width="55" visible="true"/>
+									<column headerText="OMIS备注" dataField="memo" width="180" visible="true"/>
+									<column headerText="航班备注" dataField="flightdesc" width="180" visible="true"/>
+								</columns>
+							</datagrid_set>
+							</root>;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				so = SharedObject.getLocal("flightColumnSet"+loginname);
+				
+				if(so.data.ContentXml == null){
+					columnList.source = contentXml.datagrid_set.columns.column;
+				}else{
+					contentXml = so.data.ContentXml as XML;
+					columnList.source = contentXml.datagrid_set.columns.column;
+				}
+			}
+			
+			protected function saveBtn_clickHandler(event:MouseEvent):void
+			{
+				so.data.ContentXml = contentXml;
+				so.flush();
+				flightDgRefresh();
+			}
+			
+			protected function closeBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function clearBtn_clickHandler(event:MouseEvent):void
+			{
+				so.clear();
+				so.flush();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:DataGrid width="600" height="500" editable="true" dataProvider="{columnList}"
+				 dragEnabled="true" dropEnabled="true" dragMoveEnabled="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="数据字段" editable="false" dataField="@dataField" width="120" />
+			<mx:DataGridColumn headerText="显示名称" editable="true" dataField="@headerText" width="60" />
+			<mx:DataGridColumn headerText="宽度" editable="true" dataField="@width" width="60"/>
+			<mx:DataGridColumn headerText="是否显示" editable="true" dataField="@visible" width="80"
+							   rendererIsEditor="true" editorDataField="value" >
+				<mx:itemRenderer>
+					<fx:Component>
+						<mx:HBox horizontalAlign="center" width="100%" 
+								 horizontalScrollPolicy="off" verticalScrollPolicy="off">
+							<fx:Script>
+								<![CDATA[
+									public function get value():String
+									{
+										return String( data.@visible );
+									}
+								]]>
+							</fx:Script>
+							
+							<mx:CheckBox id="isShowCheckBox" selected="{String(data.@visible)=='TRUE'||String(data.@visible)=='true'}"
+										 change="{data.@visible=isShowCheckBox.selected?'true':'false'}"/>
+						</mx:HBox>
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:HBox horizontalAlign="center" width="100%">
+		<mx:Button label="保存" id="saveBtn" click="saveBtn_clickHandler(event)" />
+		<mx:Button label="关闭" id="closeBtn" click="closeBtn_clickHandler(event)" />
+		<mx:Button label="清除缓存" id="clearBtn" click="clearBtn_clickHandler(event)" />
+	</mx:HBox>
+</containers:SuperPanel>

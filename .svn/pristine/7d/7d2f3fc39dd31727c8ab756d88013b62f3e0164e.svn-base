@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.apms.flex.component.*"
+		   initialize="init()"
+		  width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.*;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.hurlant.eval.ast.Type;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Text;
+			import mx.controls.TextArea;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var apmsService:RemoteObject ;
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			
+			[Bindable]
+			public var users:ArrayCollection=new ArrayCollection();
+			[Bindable]
+			private var prvVar4dp4user:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var initStartDate:Date=new Date();
+			[Bindable]
+			private var initStartDateAfter7:Date;
+			//记录第一行表头的数组
+			public var fields:Array = null;
+			public var dateNum:int;
+			public var startDate:Date; 
+			/**
+			 * 初始化信息
+			 * */
+			public function init():void{
+				initStartDateAfter7=DateUtil.moveDay(initStartDate,7);
+				apmsService = new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				apmsService.getCrewSchedulingUser.addEventListener(ResultEvent.RESULT,selectedUserDataHandler);
+				apmsService.getCrewSchedulingUser.addEventListener(FaultEvent.FAULT,faultHandlerGetUserData);
+				
+				
+
+			}
+			/**
+			 * 点击回车响应查询按钮
+			 */
+			public function _keyDownHandler(evet:KeyboardEvent):void{
+				if(evet.keyCode == Keyboard.ENTER){
+					queryForCrewSchling();
+				}
+
+			}
+		     /**
+			 * 初始化界面
+			 */
+			public function onclear():void{
+				this.userDg.initHeadText(dateNum);
+				userDg.base.visible=true;
+				this.users.removeAll();
+				dateNum=0;
+			}
+			/**
+ 			* 查询人员排班
+ 			*/			
+			public function queryForCrewSchling():void{
+				onclear();//每次查询时候都要先初始化清理一下DataGrid
+				if(startDa.text==null||endDa.text==null||startDa.text==""||endDa.text==""){
+					SmartXMessage.show("请设置查询日期范围！");
+				}else if(DateUtil.stringToDateDay(startDa.text).valueOf()>DateUtil.stringToDateDay(endDa.text).valueOf()){
+					SmartXMessage.show("开始日期比结束日期大！");
+				}else if(DateUtil.moveDay(DateUtil.stringToDateDay(startDa.text),59).valueOf()<=DateUtil.stringToDateDay(endDa.text).valueOf()){
+					SmartXMessage.show("查询日期范围最大为60天！");
+				}else{
+					var airportName:String=airportname.text;
+					var orgid_lineName:String=deptname.text;
+					var userName:String=username.text;
+					apmsService.getCrewSchedulingUser(airportName,orgid_lineName,userName,startDa.text,endDa.text);
+					OperatingTipUtil.startOperat("查询中");
+				}
+			}
+			/**
+			 * 查询人员排班错误结果
+			 */			
+			public function faultHandlerGetUserData(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			/**
+			 * 查询人员排班正确结果
+			 */			
+			public function selectedUserDataHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				this.users.removeAll();//先清除dataProvider中的数据
+				startDate=DateUtil.stringToDateDay(startDa.text);//设置dataGrid的开始日期
+				userDg.startDate=startDate;
+				var endDate:Date=DateUtil.stringToDateDay(endDa.text);
+				var crewSchedulingObject:Array=event.result as Array;
+				dateNum=DateUtil.compareTwoDates(startDate,endDate)+1;
+				var rowIdx:int;
+				var userDataVo:UserDataVo = null;
+				for( rowIdx=0; rowIdx<crewSchedulingObject.length; rowIdx=rowIdx+1 )
+				{
+					userDataVo = new UserDataVo();
+					var obj:Object = crewSchedulingObject[rowIdx].dataMap;
+					userDataVo.airport = obj.airportname;
+					userDataVo.org = obj.deptname;
+					userDataVo.base=obj.baseorgname;
+					userDataVo.name_ = obj.username;
+					var date:Date=startDate;
+					for(var j:int=0;j<dateNum;j++){
+						userDataVo.pubFun4setPeriodDataValue(j,obj[DateUtil.dateToString(date,2)]);
+						date=DateUtil.moveDay(date,1);
+					}
+					users.addItem(userDataVo);
+				}
+//				if(""!=airportname.text&&""==deptname.text&&""==username.text&&crewSchedulingObject.length==0){
+//					SmartXMessage.show("所属机场\""+airportname.text+"\"不存在！");
+//				}else if(""!=deptname.text&&""==airportname.text&&""==username.text&&crewSchedulingObject.length==0){
+//					SmartXMessage.show("所属部门\""+deptname.text+"\"不存在！");
+//				}else if(""!=username.text&&""==airportname.text&&""==deptname.text&&crewSchedulingObject.length==0){
+//					SmartXMessage.show("该人员\""+username.text+"\"在排班表中不存在！");
+//				}else 
+				if(crewSchedulingObject.length<=0){
+					SmartXMessage.show("未检索到数据！");
+				}else if(crewSchedulingObject.length>0){
+					userDg.base.visible=true;
+					userDg.setHeadText(dateNum);
+				    btnClear.enabled=true;
+					btnExport.enabled=true;
+				}
+				
+			}
+			/**
+			 * 复制DataGrid数据
+			 */
+			public function copy():void{
+				this.userDg.setHeadTextWhenExport(dateNum);
+				System.setClipboard( DataListExportUtil.generateCsvData(userDg, "\t") );
+				userDg.setHeadText(dateNum);
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="所属机场"/><s:TextInput id="airportname" keyDown="_keyDownHandler(event)"/>
+			<mx:Label text="所属部门"/><s:TextInput id="deptname" keyDown="_keyDownHandler(event)"/>
+			<mx:Label text="姓名"/><s:TextInput id="username" keyDown="_keyDownHandler(event)"/>
+			<mx:Label text="开始日期"/><component:DateTimeChooser id="startDa" nowTime="{initStartDate}"   formatterType="2"/>
+			<mx:Label text="结束日期"/><component:DateTimeChooser id="endDa" nowTime="{initStartDateAfter7}"  formatterType="2"/>
+		   <mx:Button label="查询" id="btnQuery" click="queryForCrewSchling()" />
+			<mx:Button label="清除"   id="btnClear" click="onclear()" enabled="false"/> 
+			<!--<mx:Button label="保存"   id="btnSave" click="saveCrewSchling()" enabled="false"/> -->
+			<mx:Button label="复制"   id="btnExport" click="copy()" enabled="false"/>
+		</mx:HBox>
+		<component:CrewSchedulingDataGrid id="userDg" width="100%" height="100%"
+										  dataProvider="{users}" />
+	</mx:VBox>
+</mx:Module>

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   layout="vertical" width="600" height="300"
+					   title="航班变动信息过滤条件"
+					   allowClose="false" allowDrag="true" allowResize="true"
+					   creationComplete="creationCompleteHandler(event)"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var condStr:String = " 1=1 ";
+			
+			public var okFunc:Function = function():void{ };
+			
+			public function get conditionStr():String{
+				return condStr;
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			public function getConditionStr():Boolean{
+				condStr = " 1=1 ";
+				
+				//航班日期
+				if(rbFltDate1.selected){
+					condStr += " and flightdate <=trunc(sysdate) ";
+				}else if(rbFltDate2.selected){
+					condStr += " and flightdate <=trunc(sysdate+1) ";
+				}else if(rbFltDate3.selected){
+					condStr += " and flightdate <=trunc(sysdate+2) ";
+				}else{
+					//默认当天
+					condStr += " and flightdate =trunc(sysdate) ";
+				}
+				
+				
+				if(cbBc0.selected && cbBc0.selected){
+					//两个条件均选，不过滤
+				}else{
+					if(cbBc1.selected){
+						condStr += " and isboardcast =0 ";
+					}else{
+						condStr += " and isboardcast =1 ";
+					}
+					
+				}
+				
+				//飞机号
+				if(txtAcid.text != null && txtAcid.text != ""){
+					condStr += " and acnum like '%"+txtAcid.text+"%' ";
+				}
+				
+				//航班号
+				if(txtFltno.text != null && txtFltno.text != ""){
+					condStr += " and flightno like '%"+txtFltno.text+"%' ";
+				}
+				
+				//飞机型号
+				if(txtAcmodel.text != null && txtAcmodel.text != ""){
+					condStr += " and acmodel = '"+txtAcmodel.text+"' ";
+				}
+				//时间限制
+				if(txtMin.text == null || txtMin.text == ""){
+					SmartXMessage.show("时间限制数值不能为空！");
+					return false;
+				}
+				var minLimit:Number = new Number(txtMin.text);
+				condStr += " and changetime >=  sysdate-"+ minLimit +"/1440 ";
+				
+				//变动类型限制
+				//飞机状态
+				var chgTypeStr:String = "-1";
+				if(cbChgType200.selected){
+					chgTypeStr += ",200";
+				}
+				if(cbChgType10.selected){
+					chgTypeStr += ",10";
+				}
+				if(cbChgType20.selected){
+					chgTypeStr += ",20";
+				}
+				if(cbChgType25.selected){
+					chgTypeStr += ",25";
+				}
+				if(cbChgType30.selected){
+					chgTypeStr += ",30";
+				}
+				if(cbChgType40.selected){
+					chgTypeStr += ",40";
+				}
+				if(cbChgType45.selected){
+					chgTypeStr += ",45";
+				}
+				if(cbChgType50.selected){
+					chgTypeStr += ",50";
+				}
+				if(cbChgType55.selected){
+					chgTypeStr += ",55";
+				}
+				if(cbChgType300.selected){
+					chgTypeStr += ",300";
+				}
+				if(cbChgType60.selected){
+					chgTypeStr += ",60";
+				}
+				if(cbChgType70.selected){
+					chgTypeStr += ",70";
+				}
+				if(cbChgType100.selected){
+					chgTypeStr += ",100";
+				}
+				if(cbChgType400.selected){
+					chgTypeStr += ",400";
+				}
+				if(cbChgType450.selected){
+					chgTypeStr += ",450";
+				}
+				
+				if(chgTypeStr == "-1"){
+					SmartXMessage.show("必须选择至少一个变动类型!");
+					return false;
+				}
+				condStr += " and changetype in ("+ chgTypeStr +")";
+				
+				return true;
+			}
+			
+			protected function cbChgTypeAll_changeHandler(event:Event):void
+			{
+				cbChgType200.selected = cbChgTypeAll.selected;
+				cbChgType10.selected = cbChgTypeAll.selected;
+				cbChgType20.selected = cbChgTypeAll.selected;
+				cbChgType25.selected = cbChgTypeAll.selected;
+				cbChgType30.selected = cbChgTypeAll.selected;
+				cbChgType40.selected = cbChgTypeAll.selected;
+				cbChgType45.selected = cbChgTypeAll.selected;
+				cbChgType50.selected = cbChgTypeAll.selected;
+				cbChgType55.selected = cbChgTypeAll.selected;
+				cbChgType300.selected = cbChgTypeAll.selected;
+				cbChgType60.selected = cbChgTypeAll.selected;
+				cbChgType70.selected = cbChgTypeAll.selected;
+				cbChgType100.selected = cbChgTypeAll.selected;
+				cbChgType400.selected = cbChgTypeAll.selected;
+				cbChgType450.selected = cbChgTypeAll.selected;
+				
+			}
+			
+			private function checkCondtionValid():Boolean{
+				
+				if(txtMin.text == null || txtMin.text == ""){
+					SmartXMessage.show("分钟跨度不能为空!");
+					return false;
+				}
+				if(getConditionStr()){
+					return true;
+				}else{
+					return false;
+				}
+			}
+			
+			public function onEnterKeyDownHandler(evet:KeyboardEvent):void{
+				if(evet.keyCode == Keyboard.ENTER){
+					onOk_clickHandler();
+				}
+				
+			}
+			
+			protected function onOk_clickHandler():void
+			{
+				//检验选择条件的合法性
+				if( !checkCondtionValid()){
+					return;
+				}
+				
+				PopUpManager.removePopUp(this);
+				
+				if(okFunc != null){
+					okFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:RadioButtonGroup id="rbGroupFltDate" />
+	</fx:Declarations>
+	<mx:VBox id="queryBox" width="100%" height="100%" verticalAlign="middle" borderStyle="solid" paddingBottom="5" paddingLeft="10" paddingRight="5">
+		<mx:HBox verticalAlign="middle" >
+			<mx:Label text="航班日期" width="80"/>
+			<mx:RadioButton id="rbFltDate1" label="当天" group="{rbGroupFltDate}" />
+			<mx:RadioButton id="rbFltDate2" label="两天" selected="true" group="{rbGroupFltDate}" />
+			<mx:RadioButton id="rbFltDate3" label="三天" group="{rbGroupFltDate}"/>
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<mx:CheckBox id="cbChgTypeAll" label="变动类型" width="80" selected="true" change="cbChgTypeAll_changeHandler(event)"/>
+			<mx:CheckBox id="cbChgType200" label="航班取消" selected="true"/> 
+			<mx:CheckBox id="cbChgType10"  label="执飞飞机" selected="true"/> 			
+			<mx:CheckBox id="cbChgType30"  label="落地机场" selected="true"/> 			
+			<mx:CheckBox id="cbChgType40"  label="出港机位" selected="true"/> 			
+			<mx:CheckBox id="cbChgType45"  label="进港机位" selected="true"/> 			
+			
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<s:Spacer width="80" />
+			<mx:CheckBox id="cbChgType20"  label="预计起飞" selected="true"/> 			
+			<mx:CheckBox id="cbChgType25"  label="预计到达" selected="true"/> 
+			<mx:CheckBox id="cbChgType50"  label="计划起飞" selected="true"/> 			
+			<mx:CheckBox id="cbChgType55"  label="计划到达" selected="true"/> 
+			<mx:CheckBox id="cbChgType300" label="延误"     selected="true"/>
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<s:Spacer width="80" />
+			<mx:CheckBox id="cbChgType400"  label="起飞维护" selected="true"/>
+			<mx:CheckBox id="cbChgType450"  label="落地维护" selected="true"/>
+			<mx:CheckBox id="cbChgType60"  label="航班状态" selected="false"/>
+			<mx:CheckBox id="cbChgType70"  label="备降机场" selected="false"/>
+			<mx:CheckBox id="cbChgType100" label="航班备注" selected="false"/>
+		</mx:HBox>
+		
+		<mx:HBox verticalAlign="middle" >
+			<mx:Label text="报时状态" width="80"/>
+			<mx:CheckBox id="cbBc0" label="未报时" selected="true" />
+			<mx:CheckBox id="cbBc1" label="已报时" selected="true" /> 
+		</mx:HBox>
+		<mx:HBox verticalAlign="middle" >
+			<s:Spacer width="30" />
+			<mx:Label text="飞机号*" width="50"/>
+			<mx:TextInput id="txtAcid" width="70" keyDown="onEnterKeyDownHandler(event)" />
+			<s:Spacer width="10" />
+			<mx:Label text="航班号*" width="50"/>
+			<mx:TextInput id="txtFltno" width="70" keyDown="onEnterKeyDownHandler(event)" />
+			<mx:Label text="机型" />
+			<mx:TextInput id="txtAcmodel" width="40" />
+			<mx:Label text="分钟跨度" />
+			<mx:TextInput id="txtMin" width="40" restrict="0-9" maxChars="3" text="15" />
+		</mx:HBox>
+	</mx:VBox>
+	<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+		<mx:Button label="确定" click="onOk_clickHandler()" />
+	</mx:HBox>
+</containers:SuperPanel>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.apms.flex.component.*"
+		   initialize="init()"
+		  width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.*;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.hurlant.eval.ast.Type;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Text;
+			import mx.controls.TextArea;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var apmsService:RemoteObject ;
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			
+			[Bindable]
+			public var users:ArrayCollection=new ArrayCollection();
+			//public var myContextMenu:ContextMenu;
+			[Bindable]
+			private var prvVar4dp4user:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var initStartDate:Date=new Date();
+			[Bindable]
+			private var initStartDateAfter7:Date;
+			//记录第一行表头的数组
+			public var fields:Array = null;
+			public var dateNum:int;
+			public var startDate:Date; 
+			/**
+			 * 初始化信息
+			 * */
+			public function init():void{
+				initStartDateAfter7=DateUtil.moveDay(initStartDate,7);
+				apmsService = new RemoteObject(apmsDest);
+				apmsService.endpoint = endpoint;
+				
+				apmsService.saveCrewSchedulingUser.addEventListener(ResultEvent.RESULT,getUserDataHandler);
+				apmsService.saveCrewSchedulingUser.addEventListener(FaultEvent.FAULT,faultHandlerSaveUserData);
+
+			}
+			/**
+			 * 监听按下的ctrl组合键
+			 **/
+			private function dataGridKeyDownHandler( event:KeyboardEvent ):void   
+			{     
+				if (event.ctrlKey && userDg.getChildByName("clipboardProxy") == null )     
+				{       
+					// Add an invisible TextField object to the DataGrid       
+					var textFieldClipboard:TextField = new TextField();       
+					textFieldClipboard.name = "clipboardProxy";       
+					userDg.addChild(textFieldClipboard);       
+					textFieldClipboard.visible = false;   
+					
+					textFieldClipboard.type = TextFieldType.INPUT;       
+					textFieldClipboard.multiline = true;       
+					textFieldClipboard.addEventListener(TextEvent.TEXT_INPUT, clipboardProxyPasteHandler);   
+					systemManager.stage.focus = textFieldClipboard;     
+				}   
+			}
+			/**
+			 * 处理黏贴的效果
+			 * */
+			private function clipboardProxyPasteHandler(event:TextEvent):void   
+			{  
+				
+					onclear();
+					prvVar4dp4user = new ArrayCollection();
+					var str:String= event.text ;
+					getDatasFromText( event.text );  
+					// 一定要在这里把 textField移除，不然会报 Flash.events.event 到 indexChang eEvent 的类型转换错误
+					// 移去 textField
+					var textFieldClipboard:TextField = TextField(userDg.getChildByName("clipboardProxy"));       
+					if ( textFieldClipboard != null )
+					{         
+						userDg.removeChild(textFieldClipboard);
+					}  
+				 								
+			} 
+			/**
+			 * 处理黏贴的数据
+			 * */
+			private function getDatasFromText(text:String):void   
+			{     
+				var rows:Array = text.split("\n");
+				if( rows == null )
+				{
+					SmartXMessage.show("没有数据或数据格式不正确！");	
+					return;	
+				}  
+				if (!rows[rows.length - 1])
+				{       
+					rows.pop();
+				}     
+				if( rows.length <=1 )
+				{
+					SmartXMessage.show( "没有数据或数据格式不正确！" );						
+					return;
+				}
+				var rwHeader:String = rows[0];
+				var fieldsHeader:Array = rwHeader.split( "\t" );
+				if(!(fieldsHeader[fieldsHeader.length-1]))
+				{
+					fieldsHeader.pop();
+				} 				
+				if( fieldsHeader.length <= 3 )
+				{
+					SmartXMessage.show("列数<=3，数据格式不正确！");						
+					return;					
+				}
+				var headTextData:String=rows[0];
+				var headTextArr:Array=headTextData.split("\t");
+				if(headTextArr[0]!="机场"||headTextArr[1]!="部门"||headTextArr[2]!="姓名"){
+					SmartXMessage.show("表头数据不正确！");
+					return;
+				}
+				var dateStr:String=DateUtil.dateToString(DateUtil.stringToDateDay(headTextArr[3]));
+				if(dateStr.substring(0,3)=="NaN"){
+					SmartXMessage.show("表头数据不正确！");
+					return;
+				}
+				startDate=DateUtil.stringToDateDay(fieldsHeader[3]);
+				userDg.startDate=startDate;
+				dateNum=fieldsHeader.length-3;
+				
+				var row:String = null;
+				
+				var rowIdx:int;
+				var userDataVo:UserDataVo = null;
+				for( rowIdx=1; rowIdx<rows.length; rowIdx=rowIdx+1 )//从第二行开始是排班数据
+				{
+					userDataVo = new UserDataVo();
+					row = rows[rowIdx];
+					fields = row.split("\t");
+					userDataVo.airport = fields[0];
+					userDataVo.org = fields[1];
+					userDataVo.name_ = fields[2];
+					for(var i:int=0;i<dateNum;i++){
+						userDataVo.pubFun4setPeriodDataValue(i,fields[3+i]);
+					}
+					users.addItem(userDataVo);
+				}
+				userDg.setHeadText(dateNum);
+				btnSave.enabled = true;
+				btnClear.enabled = true;
+			}
+			/**
+			 * 保存人员排班表
+			 */
+			public function saveCrewSchling():void{
+				//更新人
+				var updateUser:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+				//更新时间
+				var updateTime:Date=new Date();
+				OperatingTipUtil.startOperat("正在保存......",userDg);
+				apmsService.saveCrewSchedulingUser(startDate,dateNum,users,updateTime,updateUser);
+			}
+		     /**
+			 * 初始化界面
+			 */
+			public function onclear():void{
+				this.btnSave.enabled = false;
+//				this.btnExport.enabled = false;
+				this.btnClear.enabled = false;
+				this.userDg.initHeadText(dateNum);
+				this.users.removeAll();
+				dateNum=0;
+			}
+			/**
+			 * 服务器处理成功之后的返回结果
+			 **/
+			public function getUserDataHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				var messageStr:String=event.result as String;
+				SmartXMessage.show(messageStr);
+			}
+			/**
+			 * 保存失败
+			 **/
+			public function faultHandlerSaveUserData(event:FaultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("保存失败！",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Button label="清除"   id="btnClear" click="onclear()" enabled="false"/> 
+			<mx:Button label="保存"   id="btnSave" click="saveCrewSchling()" enabled="false"/> 
+		</mx:HBox>
+		<component:CrewSchedulingDataGrid id="userDg" width="100%" height="100%"
+										  dataProvider="{users}" keyDown="dataGridKeyDownHandler(event)"/>
+	</mx:VBox>
+</mx:Module>

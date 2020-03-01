@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="vertical" 
+				height="360" width="480" showCloseButton="true"
+				initialize="initializeHandler(event)"
+				creationComplete="eventWindow_creationCompleteHandler(event)"
+				close="PopUpManager.removePopUp(eventWindow)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			
+			[Bindable]
+			private var etypeArr:ArrayCollection = new ArrayCollection([
+				{value:"0",desc:"未标记"},
+				{value:"1",desc:"故障数据"},
+				{value:"2",desc:"维修工作"},
+				{value:"3",desc:"不良数据"}]);
+			
+			private var markObj:Object;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				//TODO Auto-generated method stub
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				
+				apmsService.pointMarkA23.addEventListener(ResultEvent.RESULT,pointMarkOkHandler);
+				apmsService.pointMarkA23.addEventListener(FaultEvent.FAULT,faultHandler);
+			}
+			
+			protected function eventWindow_creationCompleteHandler(event:FlexEvent):void
+			{
+				eventWindowDataUpdated();
+			}
+			
+			private function markEventConfirm():void{
+				var nowData:String= DateUtil.dateToString(new Date(),1);
+				
+				apmsService.pointMarkA23(markObj["msg_no"],etypeCmb.selectedItem["value"],memoTextArea.text,user,nowData);
+				OperatingTipUtil.startOperat("正在更新....",this);
+			}
+			
+			private function eventWindowDataUpdated():void{
+				var type:String = markObj["eventtype"];
+				for each(var obj:Object in etypeCmb.dataProvider){
+					if(type == String(obj["value"])){
+						etypeCmb.selectedItem = obj;
+						break;
+					}
+				}
+				markerLabel.text = markObj["marker"];
+				
+				var time:Date = markObj["marktime"] as Date;
+				markerTime.text = DateUtil.dateToString(time,1);;
+				
+				
+				memoTextArea.text = markObj["markmemo"];
+			}
+			
+			public function pointMarkOkHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("点事件标记成功！ ");
+				
+				//PopUpManager.removePopUp(eventWindow);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据操作出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:Label text="事件类型"/>
+	<mx:ComboBox id="etypeCmb" text="box" dataProvider="{etypeArr}" labelField="desc" />
+	<mx:Label text="标记说明:" />
+	
+	<mx:TextArea id="memoTextArea" width="400" height="150" />
+	<mx:HBox width="100%">
+		<mx:Label text="标记人："/>  
+		<mx:Label id="markerLabel" text="" color="red"/>
+	</mx:HBox>
+	<mx:HBox width="100%">
+		<mx:Label text="标记时间："/>
+		<mx:Label id="markerTime" text="" color="red"/>
+	</mx:HBox>
+	<mx:HBox width="100%" horizontalAlign="center">
+		<mx:Button label="确定"  click="markEventConfirm()" height="22"/>
+		<mx:Button label="取消"  click="PopUpManager.removePopUp(eventWindow)"  height="22"/>
+	</mx:HBox>
+</mx:TitleWindow>

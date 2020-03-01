@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A49报文N1震动" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.assets.AssetsFileLib;
+
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a49vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a49Data:Object;//译后报文内容
+			
+			private function creationComplete():void
+			{
+				a49Data = a49vo.dataMap;
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A49IAE-N1震动");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator height="100%" width="100%">
+		<mx:HDividedBox id="contentBox" width="850" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="0" id="formatBox">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   ENG START AIR VALVE RPT(49)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>				
+				<report:ReportHeaderPanel headHashVo="{a49vo}" height="190"/>
+				
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号"  leftVal="{a49Data.esn_1}" rightVal="{a49Data.esn_2}"/>
+					<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a49Data.ehrs_1}" rightVal="{a49Data.ehrs_2}"/>
+					<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a49Data.ecyc_1}" rightVal="{a49Data.ecyc_2}" />
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="L1" rightVal="R1"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="OPEN" chineseName1="OPEN"  leftVal="{a49Data.open1_str}" rightVal="{a49Data.open2_str}" boxWidth="80" />
+					<report:TwoValuesReportPanel englishName="CLOSED" chineseName1="CLOSED" leftVal="{a49Data.close1_str}" rightVal="{a49Data.close2_str}" boxWidth="80" />
+					<report:TwoValuesReportPanel englishName="TIME" chineseName1="TIME" leftVal="{a49Data.time_1}" rightVal="{a49Data.time_2}" boxWidth="80" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="AT EVENT OF SVA1 CLOSED" fontWeight="bold"  />
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="L2" rightVal="R2"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="EPR" chineseName1="推力比"  leftVal="{a49Data.epr_1}" rightVal="{a49Data.epr_2}" />
+					<report:TwoValuesReportPanel englishName="N1" chineseName1="N1转速"  leftVal="{a49Data.n1_1}"  rightVal="{a49Data.n1_2}"/>
+					<report:TwoValuesReportPanel englishName="N2" chineseName1="N2转速"  leftVal="{a49Data.n2_1}"  rightVal="{a49Data.n2_2}"/>
+					<report:TwoValuesReportPanel englishName="FF" chineseName1="燃油流量"  leftVal="{a49Data.ff_1}"  rightVal="{a49Data.ff_2}"/>
+					<report:TwoValuesReportPanel englishName="EGT" chineseName1="排气温度"  leftVal="{a49Data.egt_1}"  rightVal="{a49Data.egt_2}"/>
+					<report:TwoValuesReportPanel englishName="CTL" chineseName1="控制通道"  leftVal="{a49Data.ctl_1}"  rightVal="{a49Data.ctl_2}"/>
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="AT EVENT OF SVA2 CLOSED" fontWeight="bold"  />
+				</mx:HBox>
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="L3" rightVal="R3"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="EPR" chineseName1="推力比"  leftVal="{a49Data.epr_l3}" rightVal="{a49Data.epr_r3}" />
+					<report:TwoValuesReportPanel englishName="N1" chineseName1="N1转速"  leftVal="{a49Data.n1_l3}" rightVal="{a49Data.n1_r3}" />
+					<report:TwoValuesReportPanel englishName="N2" chineseName1="N2转速"  leftVal="{a49Data.n2_l3}" rightVal="{a49Data.n2_r3}" />
+					<report:TwoValuesReportPanel englishName="FF" chineseName1="燃油流量"  leftVal="{a49Data.ff_l3}" rightVal="{a49Data.ff_r3}" />
+					<report:TwoValuesReportPanel englishName="EGT" chineseName1="排气温度"  leftVal="{a49Data.egt_l3}" rightVal="{a49Data.egt_r3}" />
+					<report:TwoValuesReportPanel englishName="TIME" chineseName1="时间"  leftVal="{a49Data.time_l3str}" rightVal="{a49Data.time_r3str}" boxWidth="80" />
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:TabNavigator>
+</containers:SuperPanel>

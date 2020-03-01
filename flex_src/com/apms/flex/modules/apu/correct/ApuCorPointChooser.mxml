@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   width="870" height="420" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   initialize="initializeHandler(event)"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   layout="vertical" title="修正点选择"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			public var selectedFunc:Function;//选中后处理函数
+			public var asn:String;
+			
+			public var selectObj:Object;//选中的数据
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-1);
+			}
+			
+			private function creationComplete():void
+			{
+				a13List.addEventListener(MouseEvent.DOUBLE_CLICK,listDoubleClickHandler);
+				
+				applyBtnClickHandler(null);
+			}
+			
+			protected function applyBtnClickHandler(event:MouseEvent):void
+			{
+				
+				var queryCond:String = "ASN = '" + asn + "'";
+				//加入时间段限制
+				if(time_begin.text!=null && time_begin.text != ""){
+					queryCond += " and DATATIME >=  to_date('"+time_begin.text+"','YYYY-MM-DD hh24:mi:ss')" ;
+				}
+				
+				if(time_end.text!=null && time_end.text != ""){
+					queryCond +=  " and DATATIME <=  to_date('"+time_end.text+"','YYYY-MM-DD hh24:mi:ss')" ;
+				}
+				
+				a13List.initQueryCondition = queryCond;
+				a13List.query();
+			}
+			
+			protected function listDoubleClickHandler(event:MouseEvent):void
+			{
+				if(a13List.getSelectedRowValues().length != 1){
+					SmartXMessage.show("请选择一条数据！");
+					return;
+				}else{
+					selectObj = a13List.getSelectedRowValue();
+					selectedFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top" paddingTop="3">
+		<mx:HBox>
+			<mx:Label text="开始时间" />
+			<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+			<mx:Label text="结束时间" />
+			<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			<mx:Button label="应用查询时间范围" click="applyBtnClickHandler(event)" />
+		</mx:HBox>
+		<core:BillListPanel width="100%" height="100%" id="a13List"  endpoint="{endpoint}" rowCountPerPage="100"
+							templetCode="T_V_APU_CORRECTSELECT" debugMode="{debugMode}"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+	</mx:VBox>
+</containers:SuperPanel>

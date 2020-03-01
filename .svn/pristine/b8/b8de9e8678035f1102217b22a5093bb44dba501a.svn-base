@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="850" height="600"  xmlns:core="smartx.flex.components.core.*"
+			   title="A13报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a13vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a13Data:Object;//译后报文内容
+			
+			[Bindable]
+			private var acnum:String;
+			[Bindable]
+			private var date_utc:String;
+			[Bindable]
+			private var fly_from:String;
+			[Bindable]
+			private var fly_to:String;
+			[Bindable]
+			private var flt:String;
+			[Bindable]
+			private var ph:String;
+			[Bindable]
+			private var cnt:String;
+			[Bindable]
+			private var code:String;
+			[Bindable]
+			private var bleed_status:String;
+			[Bindable]
+			private var apu:String;
+			
+			[Bindable]
+			private var tat:String;
+			[Bindable]
+			private var alt:String;
+			[Bindable]
+			private var cas:String;
+			[Bindable]
+			private var mn:String;
+			[Bindable]
+			private var gw:String;
+			[Bindable]
+			private var cg:String;
+			[Bindable]
+			private var dmu:String;
+			
+			[Bindable]
+			private var nTitleXml:XML = <root>
+								<item field="" esn="ESN" acw1="ACW1" acw2="ACW2" na="NA" egta="EGTA" igv="IGV"/>
+								<item field="" esn="发动机序号" acw1="控制字1" acw2="控制字2" na="转速" egta="排气温度" igv="IGV位置"/>
+							</root>;
+			[Bindable]
+			private var sTitleXml:XML = <root>
+								<item field="" p2a="P2A" lcit="LCIT" wb="WB" pt="PT" lcdt="LCDT" ota="OTA" gla="GLA"/>
+								<item field="" p2a="进口压力" lcit="LCIT" wb="引气流量" pt="引气压力" lcdt="LCDT" ota="滑油温度" gla="GLA"/>
+							</root>;
+			[Bindable]
+			private var vTitleXml:XML = <root>
+								<item field="" sta="STA" egtp="EGTP" npa="NPA" ota="OTA" lcit="LCIT"/>
+								<item field="" sta="启动时间" egtp="EGT峰值" npa="NPA" ota="滑油温度" lcit="LCIT"/>
+							</root>;
+				
+			[Bindable]
+			private var e1Xml:XML = <root></root>;
+			[Bindable]
+			private var n13Xml:XML = <root></root>;
+			[Bindable]
+			private var s13Xml:XML = <root></root>;
+			[Bindable]
+			private var v1Xml:XML = <root></root>;
+			
+			[Bindable]
+			private var asn:String;
+			[Bindable]
+			private var ahrs:int;
+			[Bindable]
+			private var acyc:String;
+			[Bindable]
+			private var pfad:String;
+			
+			private function creationComplete():void
+			{
+			
+				a13Data = a13vo.dataMap;
+				
+				asn = a13Data['asn'];
+				ahrs = a13Data['ahrs'];
+				acyc = a13Data['acyc'];
+				pfad = a13Data['pfad'];
+				
+				var temp2:XML = <item field="" esn="" acw1="" acw2="" na="" egta="" igv=""/>;
+				temp2.@field = "N1";
+				temp2.@esn = a13Data['esn_n1'];
+				temp2.@acw1 = a13Data['acw1_n1'];
+				temp2.@acw2 = a13Data['acw2_n1'];
+				temp2.@na = a13Data['na_n1'];
+				temp2.@egta = a13Data['egta_n1'];
+				temp2.@igv = a13Data['igv_n1'];
+			    n13Xml.appendChild(temp2);
+				
+				temp2 = <item field="" esn="" acw1="" acw2="" na="" egta="" igv=""/>;
+				temp2.@field = "N2";
+				temp2.@esn = a13Data['esn_n2'];
+				temp2.@acw1 = a13Data['acw1_n2'];
+				temp2.@acw2 = a13Data['acw2_n2'];
+				temp2.@na = a13Data['na_n2'];
+				temp2.@egta = a13Data['egta_n2'];
+				temp2.@igv = a13Data['igv_n2'];
+				n13Xml.appendChild(temp2);
+				
+				temp2= <item field="" esn="" acw1="" acw2="" na="" egta="" igv=""/>;
+				temp2.@field = "N3";
+				temp2.@esn = a13Data['esn_n3'];
+				temp2.@acw1 = a13Data['acw1_n3'];
+				temp2.@acw2 = a13Data['acw2_n3'];
+				temp2.@na = a13Data['na_n3'];
+				temp2.@egta = a13Data['egta_n3'];
+				temp2.@igv = a13Data['igv_n3'];
+				n13Xml.appendChild(temp2);
+				
+			
+				var temp3:XML = <item field="" p2a="" lcit="" wb="" pt="" lcdt="" ota="" gla=""/>;
+				temp3.@field = "S1";
+				temp3.@p2a = a13Data['p2a_s1'];
+				temp3.@lcit = a13Data['lcit_s1'];
+				temp3.@wb = a13Data['wb_s1'];
+				temp3.@pt = a13Data['pt_s1'];
+			    temp3.@lcdt = a13Data['lcdt_s1'];
+			    temp3.@ota = a13Data['ota_s1'];
+			    temp3.@gla = a13Data['gla_s1'];
+				s13Xml.appendChild(temp3);
+				
+				temp3 = <item field="" p2a="" lcit="" wb="" pt="" lcdt="" ota="" gla=""/>;
+				temp3.@field = "S2";
+				temp3.@p2a = a13Data['p2a_s2'];
+				temp3.@lcit = a13Data['lcit_s2'];
+				temp3.@wb = a13Data['wb_s2'];
+				temp3.@pt = a13Data['pt_s2'];
+				temp3.@lcdt = a13Data['lcdt_s2'];
+				temp3.@ota = a13Data['ota_s2'];
+				temp3.@gla = a13Data['gla_s2'];
+				s13Xml.appendChild(temp3);
+				
+				temp3 = <item field="" p2a="" lcit="" wb="" pt="" lcdt="" ota="" gla=""/>;
+				temp3.@field = "S3";
+				temp3.@p2a = a13Data['p2a_s3'];
+				temp3.@lcit = a13Data['lcit_s3'];
+				temp3.@wb = a13Data['wb_s3'];
+				temp3.@pt = a13Data['pt_s3'];
+				temp3.@lcdt = a13Data['lcdt_s3'];
+				temp3.@ota = a13Data['ota_s3'];
+				temp3.@gla = a13Data['gla_s3'];
+				s13Xml.appendChild(temp3);
+				
+				
+				var temp4:XML = <item field="" sta="" egtp="" npa="" ota="" lcit=""/>;
+				temp4.@field = "V1";
+				temp4.@sta = a13Data['sta_v1'];
+				temp4.@egtp = a13Data['egtp_v1'];
+				temp4.@npa = a13Data['npa_v1'];
+				temp4.@ota = a13Data['ota_v1'];
+				temp4.@lcit = a13Data['lcit_v1'];
+				v1Xml.appendChild(temp4);
+				
+				
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A13启动大发报文查看");
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" verticalGap="1">
+		<mx:HDividedBox width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   APU MES/IDLE REPORT13" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a13vo}" width="100%" height="100%"/>
+				
+				<mx:HRule width="100%" />
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ASN" color="red" width="60"/><mx:Label text="AHRS" color="red" width="60"/>
+					<mx:Label text="ACYC" color="red" width="60"/><mx:Label text="PFAD" color="red" width="130"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="APU序号" color="blue" width="60"/><mx:Label text="APU小时" color="blue" width="60"/>
+					<mx:Label text="APU循环" color="blue" width="60"/><mx:Label text="APU性能调整参数" color="blue" width="130"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="E1" width="30"/><mx:Label text="{asn}" width="60"/><mx:Label text="{ahrs/60}" width="60"/>
+					<mx:Label text="{acyc}" width="60"/><mx:Label text="{pfad}" width="130"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%">
+					<mx:DataGrid id="nTitledg" width="516" height="100%" color="red" dataProvider="{nTitleXml.item}"
+								 selectable="false"
+								 rowCount="2" showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@esn" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@acw1" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@acw2" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@na" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@egta" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@igv" width="60"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="n13dg" width="516" height="100%" dataProvider="{n13Xml.item}" rowCount="3"  showHeaders="false"
+								 selectable="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@esn" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@acw1" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@acw2" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@na" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@egta" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@igv" width="60"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+
+				
+				<mx:HBox width="100%">
+					<mx:DataGrid id="sTitledg" width="516" height="100%" color="red" dataProvider="{sTitleXml.item}"
+								 rowCount="2" showHeaders="false" selectable="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@p2a" width="45" />
+							<mx:DataGridColumn headerText="" dataField="@lcit" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@wb" width="50"/>
+							<mx:DataGridColumn headerText="" dataField="@pt" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@lcdt" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@ota" width="45"/>
+							<mx:DataGridColumn headerText="" dataField="@gla" width="30"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:DataGrid id="s13dg" width="516" height="100%" dataProvider="{s13Xml.item}" rowCount="3"  showHeaders="false"
+								 selectable="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@p2a" width="45" />
+							<mx:DataGridColumn headerText="" dataField="@lcit" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@wb" width="50"/>
+							<mx:DataGridColumn headerText="" dataField="@pt" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@lcdt" width="40"/>
+							<mx:DataGridColumn headerText="" dataField="@ota" width="45"/>
+							<mx:DataGridColumn headerText="" dataField="@gla" width="30"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				
+				<mx:HBox width="100%">
+					<mx:DataGrid id="vTitledg" width="516" height="100%" color="red" dataProvider="{vTitleXml.item}"
+								 rowCount="2" showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@sta" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@egtp" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@npa" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@ota" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@lcit" width="60"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+				
+				<mx:HBox width="100%">
+					<mx:DataGrid id="v1dg" width="516" height="100%" dataProvider="{v1Xml.item}" rowCount="1"  showHeaders="false">
+						<mx:columns>
+							<mx:DataGridColumn headerText="" dataField="@field" width="20"/>
+							<mx:DataGridColumn headerText="" dataField="@sta" width="60" />
+							<mx:DataGridColumn headerText="" dataField="@egtp" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@npa" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@ota" width="60"/>
+							<mx:DataGridColumn headerText="" dataField="@lcit" width="60"/>
+						</mx:columns>
+					</mx:DataGrid>
+				</mx:HBox>
+			
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.modules.common.RefConditionUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+			private var apmsService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var apusn:String; //apu序列号
+			
+			private var basicid:String ;//查询基地号
+			
+			private var aputype:String; //apu型号
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var queryquerySql:String = "";
+			
+			
+			[Bindable]
+			private var runStatisList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			
+			[Bindable]
+			private var staticArray:ArrayCollection = new ArrayCollection([
+				{value:"YYYY-MM",desc:"月"},
+				{value:"YYYY-Q",desc:"季"},
+				{value:"YYYY",desc:"年"},
+				{value:"YYYY-WW",desc:"周"}]);
+			
+			[Bindable]
+			private var apuBasicInfo:String = "";
+			
+			private var apuInfo:Object;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-3);
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//远程服务添加监听
+				apmsService.getApuRunStatisInfo.addEventListener(ResultEvent.RESULT,getApuRunStatisInfoHandler);
+				apmsService.getApuRunStatisInfo.addEventListener(FaultEvent.FAULT,getApuRunStatisInfoErrorHandler);
+				
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				var basicItemVO:TempletItemVO = new TempletItemVO();
+				basicItemVO.itemtype="参照";
+				basicItemVO.itemname="基地名称";
+				basicItemVO.itemkey="basicid";
+				basicItemVO.refdesc="select id ID,code 编码,name 基地  from b_organization where orglevel=1;ds=datasource_apms";
+				var basicRefPanel:ItemRefPanel = new ItemRefPanel(basicItemVO,smartxDest,endpoint,false,false);
+				basicRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(basicRefPanel.returnVO != null){
+						//获取参照的返回值
+						basicid = basicRefPanel.returnVO.id;
+					}else{
+						basicid = null;
+					}
+				});	
+				
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="ACNUM";
+				apuItemVO.refdesc="SELECT A.ID ID#,AIRCRAFTID ACID#,APUSN APU序列号,M.MODEL APU型号 FROM B_APU A,B_APU_MODEL M WHERE M.ID=A.APUMODELID;ds=datasource_apms";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						apusn = apuRefPanel.returnVO.name;
+					}else{
+						apusn = null;
+					}
+				});	
+				
+				var aputypeItemVO:TempletItemVO = new TempletItemVO();
+				aputypeItemVO.itemtype="参照";
+				aputypeItemVO.itemname="选择APU型号";
+				aputypeItemVO.itemkey="ACNUM";
+				aputypeItemVO.refdesc="SELECT ID ID#,MODEL APUMODEL,SUBMODEL FROM B_APU_MODEL;ds=datasource_apms";
+				var aputypeRefPanel:ItemRefPanel = new ItemRefPanel(aputypeItemVO,smartxDest,endpoint,false,false);
+				aputypeRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(aputypeRefPanel.returnVO != null){
+						//获取参照的返回值
+						aputype = aputypeRefPanel.returnVO.id;
+					}else{
+						aputype = null;
+					}
+				});	
+				
+				
+				acBox.addChild(acRefPanel);
+				apuBox.addChild(apuRefPanel);
+				baseidBox.addChild(basicRefPanel);
+				apuTypeBox.addChild(aputypeRefPanel);
+			}
+			
+			
+			private function getApuRunStatisInfoHandler(event:ResultEvent):void 
+			{
+				runStatisList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				runStatisList = res["runStatisList"];
+				apuInfo = res["apuInfo"];
+				
+//				apuBasicInfo = "ASN:" + apuInfo["ASN"] + ", 总小时：" + apuInfo["TOTALHOUR"]+ ", 总循环:" +apuInfo["TOTALCYCLE"] 
+//						+ ", 修后小时:" + apuInfo["REPAIREDHOUR"]+ ", 修后循环:" + apuInfo["REPAIREDCYCLE"] + "";
+			}
+			
+			private function getApuRunStatisInfoErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				if( (acnum == null || acnum=="") && (apusn == null || apusn=="") && (basicid == null || basicid=="") && (aputype == null || aputype=="") ){
+					SmartXMessage.show("请选择一个飞机或APU！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				
+				if ((basicid != null)&&(aputype != null)){//根据基地和型号查询
+					querySql = "";
+					querySql="SELECT (SELECT AM.MODEL FROM B_APU_MODEL AM  WHERE AM.ID=T.APUMODELID) APUMODEL,";
+					querySql +="(SELECT NAME FROM B_ORGANIZATION O WHERE O.ID=T.BASEORGID) BASEORG,";
+					querySql +="T.DATAPERIOD,T.HOUR_SUM,T.CYCLE_SUM";       
+					querySql +=" FROM (SELECT A.APUMODELID,A.BASEORGID,";
+					querySql +="TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"') DATAPERIOD,";// --周期格式
+					querySql +="ROUND(SUM(ADD_TIME) / 60, 2) HOUR_SUM,";
+					querySql +="SUM(ADD_CYCLE) CYCLE_SUM";
+					querySql +=" FROM L_APU_RUNLOG L,B_APU A";
+					querySql +=" WHERE 1 = 1 AND A.ID=L.APU_ID";
+					//--AND L.ACNUM = 'B6677', 条件，设置条件型号过滤
+					if(basicid != null){
+						querySql +=" AND A.BASEORGID='"+basicid+"'";
+					}
+					if(aputype != null){
+						querySql +=" AND A.APUMODELID='"+aputype+"'";
+					}
+					if(acnum != null){
+						querySql +=" AND L.ACNUM='"+acnum+"'";
+					}
+					if(apusn != null){
+						querySql +=" AND L.ASN='"+apusn+"'";
+					}
+					querySql +=" AND L.DATATIME >= TO_DATE('"+time_begin.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" AND L.DATATIME <= TO_DATE('"+time_end.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" GROUP BY A.APUMODELID,A.BASEORGID,TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"')";// --分组
+					querySql +=" ORDER BY DATAPERIOD ) T ";
+					querySql +=" ORDER BY T.DATAPERIOD";
+					//query"sb.toString());
+					
+				}
+				else if((basicid != null) && (aputype == null || aputype == "" )){//根据基地查询
+					querySql ="SELECT ";
+					querySql +="(SELECT NAME FROM B_ORGANIZATION O WHERE O.ID=T.BASEORGID) BASEORG,";
+					querySql +="T.DATAPERIOD,T.HOUR_SUM,T.CYCLE_SUM";       
+					querySql +=" FROM (SELECT A.BASEORGID,";
+					querySql +="TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"') DATAPERIOD,";// --周期格式
+					querySql +="ROUND(SUM(ADD_TIME) / 60, 2) HOUR_SUM,";
+					querySql +="SUM(ADD_CYCLE) CYCLE_SUM";
+					querySql +=" FROM L_APU_RUNLOG L,B_APU A";
+					querySql +=" WHERE 1 = 1 AND A.ID=L.APU_ID";
+					//--AND L.ACNUM = 'B6677', 条件，设置条件型号过滤
+					if(basicid != null){
+						querySql +=" AND A.BASEORGID='"+basicid+"'";
+					}
+					if(acnum != null){
+						querySql +=" AND L.ACNUM='"+acnum+"'";
+					}
+					if(apusn != null){
+						querySql +=" AND L.ASN='"+apusn+"'";
+					}
+					//if(aputype != null){
+					//	querySql +=" AND T.APUMODELID='"+aputype+"'");
+					//}
+					
+					querySql +=" AND L.DATATIME >= TO_DATE('"+time_begin.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" AND L.DATATIME <= TO_DATE('"+time_end.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" GROUP BY A.BASEORGID,TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"')";// --分组
+					querySql +=" ORDER BY DATAPERIOD ) T ";
+					querySql +=" ORDER BY T.DATAPERIOD";
+					//querySb.append(sb.toString());
+				}
+				else if((basicid == null||basicid == "") && (aputype != null)){//根据型号查询
+					querySql ="SELECT AM.MODEL apumodel,T.DATAPERIOD,T.HOUR_SUM, T.CYCLE_SUM ";       
+					querySql +=" FROM (SELECT APU_MODELID,";
+					querySql +="TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"') DATAPERIOD,";// --周期格式
+					querySql +="ROUND(SUM(ADD_TIME) / 60, 2) HOUR_SUM,";
+					querySql +="SUM(ADD_CYCLE) CYCLE_SUM FROM L_APU_RUNLOG L ";
+					querySql +=" WHERE 1 = 1";
+					if(aputype != null){
+						querySql +=" AND L.APU_MODELID='"+aputype+"'";
+					}
+					if(acnum != null){
+						querySql +=" AND L.ACNUM='"+acnum+"'";
+					}
+					if(apusn != null){
+						querySql +=" AND L.ASN='"+apusn+"'";
+					}
+					// --AND L.ACNUM = 'B6677', 条件，设置条件型号过滤
+					querySql +=" AND L.DATATIME >= TO_DATE('"+time_begin.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" AND L.DATATIME <= TO_DATE('"+time_end.text+"', 'YYYY-MM-DD HH24:MI:SS')";
+					
+					querySql +=" GROUP BY APU_MODELID,TO_CHAR(L.DATATIME, '"+statisComb.selectedItem["value"]+"')";
+					querySql +=" ORDER BY DATAPERIOD) T,B_APU_MODEL AM";
+					querySql +=" WHERE AM.ID=T.APU_MODELID ORDER BY T.DATAPERIOD";
+				//	queryquerySql +=sb.toString();
+				}
+				else{//根据飞机号查询，或是更加apu序号查询
+					
+					
+					querySql ="SELECT ACNUM,ASN";
+					querySql +=" ,TO_CHAR(L.DATATIME,'"+statisComb.selectedItem["value"]+"') DATAPERIOD";
+					querySql +=" ,ROUND(SUM(ADD_TIME)/60,2) HOUR_SUM,SUM(ADD_CYCLE) CYCLE_SUM";
+					querySql +=" FROM  L_APU_RUNLOG L,b_apu b";
+					querySql +=" WHERE 1=1 and l.asn=b.apusn ";
+					if(acnum != null){
+						querySql +=" AND L.ACNUM='"+acnum+"'";
+					}
+					if(apusn != null){
+						querySql +=" AND L.ASN='"+apusn+"'";
+					}
+					querySql +=" AND L.DATATIME >= TO_DATE('"+time_begin.text+"','YYYY-MM-DD HH24:MI:SS') ";
+					querySql +=" AND L.DATATIME <= TO_DATE('"+time_end.text+"','YYYY-MM-DD HH24:MI:SS')";
+					querySql +=" GROUP BY ACNUM,ASN,TO_CHAR(L.DATATIME,'"+statisComb.selectedItem["value"]+"')";
+					querySql +=" ORDER BY DATAPERIOD";
+					
+					queryquerySql ="SELECT T.ACNUM,T.ASN,T.DATAPERIOD,T.HOUR_SUM,T.CYCLE_SUM ";
+					queryquerySql +=",ROUND(A.TOTALTIME/60,2) TOTALHOUR,A.TOTALCYCLE";
+					queryquerySql +=",ROUND((A.TOTALTIME-A.TIME_ONREPAIRED)/60,2) REPAIREDHOUR,(A.TOTALCYCLE-A.CYCLE_ONREPAIRED) REPAIREDCYCLE";
+					queryquerySql +=" FROM ("+querySql+") T,B_APU A";
+					queryquerySql +=" WHERE A.APUSN=T.ASN";
+					queryquerySql +=" ORDER BY T.DATAPERIOD";
+					queryquerySql +="";
+					querySql=queryquerySql
+						
+				}
+				runlogListPanel.sql = querySql;
+				runlogListPanel.refresh();
+				apmsService.getApuRunStatisInfo(time_begin.text,time_end.text,basicid,acnum,aputype,apusn,statisComb.selectedItem["value"]);
+				
+			}
+			
+			public function chartTipFunction(e:HitData):String {
+				var item:Object = e.item;
+				
+				var cs:ColumnSeries = e.element as ColumnSeries;
+				var yField:String = cs.yField;				
+				var seriesName:String = cs.displayName;
+				
+				var tip:String = ""; //seriesName + "：" + item[yField] ;
+				tip += "时间区间("+statisComb.selectedItem["desc"]+")："+ item["DATAPERIOD"]
+				tip += "\n小时："+ item["HOUR_SUM"] + ", 循环："+ item["CYCLE_SUM"];
+				tip += "\n------------------------";
+				tip += "\n总小时："+ item["TOTALHOUR"] + ", 总循环:" + item["TOTALCYCLE"];
+				tip += "\n修后小时："+ item["REPAIREDHOUR"] + ", 修后循环:" + item["REPAIREDCYCLE"];
+				tip += "\n机号："+ item["ACNUM"] + ", APU:" + item["ASN"];
+				
+				return tip;
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				
+				PictureExportUtil.exportChart(statisChart,"APU小时循环趋势");
+			}
+			protected function exportHandler1(event:MouseEvent):void
+			{
+				
+				//runlogListPanel.exportAllData("APU小时循环统计");
+				runlogListPanel.exportCurData("apu统计查询")
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox id="statisChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			<mx:HBox id="baseidBox">
+				<mx:Label text="基地"/>
+			</mx:HBox>
+			
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			<mx:HBox id="apuTypeBox">
+				<mx:Label text="APU型号"/>
+			</mx:HBox>
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU序号"/>
+			</mx:HBox>
+			<mx:ComboBox id="statisComb" dataProvider="{staticArray}" labelField="desc" />
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出图形" click="exportHandler(event)" />
+			<mx:Button label="导出列表" click="exportHandler1(event)" />
+		</mx:HBox>
+		<mx:TabNavigator width="100%"  height="100%" creationPolicy="all" resizeToContent="true">
+		<mx:VBox width="100%" height="100%" label="APU运行小时循环统计图">
+			<mx:HBox width="100%">
+				<mx:Label text="小时循环统计"/>
+				<mx:Spacer width="100%"/>
+				<!--
+				<mx:Label id="apuInfoLabel" color="red" text="{apuBasicInfo}"/> -->
+				<mx:CheckBox id="hourChk" selected="true" label="小时"/>
+				<mx:CheckBox id="cycleChk" selected="true" label="循环"/>
+			</mx:HBox>
+			<mx:ColumnChart id="runStatisChart" width="100%" height="100%" dataTipFunction="chartTipFunction"
+							dataProvider="{runStatisList}" showDataTips="true">
+				<mx:horizontalAxis>
+					<mx:CategoryAxis categoryField="DATAPERIOD"/>
+				</mx:horizontalAxis>
+				<mx:series>
+					<mx:ColumnSeries xField="DATAPERIOD" yField="HOUR_SUM"  displayName="小时数" labelPosition="outside" visible="{hourChk.selected}" />
+					<mx:ColumnSeries xField="DATAPERIOD" yField="CYCLE_SUM" displayName="循环数" labelPosition="outside" visible="{cycleChk.selected}" />
+				</mx:series>
+			</mx:ColumnChart>
+			<mx:Legend dataProvider="{runStatisChart}" direction="horizontal"/>
+		</mx:VBox >
+			<mx:VBox width="100%" height="100%" label="APU运行小时循环统计列表">
+				
+					<component:AdvDataGridPanel id="runlogListPanel" width="100%" height="100%"  minColumnWidth="100" pageSize="100" 
+												sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}" >
+						<component:columns>
+							<mx:DataGridColumn headerText="机号" dataField="acnum" width="100"/>
+							<mx:DataGridColumn headerText="APU型号" dataField="apumodel" width="100"/>
+							<mx:DataGridColumn headerText="APU号" dataField="apusn" width="100" />
+							<mx:DataGridColumn headerText="基地" dataField="baseorg" width="100"/>
+							<mx:DataGridColumn headerText="运行小时" dataField="hour_sum" width="100"/>
+							<mx:DataGridColumn headerText="运行循环" dataField="cycle_sum" width="100"/>
+							<mx:DataGridColumn headerText="总小时" dataField="totalhour" width="100"/>
+							<mx:DataGridColumn headerText="总循环" dataField="totalcycle" width="100"/>
+							<mx:DataGridColumn headerText="修后小时" dataField="repairedhour" width="100"/>
+							<mx:DataGridColumn headerText="修后循环" dataField="repairedcycle" width="100"/>
+							<mx:DataGridColumn headerText="统计日期" dataField="dataperiod" width="100"/>
+							
+						</component:columns>
+					</component:AdvDataGridPanel>
+				
+			</mx:VBox >	
+		</mx:TabNavigator>
+	</mx:VBox>
+</mx:Module>

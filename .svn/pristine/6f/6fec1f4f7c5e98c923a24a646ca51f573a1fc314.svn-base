@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:component="com.apms.flex.component.*"
+		   initialize="initializeHandler(event)" 
+		   layout="absolute" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DataListExportUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.cool.components.print.CoolPrintJob;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.DataGrid;
+			import mx.events.FlexEvent;
+			
+			import smartx.flex.components.util.OperatingTipUtil;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			[Bindable]
+			private var endTime:Date = new Date();
+			[Bindable]
+			private var beginTime:Date = new Date();
+			[Bindable]
+			public var sectionArr:ArrayCollection;
+			protected function initializeHandler(event:FlexEvent):void{
+				changeListDg.simpleQueryPanel.height=0;
+				queryColumns.push("flightno");
+				queryColumns.push("changetype_name");
+				beginTime = DateUtil.moveDay(new Date(),-7);
+			}
+			
+			protected function onQuery():void
+			{
+				OperatingTipUtil.startOperat("正在查询....",this);
+				querySql =  "";
+				querySql += " select id, remindid, flightid, flightdate,to_char(flightdate,'yyyy-mm-dd') flightdatestr,'未处理' status, dealtime, dealer, comments, updatetime, updateuser,risklevel,";
+				querySql += " ata_no, remind_fltno, remind_acnum, remind_status, reminddesc, feedback,";
+				querySql += " case when isneedsupport=0 then '否' when isneedsupport=1 then '是' end isneedsupportstr,";
+				querySql += " case when source=0 then '机组报告' when source=1 then '地面发现' when source=2 then '串件' when source=3 then 'Acars报文' when source=4 then '性能分析' when source=5 then '其它' end sourcestr,";
+				querySql += " case when tiptype=0 then '生产运行类' when tiptype=1 then '技术提醒类' when tiptype=2 then '管理要求类' when tiptype=3 then '提醒确认类' end tiptypestr,";
+				querySql += " looptype, flightno,acnum, acmodel, dep_apt, arr_apt";
+				querySql += " from v_remind_ins w";
+				querySql += " where w.status = 0 and w.risklevel = 2";
+				querySql += " and w.flightdate>=to_date('"+dateBegin.text+"','yyyy-mm-dd')";
+				querySql += " and w.flightdate<=to_date('"+dateEnd.text+"','yyyy-mm-dd')";
+				if(flightno.text!=""){
+					querySql +=" and w.flightno like '%"+flightno.text+"%'";
+				}
+				if(acnum.text!=""){
+					querySql +=" and w.acnum like '%"+acnum.text+"%'";
+				}
+				changeListDg.sql = querySql;
+				changeListDg.refresh();
+			}
+			//导出cvs格式文件
+			protected function exportToExcel():void{
+				DataListExportUtil.dataGridExport2CSV(changeListDg.dataListGrid as DataGrid,"最新航班变动信息");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:Label text="航班号:"/> 
+			<s:TextInput id="flightno"/>
+			<s:Spacer width="20"/>
+			<mx:Label text="飞机号:"/> 
+			<s:TextInput id="acnum"/>
+			<mx:Label text="日期" />
+			<component:DateTimeChooser id="dateBegin" nowTime="{beginTime}" editable="true" formatterType="2"/>
+			<mx:Label text="->" />
+			<component:DateTimeChooser id="dateEnd" nowTime="{endTime}" editable="true" formatterType="2"/>
+			<mx:Button label="查询" click="onQuery()"/>
+			<mx:Button label="导出" click="exportToExcel()"/>
+		</mx:HBox>
+		<component:AdvDataGridPanel id="changeListDg" width="100%" height="100%"  minColumnWidth="100" pageSize="200" 
+									searchCondVisible="false"   horizontalAlign="center" 
+									sql="{querySql}" dataSource="{apmsDs}" queryColumns="{queryColumns}">
+			<component:columns>
+				<mx:DataGridColumn dataField="flightdatestr" headerText="航班日期" width="110"/>
+				<mx:DataGridColumn dataField="flightno" headerText="航班号" width="70"/>
+				<mx:DataGridColumn dataField="acnum" headerText="飞机号" width="75"/>
+				<mx:DataGridColumn dataField="acmodel" headerText="飞机型号" width="75"/>
+				<mx:DataGridColumn dataField="status" headerText="状态" width="70"/>
+				<mx:DataGridColumn dataField="tiptypestr" headerText="提示类型" width="80"/>
+				<mx:DataGridColumn dataField="risklevel" headerText="提示级别" width="70"/>
+				<mx:DataGridColumn dataField="reminddesc" headerText="提示信息描述" width="145"/>
+				<mx:DataGridColumn dataField="dep_apt" headerText="起飞站" width="70"/>
+				<mx:DataGridColumn dataField="arr_apt" headerText="落地站" width="70"/>
+				<mx:DataGridColumn dataField="dealer" headerText="处理人" width="100"/>
+				<mx:DataGridColumn dataField="dealtime" headerText="处理时间" width="150"/>
+				<mx:DataGridColumn dataField="starttime" headerText="提示开始时间" width="145"/>
+				<mx:DataGridColumn dataField="endtime" headerText="提示结束时间" width="145"/>
+				<mx:DataGridColumn dataField="feedback" headerText="处理措施" width="145"/>
+				<mx:DataGridColumn dataField="sourcestr" headerText="来源" width="100"/>
+				<mx:DataGridColumn dataField="isneedsupportstr" headerText="是否需要支援" width="100"/>
+				<mx:DataGridColumn dataField="ata_no" headerText="章节号" width="75"/>
+				<mx:DataGridColumn dataField="comments" headerText="备注" width="145"/>
+				<mx:DataGridColumn dataField="creator" headerText="创建人" width="75"/>
+				<mx:DataGridColumn dataField="creator_dept" headerText="创建人部门" width="145"/>
+				<mx:DataGridColumn dataField="updatetime" headerText="更新时间" width="145"/>
+				<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="100"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+	</mx:VBox>
+</mx:Module>

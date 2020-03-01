@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  initialize="initializeHandler(event)"
+		  creationComplete="creationCompleteHandler()"
+		  xmlns:core="smartx.flex.components.core.*" xmlns:styletemplate="smartx.flex.components.styletemplate.*">
+	<fx:Script>
+		<![CDATA[
+			import com.sep.flex.modules.a3.A3CardPrintUtil;
+			
+			import mx.containers.BoxDirection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillCardPanel;
+			import smartx.flex.components.core.ext.DataValidator;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.util.TempletDataUtil;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			private var formService:RemoteObject;
+			[Bindable]
+			public var debugMode:Boolean = false;
+			[Bindable]
+			private var interval:Number = 0;
+			
+			private var returnAfterSave:Boolean = false;
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+			}
+			
+			private function creationCompleteHandler():void{
+				formService = new RemoteObject(destination);
+				formService.endpoint = endpoint;
+				formService.updateBatchData.addEventListener(ResultEvent.RESULT,updateHandler);
+				formService.updateBatchData.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				mainTemplate.listPanel.topArea.addChild(listButtonBox);
+				mainTemplate.cardBox.addChildAt(cardButtonBox,0);
+				
+				//双击也要刷新子列表 modified by xuzhilin 20130122
+				mainTemplate.listPanel.dataGrid.addEventListener(ListEvent.CHANGE,listPanelItemClickHander);
+				mainTemplate.listPanel.dataGrid.addEventListener(CollectionEvent.COLLECTION_CHANGE,listPanelCollectionChangeHandler);
+				
+				mainTemplate.listPanel.dataGrid.addEventListener(ListEvent.ITEM_DOUBLE_CLICK,listPanelDoubleClickHander);
+				mainTemplate.cardPanel.addEventListener(BillCardPanelEvent.REFRESHCHILDLIST,cardPanelRefreshChild);
+				
+				taskorderList.dataGrid.addEventListener(ListEvent.CHANGE,taskorderListChangeHander);
+				taskorderList.dataGrid.addEventListener(CollectionEvent.COLLECTION_CHANGE,taskorderCollectionChangeHandler);
+				
+			}
+			
+			private function listPanelItemClickHander(event:ListEvent):void{
+				clearInterval(interval);
+				interval = setInterval(deferredClickHandler,240);
+			}
+			
+			private function listPanelCollectionChangeHandler(event:CollectionEvent):void{
+				clearInterval(interval);
+				if(event.kind ==  CollectionEventKind.RESET){
+					interval = setInterval(deferredClickHandler,240);
+				}
+			}
+			
+			private function listPanelDoubleClickHander(event:ListEvent):void{
+				clearInterval(interval);
+				mainTemplate.onEdit();
+				this.onEdit();
+				interval = setInterval(deferredClickHandler,240);
+				
+			}
+			//cardpanel中要求子模板列表数据刷新
+			private function cardPanelRefreshChild(event:BillCardPanelEvent):void{
+				mainObject = mainTemplate.cardPanel.getDataValue();
+				refreshChildListPanel();
+			}
+			
+			private var mainObject:Object;
+			private function deferredClickHandler():void{
+				clearInterval(interval);			
+				mainObject = mainTemplate.listPanel.getSelectedRowValue();
+				if(mainObject == null)
+					mainObject = new Object();
+				refreshChildListPanel();
+			}
+			//刷新子列表
+			private function refreshChildListPanel():void{
+				var workorderId:Object = mainObject["ID"];
+				var condition:String = " WORKORDERID = " + workorderId;
+				
+				taskorderList.initQueryCondition = condition;
+				taskorderList.query();
+				
+				workuserList.initQueryCondition = " TASKSRC=1 AND WORKORDERID= "+ workorderId;
+				workuserList.query();
+				
+				taskuserList.initQueryCondition = " 1=2 ";
+				taskuserList.query();
+				
+			}
+			
+			private var taskorderObject:Object;
+			private function taskorderListChangeHander(event:ListEvent):void{
+				taskorderObject = taskorderList.getSelectedRowValue();
+				if(taskorderObject == null){
+					taskorderObject = new Object();
+				}
+				refreshOrderUserListPanel();
+			}
+			private function taskorderCollectionChangeHandler(event:CollectionEvent):void{
+				taskorderObject = taskorderList.getSelectedRowValue();
+				if(taskorderObject == null){
+					taskorderObject = new Object();
+				}
+				refreshOrderUserListPanel();
+			}
+			
+			
+			private function refreshOrderUserListPanel():void{
+				var taskorderId:Object = taskorderObject["ID"];
+				taskuserList.initQueryCondition = " TASKSRC=2 AND TASKORDERID= "+ taskorderId;
+				taskuserList.query();
+			}
+			
+			private function faultHandler(event:FaultEvent):void{   
+				SmartXMessage.show("Error",SmartXMessage.MESSAGE_ERROR,event.fault.faultString,this);
+			}
+			
+			private function updateHandler(event:ResultEvent):void{
+				mainTemplate.cardPanel.insertMode = false;
+				
+				if(returnAfterSave){
+					mainTemplate.onReturn();
+					returnAfterSave = false;
+				}
+				mainTemplate.listPanel.query();
+				SmartXMessage.show("操作已成功!");
+			}	
+			
+			private function onEdit():void{
+				taskorderList.showEditBox = true;
+				taskorderList.editable = true;
+			}
+			
+			private function onInsert():void{
+				taskorderList.initQueryCondition = "1=2";//清空子表
+				taskorderList.query();
+				taskorderList.showEditBox = true;
+				taskorderList.editable = true;
+			}
+			
+			private function onReturn():void{
+				taskorderList.showEditBox = false;
+				taskorderList.editable = false;		
+			}
+			
+			private function onSave():void{
+				mainTemplate.onSave();
+			}
+			
+			private function onSaveAndReturn():void{
+				onSave();
+				returnAfterSave = true;
+			}
+			
+			private function onDelete():void{
+				if(mainTemplate.listPanel.getSelectedRowValues().length == 0){
+					SmartXMessage.show("请选择要删除的记录");
+					return;
+				}
+				SmartXMessage.show("是否确认要删除记录？",SmartXMessage.MESSAGE_CONFIRM,null,this,function(event:CloseEvent):void{
+					switch(event.detail){
+						case Alert.YES:
+							var sqlList:Array = new Array();
+							var values:Array = new Array();
+						for each(var selectListRowValue:Object in mainTemplate.listPanel.getSelectedRowValues()){
+							var pkValue:Object = selectListRowValue["ID"];
+							//删除子表数据
+							var deleteSQL:String = "delete from "+taskorderList.saveTableName+" where WORKORDERID = "+pkValue;
+							sqlList.push(deleteSQL);
+							
+							var tempSQL:String = "delete from "+mainTemplate.listPanel.saveTableName+" where ID="+pkValue;
+							trace(tempSQL);
+							sqlList.push(tempSQL);
+							
+						}
+						if(sqlList.length>0){
+							formService.executeBatchByDS(mainTemplate.listPanel.datasourceName, sqlList,values,null,null);
+						}
+						
+						trace(deleteSQL);
+						sqlList.push(deleteSQL);
+						taskorderList.initQueryCondition = "1=2";//清空子表
+						taskorderList.query();
+							
+						case Alert.NO:
+							return;
+					}
+				});
+			}
+			
+			protected function insertBtn_clickHandler(event:MouseEvent):void
+			{
+				mainTemplate.onInsert();
+			}
+			
+			protected function worksplitBtn_clickHandler(event:MouseEvent):void
+			{
+				var row:Object = mainTemplate.listPanel.getSelectedRowValue();
+				if(row == null){
+					SmartXMessage.show("请选择一个工单！");
+					return ;
+				}
+				
+				var taskorderWindow:WorkOrder2TaskOrderWindow = new WorkOrder2TaskOrderWindow();
+				taskorderWindow.setOrderValue(row);
+				taskorderWindow.okFunc = refreshChildListPanel;
+				
+				PopUpManager.addPopUp(taskorderWindow,this);
+				PopUpManager.centerPopUp(taskorderWindow);
+				
+			}
+			
+			protected function workassignBtn_clickHandler(event:MouseEvent):void
+			{
+				var row:Object = mainTemplate.listPanel.getSelectedRowValue();
+				if(row == null){
+					SmartXMessage.show("请选择一个工单！");
+					return ;
+				}
+				var dispatchPanel:WorkOrderDispatchWindow = new WorkOrderDispatchWindow();
+				dispatchPanel.setOrderValue(row);
+				dispatchPanel.okFunc = refreshChildListPanel;
+				
+				PopUpManager.addPopUp(dispatchPanel,this);
+				PopUpManager.centerPopUp(dispatchPanel);
+			}
+			
+			protected function taskassignBtn_clickHandler(event:MouseEvent):void
+			{
+				var row:Object = taskorderList.getSelectedRowValue();
+				if(row == null){
+					SmartXMessage.show("请选择一个任务单！");
+					return ;
+				}
+				
+				var taskDispatchPanel:TaskOrderDispatchWindow = new TaskOrderDispatchWindow();
+				taskDispatchPanel.setOrderValue(row);
+				taskDispatchPanel.okFunc = refreshChildListPanel;
+				
+				PopUpManager.addPopUp(taskDispatchPanel,this);
+				PopUpManager.centerPopUp(taskDispatchPanel);
+				
+			}
+			
+			protected function a3PrintBtn_clickHandler(event:MouseEvent):void
+			{
+				var row:Object = taskorderList.getSelectedRowValue();
+				if(row == null){
+					SmartXMessage.show("请选择一个任务单！");
+					return ;
+				}
+				
+				var refVo:SimpleRefItemVO = row["JOBCARDID"];
+				var jobcardId:String = refVo.id;
+				var util:A3CardPrintUtil = new A3CardPrintUtil();
+				util.printA3Card(jobcardId);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:HBox width="100%" id="listButtonBox">
+			<mx:Button id="insertBtn" label="新增" click="insertBtn_clickHandler(event)" icon="{AssetsFileLib.insertIcon}" />
+			<mx:Button id="deleteBtn" label="删除" click="onDelete()" icon="{AssetsFileLib.delete2Icon}" />
+			<mx:Button id="worksplitBtn" label="A3关联" click="worksplitBtn_clickHandler(event)" icon="{AssetsFileLib.subDatataskIcon}" />
+			<mx:Button id="workassignBtn" label="工单分派" click="workassignBtn_clickHandler(event)" icon="{AssetsFileLib.assignIcon}" />
+		</mx:HBox>
+		
+		<mx:HBox id="cardButtonBox" width="100%">
+			<mx:Button label="返回" click="mainTemplate.onReturn()" icon="{AssetsFileLib.returnIcon}"/>
+			<mx:Button id="saveAndReturnButton" label="保存并返回" click="onSaveAndReturn()" icon="{AssetsFileLib.savereturnIcon}"/>
+			<mx:Button id="cardSaveButton" label="保存" click="onSave()" icon="{AssetsFileLib.saveIcon}"/>
+		</mx:HBox>
+	</fx:Declarations>
+	<mx:VDividedBox width="100%" height="100%" verticalGap="2">
+		<mx:HDividedBox height="65%" width="100%">
+			<styletemplate:StyleTemplate02 width="65%" height="100%" id="mainTemplate"
+								 destination="{destination}" endpoint="{endpoint}" 
+								 edit="onEdit()" insert="onInsert()" returnToList="onReturn()"
+								 templetCode="T_U_WORKORDER_MNG"  editable="true" showSystemButton="false"
+								 insertbfIncCard ="com.apms.flex.modules.basic.interceptor.UpdateManInfoBfInterceptor"
+								 updatebfIncCard ="com.apms.flex.modules.basic.interceptor.UpdateManInfoBfInterceptor"
+								 showDataAfterInit="true" pageSize="60" itemLabelWidth="100"
+								 />
+			<mx:VBox width="35%" height="100%" >
+				<s:Spacer height="28" />
+				<mx:Label fontWeight="bold" text="工单人员"/>
+			  	<core:BillListPanel width="100%" height="100%" id="workuserList" endpoint="{endpoint}" destination="{destination}"
+								label="工单下人员" templetCode="T_U_WORKORDER_USER_MNG"  showQuickQueryPanel="false" 
+								editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}" debugMode="{debugMode}"/>
+			</mx:VBox>
+		</mx:HDividedBox>
+		<mx:HRule width="100%" />
+		<mx:HDividedBox height="40%" width="100%">
+			<mx:VBox width="65%" height="100%">
+				<mx:HBox width="100%" horizontalAlign="left">
+					<mx:Label fontWeight="bold" text="任务单"/>
+					<s:Spacer width="30"/>
+					<mx:Button id="taskassignBtn" label="任务单分派" icon="{AssetsFileLib.assignIcon}" click="taskassignBtn_clickHandler(event)" />
+					<mx:Button id="a3PrintBtn" label="A3卡打印" icon="{AssetsFileLib.printIcon}" click="a3PrintBtn_clickHandler(event)"  />
+				</mx:HBox>
+				<core:BillListPanel width="100%" height="100%" id="taskorderList" endpoint="{endpoint}" destination="{destination}"
+							label="任务单" templetCode="T_U_TASKORDER_RECORD_MNG" showQuickQueryPanel="false" showPageBox="false"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}" debugMode="{debugMode}"/>
+			</mx:VBox>
+			<mx:VBox width="35%" height="100%">
+				<mx:Label fontWeight="bold" text="任务单人员"/>
+				<core:BillListPanel width="100%" height="100%" id="taskuserList" endpoint="{endpoint}" destination="{destination}"
+							label="任务单人员" templetCode="T_U_TASKORDER_USER_MNG"  showQuickQueryPanel="false" showPageBox="false" 
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}" debugMode="{debugMode}"
+							showLoadingWindow="false"/>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VDividedBox>
+</mx:Module>

@@ -1,0 +1,1168 @@
+<ReportSettings version="1.2">
+  <PageWidth>29.7</PageWidth>
+  <PageHeight>21</PageHeight>
+  <LeftMargin>0.85</LeftMargin>
+  <RightMargin>0.85</RightMargin>
+  <TopMargin>0.5</TopMargin>
+  <BottomMargin>0.5</BottomMargin>
+  <PageHeaderRepeat>false</PageHeaderRepeat>
+  <AdjustPrintDirection>true</AdjustPrintDirection>
+  <ShowPageNumber>true</ShowPageNumber>
+  <PageNumberFormat>{0}/{1}</PageNumberFormat>
+  <PageHeaderSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <Height>1.6</Height>
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@主标题</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <VerticalAlign>top</VerticalAlign>
+            <FontSize>18</FontSize>
+            <FontBold>true</FontBold>
+          </Style>
+          <Width>28</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageHeaderSettings>
+  <PageFooterSettings>
+    <ItemSetting type="CaptionRowSetting">
+      <CaptionCellSettings>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>打印时间：</Value>
+          <Width>2.4</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@打印时间</Value>
+          <Format>yyyy-MM-dd HH:mm:ss</Format>
+          <Width>12.5</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>打印人:</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+          </Style>
+          <Width>1.6</Width>
+        </ItemSetting>
+        <ItemSetting type="CaptionCellSetting">
+          <Value>=@打印人</Value>
+          <Style>
+            <TextAlign>right</TextAlign>
+          </Style>
+          <Width>2.3</Width>
+        </ItemSetting>
+      </CaptionCellSettings>
+    </ItemSetting>
+  </PageFooterSettings>
+  <TableColumnSettings>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.45</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>1.6</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>5.1</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>3.8</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>3.9</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>0.75</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>0.75</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.5</Width>
+    </ItemSetting>
+    <ItemSetting type="TableColumnSetting">
+      <Width>2.1</Width>
+    </ItemSetting>
+  </TableColumnSettings>
+  <TableHeaderSettings>
+    <ItemSetting type="TableRowSetting">
+      <Height>1.8</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/L.CODE               航空公司</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/C TYPE                  机型号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/C REG.                  机号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>WORK_BASE                                维修基地</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>A/C TSN/                                    本次航班                                 飞机总时间/总循环</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <Height>1.6</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@航空公司</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@机型</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@机号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+            <Leading>2</Leading>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=@所属基地</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>ITEM                                       项次</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+          </Style>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>ROUTINE WORK DESCRIPTION                                        例行工作内容</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>W.O.N                                 指令号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>WORK OD                                        工作单编号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>MH                               工时</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <ColSpan>2</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>SIGN/签名</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+          </Style>
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>3</ColSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>CANCELLED/取消</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>COMP/                           完成</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+            <Leading>2</Leading>
+          </Style>
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+    <ItemSetting type="TableRowSetting">
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>3</RowSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>实施部门</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>MCC</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontName>SimHei</FontName>
+            <FontSize>12</FontSize>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <RowSpan>2</RowSpan>
+        </ItemSetting>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableHeaderSettings>
+  <TableDetailSettings>
+    <ItemSetting type="TableRowSetting">
+      <Height>1.6</Height>
+      <TableCellSettings>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#项次</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#工作内容</Value>
+          <Style>
+            <VerticalAlign>top</VerticalAlign>
+            <FontSize>10</FontSize>
+          </Style>
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <ColSpan>4</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#指令号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#编号</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+          </Style>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#工时</Value>
+          <Style>
+            <TextAlign>center</TextAlign>
+            <FontSize>10</FontSize>
+          </Style>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting">
+          <Value>=#工时</Value>
+          <ColSpan>2</ColSpan>
+        </ItemSetting>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+        <ItemSetting type="TableCellSetting"/>
+      </TableCellSettings>
+    </ItemSetting>
+  </TableDetailSettings>
+  <TableFooterSettings>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@子报表2参数</SubReportParameters>
+      <SubReportTable>=@子报表2表格</SubReportTable>
+      <TableHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>ITEM                项次</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>ROUTINE WORK DESCRIPTION                                 非例行工作内容</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>W.O.N                   指令号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>WORK OD                       工作单编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>MH            工时</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <ColSpan>2</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>反馈结果</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>SIGN/签名</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>CANCELLED/取消</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>COMP/               完成</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <RowSpan>2</RowSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>实施部门</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>MCC</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+                <FontSize>12</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>2</RowSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <Height>1.5</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#项次</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工作内容</Value>
+              <Style>
+                <VerticalAlign>top</VerticalAlign>
+                <FontSize>10</FontSize>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#指令号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工时</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工时</Value>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+      <TableFooterSettings>
+        <ItemSetting type="TableRowSetting">
+          <Height>1.3</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>TOTAL 总工时</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>14</FontSize>
+              </Style>
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=@工时总和</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>INSTRUCTIONS:要求：                                                                                   CHECK ALL ITEMS ABOVE FOR CORRECT SIGNATURES/STAMPS AND COMPLETENESS. ANY ITEMS DELETED OR POSTPONED SHOULD BE SIGNED BY A PLANNER OR OPERATOR.ALL ITEMS MENTIONED IN GROUND SHEET,TECHNICAL LOGBOOK(TLB) AND CABIN LOGBOOK (CLB) ARE RECTIFIED OR DEFERRED I.A.W.APPLICABLE APPROVED PROCEDURES.REQUIRED INSPECTION ITEMS (RII) ARE CLASSIFIED AND PERFORMED. MAINTENANCE CHECK PERFORMED IS SIGNED OFF IN TLB OR ON AN APPLICABLE MAINTENANCE  RELEASE. ALL AIRCRAFT DOCUMENTS ARE RETURNED ON BOARD AND PROPERLY STOWED.                                                                                                     检查上述项目已正确签署/盖章并且完整。要撤除或推迟的项目应有计划员或控制员签署。地面检查报告单，技术记录本（TLB）和客舱记录本（CLB）中的故障已排除或按有关批准程序保留。必检项目（RII）已分类并实施。完成的工作应在TLB或维修放行单上签署。所有文件应送回飞机并保存好。</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <Leading>3</Leading>
+              </Style>
+              <ColSpan>8</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>8</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>CERTIFY STAFF/SIGN OR STAMPING                                      放行人员                                          签字或盖章:</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <Leading>10</Leading>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>7</ColSpan>
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <RowSpan>3</RowSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>DATE:                                                 日期：</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <Leading>5</Leading>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableFooterSettings>
+    </ItemSetting>
+    <ItemSetting type="SubReportRowSetting">
+      <SubReportParameters>=@子报表3参数</SubReportParameters>
+      <SubReportTable>=@子报表3表格</SubReportTable>
+      <TableHeaderSettings>
+        <ItemSetting type="TableRowSetting">
+          <Height>1.7</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>前三天完成的工作：</Value>
+              <Style>
+                <FontName>SimHei</FontName>
+                <FontSize>14</FontSize>
+                <Border>false</Border>
+              </Style>
+              <ColSpan>12</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+            <ItemSetting type="TableCellSetting"/>
+          </TableCellSettings>
+        </ItemSetting>
+        <ItemSetting type="TableRowSetting">
+          <Height>1.2</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>序号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>工作内容</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>维修号（编号）</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontBold>true</FontBold>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>指令号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>维修号（编号）</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>件号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>工作日期</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontName>SimHei</FontName>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>工作日期</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+              </Style>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableHeaderSettings>
+      <TableDetailSettings>
+        <ItemSetting type="TableRowSetting">
+          <Height>1.4</Height>
+          <TableCellSettings>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#序号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工作内容</Value>
+              <Style>
+                <VerticalAlign>top</VerticalAlign>
+                <FontSize>10</FontSize>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>2</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#指令号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#编号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#件号</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <ColSpan>3</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工作日期</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+                <Leading>2</Leading>
+              </Style>
+              <ColSpan>4</ColSpan>
+            </ItemSetting>
+            <ItemSetting type="TableCellSetting">
+              <Value>=#工作日期</Value>
+              <Style>
+                <TextAlign>center</TextAlign>
+                <FontSize>10</FontSize>
+              </Style>
+            </ItemSetting>
+          </TableCellSettings>
+        </ItemSetting>
+      </TableDetailSettings>
+    </ItemSetting>
+  </TableFooterSettings>
+  <TableGroupSettings>
+    <ItemSetting type="TableGroupSetting"/>
+  </TableGroupSettings>
+</ReportSettings>

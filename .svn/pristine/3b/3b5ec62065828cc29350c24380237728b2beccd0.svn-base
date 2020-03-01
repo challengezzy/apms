@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="840" height="480"
+					   allowClose="true" allowDrag="true"
+					   close="closeClickHandler()"
+					   title="任务单拆分"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" 
+					   xmlns:component="com.apms.flex.component.*" 
+					   >
+	<fx:Declarations>
+		<!--
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightTaskDispatch" result="result4flightTaskDispatch(event)" 
+					   fault="fault4flightTaskDispatch(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+		-->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.apms.flex.vo.LoginUserVo;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.IUIComponent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var destination:String = GlobalConst.SERVICE_FORM;
+			
+			private var orderObj:Object;
+			
+			[Bindable]
+			public var initQueryCondition:String;
+			[Bindable]
+			public var orderid:String = "";
+			[Bindable]
+			public var ordersn:String = "";
+			[Bindable]
+			public var acnum:String = "";
+			[Bindable]
+			public var opday_str:String = "";
+			
+			private var loginvo:LoginUserVo;
+			
+			public var okFunc:Function = function():void{ };
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				listPanel.query();
+			}
+			
+			public function setOrderValue(value:Object):void{
+				this.orderObj = value;
+				
+				ordersn = orderObj["WORKORDERSN"];
+				orderid = orderObj["ID"];
+				acnum = orderObj["ACNUM"];
+				opday_str = orderObj["OPDAY"];
+				
+				initQueryCondition = " WORKORDERID = "+orderid;
+				if(listPanel != null){
+					listPanel.query();
+				}
+			}
+			
+			
+			protected function onOkClickHandler():void
+			{
+				var optUser:String = ClientEnviorment.getInstance().getVar("KEY_LOGIN_USER_NAME") as String;
+				
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY-MM-DD JJ:NN:SS";
+				var nowData:String= dateFormatter.format(new Date());
+				
+				//刷新子表的外键值，指向主键
+				var insertObjects:Array = listPanel.getSaveDataValueList();
+				for each(var insertObject:Object in insertObjects){
+					
+					var cardvo:SimpleRefItemVO = insertObject["JOBCARDID"] as SimpleRefItemVO;
+					
+					insertObject["AMM_NO"] = cardvo.name;
+					insertObject["WORKORDERID"] = orderid;
+					insertObject["UPDATETIME"] = nowData;
+					insertObject["UPDATEUSER"] = optUser;
+				}
+				
+				//调用billlist模板进行保存
+				listPanel.save();
+				
+			}
+			
+			protected function closeClickHandler():void
+			{
+				PopUpManager.removePopUp(this);
+				if(okFunc != null){
+					okFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%" paddingTop="10">
+		<mx:HBox width="100%">
+			<mx:Label text="指令号" width="60" />
+			<mx:TextInput editable="false" width="160" text="{ordersn}" />
+			<s:Spacer width="10" />
+			<mx:Label text="机号" width="60" />
+			<mx:TextInput editable="false" width="100" text="{acnum}" />
+			<mx:Label text="实施日期" width="60" />
+			<mx:TextInput editable="false" width="100" text="{opday_str}" />
+		</mx:HBox>
+		<mx:HRule width="100%" />
+		<mx:Label fontWeight="bold" text="任务单"/>
+		<core:BillListPanel id="listPanel" width="100%" height="100%" destination="{destination}" endpoint="{endpoint}" 
+							templetCode="T_U_TASKORDER_RECORD_NEW" editable="true" showEditBox="true" showSaveButton="false"
+							rowCountPerPage="20" showQuickQueryPanel="false"
+							initQueryCondition="{initQueryCondition}"/>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.okIcon}" label="保存" click="onOkClickHandler()" />
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="closeClickHandler()" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

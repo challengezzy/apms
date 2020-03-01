@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   width="100%" height="560"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   allowClose="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="DD单"
+					   verticalGap="1"   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.utils.StringUtil;
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			[Bindable]
+			public var editable:Boolean=false;//是否可编辑
+			[Bindable]
+			private var ddinfoData:Object = new Object();//列表对象
+			[Bindable]
+			public var threeWordsLen:Number;//3个字的长度（排版用）
+			[Bindable]
+			public var fourWordsLen:Number;
+			[Bindable]
+			public var fiveWordsLen:Number;
+			[Bindable]
+			public var textAreaLen:Number;
+			[Bindable]
+			public var issue_dateToDate:Date;//日期
+			[Bindable]
+			public var target_dateToDate:Date;
+			[Bindable]
+			public var first_dateToDate:Date;
+			[Bindable]
+			public var ef_dateToDate:Date;
+			[Bindable]
+			public var proposed_dateToDate:Date;
+			[Bindable]
+			public var approved_dateToDate:Date;
+			[Bindable]
+			public var input_dateToDate:Date;
+			[Bindable]
+			public var property_dateToDate:Date;
+			//文本框的长度
+			[Bindable]
+			public var textLen:Number;
+			[Bindable]
+			public var finish_signText:String;
+			[Bindable]
+			public var initTime:Date=null; 
+			[Bindable]
+			public var total_fh_h:String;//该界面的时间都转换成小时
+			[Bindable]
+			public var target_fh_h:String;
+			[Bindable]
+			public var req_grandt_h:String;
+			[Bindable]
+			public var delayTimes:Number;//译后报文内容
+			[Bindable]
+			public var req_mh_h:String;
+			
+			private var isCreated:Boolean = false; 
+			
+			//关闭标识
+			[Bindable]
+			public var finishArr:ArrayCollection = new ArrayCollection(
+				[    {valueCN:"未关闭"}, 
+					{valueCN:"已关闭"}, 
+					{valueCN:"延期"}, 
+					{valueCN:"关闭延期"}, 
+					{valueCN:"取消"}
+				]                
+			);
+			
+			private function creationComplete():void
+			{
+				threeWordsLen=threeWordsL.width;
+				fourWordsLen=fourWordsL.width;
+				fiveWordsLen=fiveWordsL.width;
+				textAreaLen=860-fiveWordsLen;
+				textLen=0.7*target_fh.width;
+				isCreated = true;
+				refreshData();
+			}
+			
+			public function set ddInfoData(_data:Object):void{
+				this.ddinfoData = _data;
+				
+				if(isCreated ){
+					refreshData();
+				}
+			}
+			
+			private function refreshData():void{
+				//日期转换
+				var issue_dateSt:String=ddinfoData.ISSUE_DATE;
+				if(issue_dateSt==null){
+					issue_dateToDate=initTime;
+				}else{
+					issue_dateToDate = DateUtil.stringToDate(issue_dateSt);
+				}
+				var target_dateSt:String=ddinfoData.TARGET_DATE;
+				if(target_dateSt==null){
+					target_dateToDate=initTime;
+				}else{
+					target_dateToDate = DateUtil.stringToDate(target_dateSt);
+				}
+				var first_dateSt:String=ddinfoData.FIRST_DATE;
+				if(first_dateSt==null){
+					target_dateToDate=initTime;
+				}else{
+					first_dateToDate = DateUtil.stringToDate(first_dateSt);
+				}
+				var ef_dateSt:String=ddinfoData.EF_DATE;
+				if(ef_dateSt==null){
+					ef_dateToDate=initTime;
+				}else{
+					ef_dateToDate = DateUtil.stringToDate(ef_dateSt);
+				}
+				var proposed_dateSt:String=ddinfoData.PROPOSED_DATE;
+				if(proposed_dateSt==null){
+					proposed_dateToDate=initTime;
+				}else{
+					proposed_dateToDate = DateUtil.stringToDate(proposed_dateSt);
+				}
+				var approved_dateSt:String=ddinfoData.APPROVED_DATE;
+				if(approved_dateSt==null){
+					approved_dateToDate=initTime;
+				}else{
+					approved_dateToDate = DateUtil.stringToDate(approved_dateSt);
+				}
+				var input_dateSt:String=ddinfoData.INPUT_DATE;
+				if(input_dateSt==null){
+					input_dateToDate=initTime;
+				}else{
+					input_dateToDate = DateUtil.stringToDate(input_dateSt);
+				}
+				var property_dateSt:String=ddinfoData.PROPERTY_DATE;
+				if(property_dateSt==null){
+					property_dateToDate=initTime;
+				}else{
+					property_dateToDate = DateUtil.stringToDate(property_dateSt);
+				}
+				//分钟转换小时
+				if(ddinfoData.TOTAL_FH==null){
+					total_fh_h=null;
+				}else{
+					var templeText1:String=ddinfoData.TOTAL_FH;
+					var total_fh_mi:Number=Number(templeText1);
+					var total_fh_h_str:Number=total_fh_mi/60;
+					total_fh_h=total_fh_h_str.toString();
+				}
+				if(ddinfoData.TARGET_FH==null){
+					target_fh_h=null;
+				}else{
+					var templeText2:String=ddinfoData.TARGET_FH;
+					var target_fh_mi:Number=Number(templeText2);
+					var target_fh_h_str:Number=target_fh_mi/60;
+					target_fh_h= target_fh_h_str.toString();
+				}
+				if(ddinfoData.REQ_GRANDT==null){
+					req_grandt_h=null;
+				}else{
+					var templeText3:String=ddinfoData.REQ_GRANDT;
+					var req_grandt_mi:Number=Number(templeText3);
+					var req_grandt_h_str:Number=req_grandt_mi/60;
+					req_grandt_h=req_grandt_h_str.toString();
+					
+				}
+				if(ddinfoData.REQ_MH==null){
+					req_mh_h=null;
+				}else{
+					var templeText4:String=ddinfoData.REQ_MH;
+					var req_mh_mi:Number=Number(templeText4);
+					var req_mh_h_str:Number=req_mh_mi/60;
+					req_mh_h=req_mh_h_str.toString();
+				}
+				
+				delayTimes=1+Number(ddinfoData.DELAY_NUM);
+				//关闭标识
+				if(ddinfoData.FINISH_SIGN==0){
+					finish_sign.selectedIndex=0;
+				}else if(ddinfoData.FINISH_SIGN==2){
+					finish_sign.selectedIndex=2;
+				}
+				//复选框选定的判定
+				//相关部门
+				if(ddinfoData.M_FLAG==null){
+					m_flag.selected=false;
+				}else{
+					var m_flagStr:String=StringUtil.trim(ddinfoData.M_FLAG);
+					if("1".localeCompare(m_flagStr)==0){
+						m_flag.selected=true;
+					}else{
+						m_flag.selected=false;
+					}
+				}
+				if(ddinfoData.RELDEP_QIANPAI==0||ddinfoData.RELDEP_QIANPAI==null){
+					reldep_qianpai.selected=false;
+				}else{
+					reldep_qianpai.selected=true;
+				}
+				if(ddinfoData.RELDEP_FEIXINGDUI==0||ddinfoData.RELDEP_FEIXINGDUI==null){
+					reldep_feixingdui.selected=false;
+				}else{
+					reldep_feixingdui.selected=true;
+				}
+				if(ddinfoData.RELDEP_KECANG==0||ddinfoData.RELDEP_KECANG==null){
+					reldep_kecang.selected=false;
+				}else{
+					reldep_kecang.selected=true;
+				}
+				if(ddinfoData.RELDEP_JIZU==0||ddinfoData.RELDEP_JIZU==null){
+					reldep_jizu.selected=false;
+				}else{
+					reldep_jizu.selected=true;
+				}
+				//相关部门——其它
+				if(ddinfoData.RELATIVE_DEP==null){
+					reldep_qita.text=null;
+				}else{
+					var relative_depText:String=ddinfoData.RELATIVE_DEP;
+					relative_depText=relative_depText.replace("签派,","")
+					var arr:Array=["飞行队,","客舱,","机组,","签派","飞行队","客舱","机组"];
+					for(var i:int=0;i<arr.length;i++){
+						if(relative_depText!=null){
+							relative_depText=relative_depText.replace(arr[i],"");
+						}
+					}
+					reldep_qita.text=relative_depText;
+				}
+				//运行限制
+				if(ddinfoData.LIMIT_JIANZAI==0||ddinfoData.LIMIT_JIANZAI==null){
+					limit_jianzai.selected=false;
+				}else{
+					limit_jianzai.selected=true;
+				}
+				if(ddinfoData.LIMIT_JIANKE==0||ddinfoData.LIMIT_JIANKE==null){
+					limit_jianke.selected=false;
+				}else{
+					limit_jianke.selected=true;
+				}
+				if(ddinfoData.LIMIT_ERLEIFLY==0||ddinfoData.LIMIT_ERLEIFLY==null){
+					limit_erleifly.selected=false;
+				}else{
+					limit_erleifly.selected=true;
+				}
+				if(ddinfoData.LIMIT_GAOYUAN==0||ddinfoData.LIMIT_GAOYUAN==null){
+					limit_gaoyuan.selected=false;
+				}else{
+					limit_gaoyuan.selected=true;
+				}
+				if(ddinfoData.LIMIT_RVSM==0||ddinfoData.LIMIT_RVSM==null){
+					limit_rvsm.selected=false;
+				}else{
+					limit_rvsm.selected=true;
+				}
+				//运行限制——其它
+				if(ddinfoData.USE_LIMITED==null){
+					limit_qita.text=null;
+				}else{
+					var use_limitedtext:String=ddinfoData.USE_LIMITED;
+					use_limitedtext=use_limitedtext.replace("减载,","");
+					var arr2:Array=["减客,","高原航线,","RVSM,","Ⅱ类飞行,","减载","减客","高原航线","RVSM","Ⅱ类飞行"];
+					for(var j:int=0;j<arr2.length;j++){
+						if(use_limitedtext!=null){
+							use_limitedtext=use_limitedtext.replace(arr2[j],"");
+						}
+					}
+					
+					limit_qita.text=use_limitedtext;
+				}
+				//是否有料
+				if(ddinfoData.MATERIAL==null){
+					material.selected=false;
+				}else{
+					if(ddinfoData.MATERIAL.id==0||ddinfoData.MATERIAL.id==null){
+						material.selected=false;
+					}else{
+						material.selected=true;
+					}
+				}
+				
+				//放上飞机
+				if(ddinfoData.SRM_CODE==null){
+					srm_code.selected=false;
+				}else{
+					var srm_codeStr:String=StringUtil.trim(ddinfoData.SRM_CODE);
+					if("1".localeCompare(srm_codeStr)==0){
+						srm_code.selected=true;
+					}else{
+						srm_code.selected=false;
+					}
+				}
+				//是否重检
+				if(ddinfoData.REPEAT==null){
+					repeat.selected=false;
+				}else{
+					if(ddinfoData.REPEAT.id==0||ddinfoData.REPEAT.id==null){
+						repeat.selected=false;
+					}else{
+						repeat.selected=true;
+					}
+				}
+				//影响服务
+				if(ddinfoData.SEVICE_SIGN==null){
+					sevice_sign.selected=false;
+				}else{
+					var sevice_signStr:String=StringUtil.trim(ddinfoData.SEVICE_SIGN.id);
+					if("1".localeCompare(sevice_signStr)==0){
+						sevice_sign.selected=true;
+					}else{
+						sevice_sign.selected=false;
+					}
+				}
+				//影响运行
+				if(ddinfoData.AOC_FLAG==null){
+					aoc_flag.selected=false;
+				}else{
+					var aoc_flagStr:String=StringUtil.trim(ddinfoData.AOC_FLAG);
+					if("1".localeCompare(aoc_flagStr)==0){
+						aoc_flag.selected=true;
+					}else{
+						aoc_flag.selected=false;
+					}
+				}
+				//是否性能分析
+				if(ddinfoData.PROPERTY_FLAG==null){
+					property_flag.selected=false;
+				}else{
+					var property_flagStr:String=StringUtil.trim(ddinfoData.PROPERTY_FLAG);
+					if("1".localeCompare(property_flagStr)==0){
+						property_flag.selected=true;
+					}else{
+						property_flag.selected=false;
+					}
+				}
+				//特殊关注
+				if(ddinfoData.ACTION_SIGN==null){
+					action_sign.selected=false;
+				}else{
+					if(ddinfoData.ACTION_SIGN.id==0||ddinfoData.ACTION_SIGN.id==null){
+						action_sign.selected=false;
+					}else{
+						action_sign.selected=true;
+					}
+				}
+				//是否完成分析
+				if(ddinfoData.PROPERTY_CLOSE==0||ddinfoData.PROPERTY_CLOSE==null){
+					property_close.selected=false;
+				}else{
+					property_close.selected=true;
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="vbox" paddingLeft="5" paddingRight="5" paddingTop="10" paddingBottom="10">
+		<mx:HBox>
+			<mx:Label text="DD单号" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="dd_no" text="{ddinfoData.DD_NO}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="飞机号" id="threeWordsL"/><s:TextInput id="ac_id" text="{ddinfoData.AC_ID}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="所属基地" id="fourWordsL"/><s:TextInput id="apt_iata" text="{ddinfoData.APT_IATA}" width="{textLen}" editable="{editable}"/>
+			
+			<mx:Label text="总循环" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="total_cycl" text="{ddinfoData.TOTAL_CYCL}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="总小时" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="total_fh" text="{total_fh_h}" width="{textLen}" editable="{editable}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="转录自" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="trans_from" text="{ddinfoData.TRANS_FROM}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="机型" width="{threeWordsLen}" textAlign="right"/><s:TextInput id="ac_type" text="{ddinfoData.AC_TYPE}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="指令号" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="work_no" text="{ddinfoData.WORK_NO}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="发动机序号"  id="fiveWordsL"/><s:TextInput id="eng_sn" text="{ddinfoData.ENG_SN}" width="{textLen}" editable="{editable}"/>
+			<mx:Label text="起始日期"/><component:DateTimeChooser id="issue_date" nowTime="{issue_dateToDate}" editable="{editable}" formatterType="2"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="故障报告"/><mx:TextArea  id="defect_rpt" width="{textAreaLen}" text="{ddinfoData.DEFECT_RPT}" editable="{editable}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="措施" width="{fourWordsLen}" textAlign="right"/><mx:TextArea  id="rect" width="{textAreaLen}" text="{ddinfoData.RECT}" editable="{editable}"/>
+		</mx:HBox>	
+		<mx:HBox>
+			<mx:VBox>
+				<mx:HBox width="{fourWordsLen}" textAlign="right">
+					<mx:CheckBox id="m_flag"   enabled="{editable}"/>
+					<mx:Label text="M项" color="red"/>
+				</mx:HBox>
+				<mx:Label text="M项描述" width="{fourWordsLen}" textAlign="right"/>
+			</mx:VBox>
+			<mx:TextArea   id="m_desc" width="{textAreaLen}" text="{ddinfoData.M_DESC}" editable="{editable}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<s:BorderContainer>
+				<mx:VBox>
+					<mx:HBox>
+						<mx:Label text="期限预留至" color="red"/><component:DateTimeChooser  id="target_date" nowTime="{target_dateToDate}" editable="{editable}" formatterType="2"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="小时" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="target_fh" text="{target_fh_h}" editable="{editable}"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="循环" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="target_cycl" text="{ddinfoData.TARGET_CYCL}" editable="{editable}"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="其它" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="keep_others" text="{ddinfoData.KEEP_OTHERS}" editable="{editable}"/>
+					</mx:HBox>
+				</mx:VBox>
+			</s:BorderContainer>
+			<s:BorderContainer>
+				<mx:VBox>
+					<mx:HBox>
+						<mx:Label text="DD-分类" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="dd_cls" text="{ddinfoData.DD_CLS}" editable="{editable}"/>
+						<mx:Label text="停场时间"/><s:TextInput id="req_grandt" text="{req_grandt_h}" editable="{editable}"/>	
+						<mx:Label text="MEL" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="mel_code" text="{ddinfoData.MEL_CODE}" editable="{editable}"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="项目代码"/><s:TextInput id="item_no" text="{ddinfoData.ITEM_NO}" editable="{editable}"/>
+						<mx:Label text="所需工时"/><s:TextInput id="req_mh" text="{req_mh_h}" editable="{editable}"/>	
+						<mx:Label text="ATA章节" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="ata_no" text="{ddinfoData.ATA_NO}" editable="{editable}"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="故障系统"/><s:TextInput id="position" text="{ddinfoData.POSITION}" editable="{editable}"/>
+						<mx:HBox>
+							<mx:Label text="相关部门"/>
+							<mx:CheckBox id="reldep_qianpai" label="签派" enabled="{editable}"/>
+							<mx:CheckBox id="reldep_feixingdui" label="飞行队" enabled="{editable}"/>
+							<mx:CheckBox id="reldep_kecang" label="客舱" enabled="{editable}"/>
+							<mx:CheckBox id="reldep_jizu" label="机组" enabled="{editable}"/>
+							<mx:Label text="其它" /><s:TextInput id="reldep_qita" editable="{editable}"/>
+						</mx:HBox>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:Label text="故障数量"/><s:TextInput id="num_bad" text="{ddinfoData.NUM_BAD}" editable="{editable}"/>
+						<mx:Label text="放行数量"/><s:TextInput id="num_release" text="{ddinfoData.NUM_RELEASE}" editable="{editable}"/>
+						<mx:Label text="安装数量"/><s:TextInput id="num_install" text="{ddinfoData.NUM_INSTALL}" editable="{editable}"/>
+					</mx:HBox>
+				</mx:VBox>
+			</s:BorderContainer>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="运行限制"/>
+			<mx:CheckBox id="limit_jianzai" label="减载" enabled="{editable}"/>
+			<mx:CheckBox id="limit_jianke" label="减客" enabled="{editable}"/>
+			<mx:CheckBox id="limit_erleifly" label="II类飞行" enabled="{editable}"/>
+			<mx:CheckBox id="limit_gaoyuan" label="高原航线" enabled="{editable}"/>
+			<mx:CheckBox id="limit_rvsm" label="RSVM" enabled="{editable}"/>
+			<mx:Label text="其它" /><s:TextInput id="limit_qita" editable="{editable}"/>
+		</mx:HBox>
+		<s:Line width="100%" >
+			<s:stroke>
+				<s:SolidColorStroke color="0x0000ff" weight="2" caps="square"/>
+			</s:stroke>
+		</s:Line>
+		<!--
+		<s:Group width="100%">
+			<s:Line xFrom="0" xTo="880" yFrom="0" yTo="0">
+				
+			</s:Line>
+		</s:Group>
+		-->
+		<mx:HBox>
+			<mx:Label text="首办号" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="first_no" text="{ddinfoData.FIRST_NO}" editable="{editable}"/>
+			<mx:Label text="首办日期"/><component:DateTimeChooser id="first_date" nowTime="{first_dateToDate}"  editable="{editable}" formatterType="2"/>
+			<mx:Label text="E/R标识" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="e_r" text="{ddinfoData.E_R}" editable="{editable}"/>
+			<mx:Label text="第"/><s:TextInput id="delay_num" text="{delayTimes}" editable="{editable}"/><mx:Label text="次延期" />
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="关闭标识" color="red"/><s:ComboBox id="finish_sign" width="{target_fh.width}" dataProvider="{finishArr}" labelField="valueCN" enabled="{editable}" />
+			<mx:Label text="关闭日期"/><component:DateTimeChooser id="ef_date" nowTime="{ef_dateToDate}"  editable="{editable}" formatterType="2"/>
+			<mx:Label text="延期单号"/><s:TextInput id="dd_no_next" text="{ddinfoData.DD_NO_NEXT}" editable="{editable}"/>
+			<mx:CheckBox id="material" enabled="{editable}"/><mx:Label text="是否有料"/>
+			<mx:CheckBox id="srm_code" enabled="{editable}"/><mx:Label text="放上飞机"/>
+			<mx:CheckBox id="repeat" enabled="{editable}"/><mx:Label text="是否重检"/>
+			
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="处理状态"/><mx:TextArea  id="status_" width="{textAreaLen}" text="{ddinfoData.STATUS}" editable="{editable}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="申请人" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="proposer" text="{ddinfoData.PROPOSER}" editable="{editable}"/>
+			<mx:Label text="申请日期"/><component:DateTimeChooser id="proposed_date" nowTime="{proposed_dateToDate}" editable="{editable}" formatterType="2"/>
+			<mx:Label text="技术人员" width="{fiveWordsLen}" textAlign="right"/><s:TextInput id="technician" text="{ddinfoData.TECHNICIAN}" editable="{editable}"/>
+			<mx:Label text="检查人员"/><s:TextInput id="inspector" text="{ddinfoData.INSPECTOR}" editable="{editable}"/>
+		</mx:HBox>
+		<mx:HBox>
+			<mx:Label text="批准人" width="{fourWordsLen}" textAlign="right"/><s:TextInput id="approver" text="{ddinfoData.APPROVER}" editable="{editable}"/>
+			<mx:Label text="批准日期"/><component:DateTimeChooser id="approved_date" nowTime="{approved_dateToDate}" editable="{editable}" formatterType="2"/>
+			<mx:Label text="黄页撤出者"/><s:TextInput id="ef_man" text="{ddinfoData.EF_MAN}" editable="{editable}"/>
+			<mx:Label text="输机日期"/><component:DateTimeChooser id="input_date" nowTime="{input_dateToDate}" editable="{editable}" />
+		</mx:HBox>
+		<!--
+		<s:Group >
+			<s:Line xFrom="0" xTo="880" yFrom="0" yTo="0">
+				<s:stroke>
+					<s:SolidColorStroke color="0x0000ff" weight="2" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</s:Group>
+		-->
+		<s:Line width="100%" >
+			<s:stroke>
+				<s:SolidColorStroke color="0x0000ff" weight="2" caps="square"/>
+			</s:stroke>
+		</s:Line>
+		<mx:HBox>
+			<mx:CheckBox id="sevice_sign" enabled="{editable}"/><mx:Label text="影响服务"/>
+			<mx:CheckBox id="aoc_flag" enabled="{editable}"/><mx:Label text="影响运行"/>
+			<mx:CheckBox id="property_flag" enabled="{editable}"/><mx:Label text="是否性能分析"/>
+			<mx:CheckBox id="action_sign" enabled="{editable}"/><mx:Label text="特殊关注"/>
+		</mx:HBox>
+		<mx:VBox>
+			<mx:HBox>
+				<mx:CheckBox id="property_close" enabled="{editable}"/><mx:Label text="是否分析完成"/>
+				<mx:Label text="分析人"/><s:TextInput id="propertyer" text="{ddinfoData.PROPERTYER}" editable="{editable}"/>
+				<mx:Label text="分析日期"/><component:DateTimeChooser id="property_date" nowTime="{property_dateToDate}"  editable="{editable}" />
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="分析结果"/>
+				<mx:TextArea  id="property_result" width="{textAreaLen}" text="{ddinfoData.PROPERTY_RESULT}" editable="{editable}"/>
+			</mx:HBox>
+		</mx:VBox>
+	</s:VGroup>
+</containers:SuperPanel>

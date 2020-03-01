@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   initialize="initializeHandler(event)"
+		   creationComplete="module_creationCompleteHandler(event)"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" 
+		   width="100%" height="100%" 
+		   xmlns:component="com.apms.flex.component.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.LineSeries;
+			import mx.charts.series.PlotSeries;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.graphics.IFill;
+			import mx.graphics.SolidColor;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.UIComponentEvent;
+			import smartx.flex.components.itemcomponent.ItemRefPanel;
+			import smartx.flex.components.util.MemoryUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			private var fuelDest:String = ApmsUIConst.APUFUEL_SERVICE;
+			private var fuelService:RemoteObject = new RemoteObject;
+			private var smartService:RemoteObject = new RemoteObject;
+			
+			private var acnum:String ;//查询机号
+			private var asn:String;
+			
+			[Bindable]
+			private var rptDataList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var endTime:Date = new Date();
+			
+			[Bindable]
+			private var beginTime:Date;
+			
+			/** Flex 4.6 unable load module, if it contains a chart component.
+			 *  override this method on your module loaded byt the main app **/
+			override public function get moduleFactory():IFlexModuleFactory {
+				return FlexGlobals.topLevelApplication.moduleFactory;
+			}
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				beginTime = DateUtil.moveMonth(endTime,-6);
+				
+				fuelService.endpoint = endpoint;
+				fuelService.destination = fuelDest;
+				//远程服务添加监听
+				fuelService.getReportFuelAnalyzeData.addEventListener(ResultEvent.RESULT,getReportFuelAnalyzeDataHandler);
+				fuelService.getReportFuelAnalyzeData.addEventListener(FaultEvent.FAULT,getReportFuelAnalyzeDataErrorHandler);
+				
+			}
+			
+			protected function module_creationCompleteHandler(event:FlexEvent):void
+			{
+				//添加参照控件
+				var acItemVO:TempletItemVO = new TempletItemVO();
+				acItemVO.itemtype="参照";
+				acItemVO.itemname="选择飞机";
+				acItemVO.itemkey="ACNUM";
+				acItemVO.refdesc="SELECT A.ID ID#,BASEORGID ORGID#,AIRCRAFTSN 机号,M.MODELCODE 机型 FROM" +
+					" B_AIRCRAFT A,B_AIRCRAFT_MODEL M WHERE M.ID=A.ACMODELID ;ds=datasource_apms";
+				var acRefPanel:ItemRefPanel = new ItemRefPanel(acItemVO,smartxDest,endpoint,false,false);
+				acRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(acRefPanel.returnVO != null){
+						//获取参照的返回值
+						acnum = acRefPanel.returnVO.name;
+					}else{
+						acnum = null;
+					}
+				});	
+				
+				acBox.addChild(acRefPanel);
+				
+				//添加参照控件
+				var apuItemVO:TempletItemVO = new TempletItemVO();
+				apuItemVO.itemtype="参照";
+				apuItemVO.itemname="选择APU";
+				apuItemVO.itemkey="APU";
+				apuItemVO.refdesc="SELECT A.ID ID#,A.APUSN ASN#,A.APUSN APU序号,T.AIRCRAFTSN 机号 FROM B_APU A,B_AIRCRAFT T WHERE A.AIRCRAFTID=T.ID(+)";
+				var apuRefPanel:ItemRefPanel = new ItemRefPanel(apuItemVO,smartxDest,endpoint,false,false);
+				apuRefPanel.addEventListener(UIComponentEvent.REAL_VALUE_CHANGE,function(event:UIComponentEvent):void{
+					if(apuRefPanel.returnVO != null){
+						//获取参照的返回值
+						asn = apuRefPanel.returnVO.name;
+					}else{
+						asn = null;
+					}
+				});	
+				
+				apuBox.addChild(apuRefPanel);
+			}
+			
+			
+			private function getReportFuelAnalyzeDataHandler(event:ResultEvent):void 
+			{
+				rptDataList = null;
+				MemoryUtil.forceGC();
+				
+				OperatingTipUtil.endOperat();
+				var res:Object = event.result;
+				
+				rptDataList = res["rptDataList"];
+			}
+			
+			private function getReportFuelAnalyzeDataErrorHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("查询数据出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据查询出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			protected function queryBtnClickHandler(event:MouseEvent):void
+			{
+				
+				if( (acnum == null || acnum=="") && (asn == null || asn =="") ){
+					SmartXMessage.show("请选择一个飞机号或APU序号！");
+					return;
+				}
+				
+				OperatingTipUtil.startOperat("正在查询....",this);
+				fuelService.getReportFuelAnalyzeData(time_begin.text,time_end.text,acnum, asn );
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				var fname:String = asn;
+				if(fname == null || fname ==""){
+					fname = acnum;
+				}
+					
+				PictureExportUtil.exportChart(mainChart,"APU_"+acnum+"_"+asn+"_报文燃油运行成本");
+			}
+			
+			public function fuelCostTipStrFunc(e:HitData,unitStr:String=""):String {
+				var item:Object = e.item;
+				
+				var yField:String = "";
+				var xField:String = "";
+				var seriesName:String = "值";
+				if(e.element is LineSeries){
+					var ls:LineSeries = e.element as LineSeries;
+					yField = ls.yField;
+					xField = ls.xField;
+					seriesName = ls.displayName;
+				}else if(e.element is PlotSeries){
+					var ps:PlotSeries = e.element as PlotSeries;
+					yField = ps.yField;
+					xField = ps.xField;
+					seriesName = ps.displayName;
+				}else if(e.element is ColumnSeries){
+					var cs:ColumnSeries = e.element as ColumnSeries;
+					yField = cs.yField;
+					xField = cs.xField;
+					seriesName = cs.displayName;
+				}
+				
+				var tip:String = seriesName;
+				tip += "\n"+ DateUtil.dateToString(item[xField],1);
+				tip += " ,燃油消耗："+ item["FUSED"]+"kg";
+				tip += "\n平均小时消耗："+ item["USED_PERHOUR"];
+				tip += ",平均小时消耗5点均："+ item["USED_PERHOUR_AVG5"];
+				tip += "\n小时："+ item["AHRS"] + " ,循环:" + item["ACYC"];
+				tip += "\n机号："+ item["ACNUM"] + " ,ASN："+ item["ACNUM"];
+				
+				return tip;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:LinearAxis id="lineAxis" baseAtZero="false" autoAdjust="true" />
+		<mx:DateTimeAxis id="dayAxis" labelUnits="days" dataUnits="days" /> 
+	</fx:Declarations>
+	
+	<mx:VBox id ="mainChart" width="100%" height="100%">
+		<mx:HBox borderStyle="solid" verticalAlign="middle" id="conditionBox" width="100%" height="30" paddingLeft="10">
+			<mx:HBox>
+				<mx:Label text="开始时间" />
+				<component:DateTimeChooser id="time_begin" nowTime="{beginTime}" editable="true" />
+				<mx:Label text="结束时间" />
+				<component:DateTimeChooser id="time_end" nowTime="{endTime}" editable="true" />
+			</mx:HBox>
+			
+			<mx:HBox id="acBox">
+				<mx:Label text="机号"/>
+			</mx:HBox>
+			
+			<mx:HBox id="apuBox">
+				<mx:Label text="APU序号"/>
+			</mx:HBox>
+			<mx:Button label="查询" click="queryBtnClickHandler(event)" />
+			<mx:Button label="导出" click="exportHandler(event)" />
+		</mx:HBox>
+		<component:ReportTrendChart id="fuelAvgHourChart" chartName="平均小时燃油消耗量" height="100%" width="100%"
+									xField="RPTDATE" valField="USED_PERHOUR" isAvg5="true" avg5Field="USED_PERHOUR_AVG5"
+									rptno="A36" tipFunction="fuelCostTipStrFunc"
+									allList="{rptDataList}" >
+		</component:ReportTrendChart>
+		<mx:VBox width="100%" height="180">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="报文燃油消耗量(KG)" />
+			</mx:HBox>
+			<mx:ColumnChart id="rptFuelCostChart" height="100%" width="100%" dataTipFunction="{fuelCostTipStrFunc}"
+							horizontalAxis="{dayAxis}"
+							dataProvider="{rptDataList}" showDataTips="true">
+				<mx:series>
+					<mx:ColumnSeries xField="RPTDATE" yField="FUSED" displayName="报文燃油消耗量" labelPosition="none" />
+				</mx:series>
+			</mx:ColumnChart>
+			<!--
+			<mx:Legend dataProvider="{rptFuelCostChart}" direction="horizontal"/>
+			-->
+		</mx:VBox >
+		
+		<mx:VBox width="100%" height="180">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="报文燃油成本(美元)" />
+			</mx:HBox>
+			<mx:ColumnChart id="rptCostChart" height="100%" width="100%" horizontalAxis="{dayAxis}"
+							dataProvider="{rptDataList}" dataTipFunction="{fuelCostTipStrFunc}" showDataTips="true">
+				<mx:series>
+					<mx:ColumnSeries xField="RPTDATE" yField="USED_DOLLAR" displayName="报文燃油成本" 
+									 labelPosition="none" />
+				</mx:series>
+			</mx:ColumnChart>
+			<!--
+			<mx:Legend dataProvider="{rptCostChart}" direction="horizontal"/>
+			-->
+		</mx:VBox >
+		
+	</mx:VBox>
+</mx:Module>

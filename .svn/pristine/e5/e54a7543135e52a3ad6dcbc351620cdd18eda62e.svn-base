@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="900" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="A50报文N1 VIB" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			import com.apms.flex.assets.AssetsFileLib;
+
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a50vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a50Data:Object;//译后报文内容
+			
+			private function creationComplete():void
+			{
+				a50Data = a50vo.dataMap;
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A50IAE-N1震动");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator height="100%" width="100%">
+		<mx:HDividedBox id="contentBox" width="850" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+			<mx:VBox width="30%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="70%" height="100%" verticalGap="0" id="formatBox">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   ENG N1 VIBRATION DATA RPT(050)" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>				
+				<report:ReportHeaderPanel headHashVo="{a50vo}" height="190"/>
+				
+				<mx:HBox>
+					<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE"  boxWidth="30"/>
+					<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号"  leftVal="{a50Data.esn_1}" rightVal="{a50Data.esn_2}"/>
+					<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a50Data.ehrs_1}" rightVal="{a50Data.ehrs_2}"/>
+					<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a50Data.ecyc_1}" rightVal="{a50Data.ecyc_2}" />
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:OneValuesReportPanel  leftVal="P1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="N1SET" chineseName1="最低起点转速"  leftVal="{a50Data.n1set}" boxWidth="90"  />
+					<report:OneValuesReportPanel englishName="N1VAR" chineseName1="N1变化稳定量" leftVal="{a50Data.n1var}"  boxWidth="90"/>
+					<report:OneValuesReportPanel englishName="N1DT" chineseName1="采集间隔" leftVal="{a50Data.n1dt}" />
+					<report:OneValuesReportPanel englishName="TMR" chineseName1="要求N1稳定时间" leftVal="{a50Data.tmr}"  boxWidth="100"/>
+					<report:OneValuesReportPanel englishName="VIBSET" chineseName1="N1发送门槛值" leftVal="{a50Data.vibset}"  boxWidth="90"/>
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:OneValuesReportPanel  leftVal="L1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="RPM" chineseName1="RPM"  leftVal="{a50Data.l1_rpm_1}"  />
+					<report:OneValuesReportPanel englishName="MIL" chineseName1="震动单位" leftVal="{a50Data.l1_mil_1}" />
+					<report:OneValuesReportPanel englishName="DEG" chineseName1="360度" leftVal="{a50Data.l1_deg_1}"/>
+					<report:OneValuesReportPanel englishName="TIME" chineseName1="时间" leftVal="{a50Data.l1_time_1_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishName="UNIT" chineseName1="驾驶舱单位" leftVal="{a50Data.l1_unit_1}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="L1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_rpm_2}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_mil_2}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_deg_2}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.l1_time_2_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_unit_2}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="L1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_rpm_3}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_mil_3}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_deg_3}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.l1_time_3_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_unit_3}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="L1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_rpm_4}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_mil_4}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_deg_4}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.l1_time_4_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_unit_4}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="L1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_rpm_5}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_mil_5}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_deg_5}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.l1_time_5_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.l1_unit_5}" boxWidth="70"/>
+				</mx:HBox>
+				
+				<mx:HBox>
+					<report:OneValuesReportPanel  leftVal="R1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishName="RPM" chineseName1="RPM"  leftVal="{a50Data.r1_rpm_1}"  />
+					<report:OneValuesReportPanel englishName="MIL" chineseName1="震动单位" leftVal="{a50Data.r1_mil_1}" />
+					<report:OneValuesReportPanel englishName="DEG" chineseName1="360度" leftVal="{a50Data.r1_deg_1}"/>
+					<report:OneValuesReportPanel englishName="TIME" chineseName1="时间" leftVal="{a50Data.r1_time_1_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishName="UNIT" chineseName1="驾驶舱单位" leftVal="{a50Data.r1_unit_1}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="R1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_rpm_2}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_mil_2}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_deg_2}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.r1_time_2_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_unit_2}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="R1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_rpm_3}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_mil_3}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_deg_3}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.r1_time_3_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_unit_3}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="R1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_rpm_4}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_mil_4}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_deg_4}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.r1_time_4_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_unit_4}" boxWidth="70"/>
+				</mx:HBox>
+				<mx:HBox>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="R1" boxWidth="30"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_rpm_5}"  />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_mil_5}" />
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_deg_5}"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false"  leftVal="{a50Data.r1_time_5_str}" boxWidth="80"/>
+					<report:OneValuesReportPanel englishNameToVisible="false" name1ToVisible="false" leftVal="{a50Data.r1_unit_5}" boxWidth="70"/>
+				</mx:HBox>
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:TabNavigator>
+</containers:SuperPanel>

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   initialize="initHandler(event)"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="820" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A19报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			import com.apms.flex.assets.AssetsFileLib;
+
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+//			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a19vo:SimpleHashVO;
+			
+			[Bindable]
+			public var a19Data:Object;//译后报文内容
+			
+		
+			[Bindable]
+			private var esn_1:String;
+			[Bindable]
+			private var ehrs_1:String;
+			[Bindable]
+			private var ecyc_1:String;
+			[Bindable]
+			private var ap_1:String;
+			[Bindable]
+			private var y1_1:String;
+			[Bindable]
+			private var nl_1:String;
+			[Bindable]
+			private var esn_2:String;
+			[Bindable]
+			private var ehrs_2:String;
+			[Bindable]
+			private var ecyc_2:String;
+			[Bindable]
+			private var ap_2:String;
+
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var initCondition:String;
+
+
+			
+			private function creationComplete():void
+			{
+				a19Data = a19vo.dataMap;
+				
+			
+				
+				esn_1 = a19Data['esn_1'];
+				ehrs_1 = a19Data['ehrs_1'];
+				ecyc_1 = a19Data['ecyc_1'];
+				ap_1 = a19Data['ap_1'];
+				y1_1 = a19Data['y1_1'];
+				nl_1 = a19Data['nl_1'];
+				esn_2 = a19Data['esn_2'];
+				ehrs_2 = a19Data['ehrs_2'];
+				ecyc_2 = a19Data['ecyc_2'];
+				ap_2 = a19Data['ap_2'];
+			
+				listPanel5.dataGrid.showHeaders = false;
+				listPanel6.dataGrid.showHeaders = false;
+				listPanel7.dataGrid.showHeaders = false;
+				listPanel8.dataGrid.showHeaders = false;
+				listPanel9.dataGrid.showHeaders = false;
+				listPanel10.dataGrid.showHeaders = false;
+				listPanel11.dataGrid.showHeaders = false;
+				listPanel12.dataGrid.showHeaders = false;
+
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				a19Data = a19vo.dataMap;
+				var msg_no:String = a19Data['msg_no'];
+				
+				initCondition = " MSG_NO = " + msg_no;
+				
+				
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A19 空调报文查看");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="contentBox" height="100%" width="100%" >
+		<mx:HDividedBox width="100%" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3">
+			<mx:VBox width="35%" height="100%">
+				<mx:Label text="原始报文" fontWeight="bold"/>
+				<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+				</mx:TextArea>
+			</mx:VBox>
+			<mx:VBox width="65%" height="100%" verticalGap="0">
+				<mx:HBox width="100%">
+					<mx:Label text="译后报文   REPORT19" fontWeight="bold"/>
+					<mx:Spacer width="100%"/>
+					<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+				</mx:HBox>
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text=" REPORT (19)" fontWeight="bold" />
+				</mx:HBox>
+				<report:ReportHeaderPanel headHashVo="{a19vo}" />
+			
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="red" width="60"/><mx:Label text="EHRS" color="red" width="60"/>
+					<mx:Label text="ECYC" color="red" width="60"/><mx:Label text="AP" color="red" width="60"/><mx:Label text="Y1" color="red" width="60"/>
+					<mx:Label text="NL" color="red" width="60"/>
+				</mx:HBox>
+			    <mx:HBox width="100%" height="19">
+					<mx:Label text="  " width="30"/><mx:Label text="ESN" color="blue" width="60"/><mx:Label text="EHRS" color="blue" width="60"/>
+	                <mx:Label text="ECYC" color="blue" width="60"/><mx:Label text="AP" color="blue" width="60"/><mx:Label text="Y1" color="blue" width="60"/>
+					<mx:Label text="NL" color="blue" width="60"/>
+			    </mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EC" width="30"/><mx:Label text="{esn_1}" width="60"/><mx:Label text="{ehrs_1}" width="60"/>
+					<mx:Label text="{ecyc_1}" width="60"/><mx:Label text="{ap_1}" width="60"/><mx:Label text="{y1_1}" width="60"/>
+					<mx:Label text="{nl_1}" width="60"/>
+				</mx:HBox>
+				<mx:HBox width="100%" height="19">
+					<mx:Label text="EE" width="30"/><mx:Label text="{esn_2}" width="60"/><mx:Label text="{ehrs_2}" width="60"/>
+					<mx:Label text="{ecyc_2}" width="60"/><mx:Label text="{ap_2}" width="60"/>
+				</mx:HBox>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="PER EVENT 'Y1' SEC INTERVALS" fontWeight="bold" />
+				</mx:HBox>			
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="88" id="listPanel1"
+									templetCode="T_A_DFD_A19_LIST_EN1_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false" 
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="88" id="listPanel2" 
+									templetCode="T_A_DFD_A19_LIST_ST1_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel3" 
+									templetCode="T_A_DFD_A19_LIST_V1_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel4" 
+									templetCode="T_A_DFD_A19_LIST_X1_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				<mx:HRule width="100%" height="10" />
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel5" 
+									templetCode="T_A_DFD_A19_LIST_ENOT_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel6" 
+									templetCode="T_A_DFD_A19_LIST_STOT_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel7" 
+									templetCode="T_A_DFD_A19_LIST_VOT_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="60" id="listPanel8" 
+									templetCode="T_A_DFD_A19_LIST_XOT_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<mx:HBox width="100%" horizontalAlign="center">
+					<mx:Label text="AT EVENT" fontWeight="bold" />
+				</mx:HBox>		
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="66" id="listPanel9" 
+									templetCode="T_A_DFD_A19_LIST_EN12_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="66" id="listPanel10" 
+									templetCode="T_A_DFD_A19_LIST_ST12_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="33" id="listPanel11" 
+									templetCode="T_A_DFD_A19_LIST_V12_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+				<core:BillListPanel endpoint="{endpoint}" width="100%" height="33" id="listPanel12" 
+									templetCode="T_A_DFD_A19_LIST_X12_ROW" debugMode="false"
+									initQueryCondition="{initCondition}" showRowNum="false"
+									showPageBox="false"
+									showDataAfterInit="true" showQuickQueryPanel="false"
+									editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+				
+			
+				
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:VBox>
+</containers:SuperPanel>

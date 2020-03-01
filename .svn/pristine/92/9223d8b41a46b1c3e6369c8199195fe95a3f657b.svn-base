@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 initialize="initializeHandler(event)"
+		 xmlns:component="com.apms.flex.component.*"
+		 width="100%" height="100%" creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.modules.ChartUtil;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.hurlant.eval.ast.PublicNamespace;
+			
+			import mx.charts.ChartItem;
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.chartClasses.Series;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.items.PlotSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.graphics.IFill;
+			import mx.managers.PopUpManager;
+			import mx.rpc.Fault;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.basic.DeskTopFrame;
+			import smartx.flex.components.util.MetadataTempletUtil;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.MetadataTemplet;
+			
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+
+			private var user:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_LOGIN_USER_NAME) as String;
+			private var desktop:DeskTopFrame = ClientEnviorment.getInstance().getVar(ClientEnviorment.DESKTOP_FRAME) as DeskTopFrame;
+			private var apmsService:RemoteObject = new RemoteObject;
+			[Bindable]
+			private var changePointRadius:Number = ChartUtil.changePointRadius;			
+			[Bindable]
+			public var chartName:String = "图表名称";			
+			[Bindable]
+			public var axisX:IAxis;//横坐标	
+			[Bindable]
+			public var axisY:IAxis;//纵坐标
+			
+			[Bindable]
+			public var xField:String;//X坐标字段
+			[Bindable]
+			public var valField:String;//原值字段
+			
+			[Bindable]
+			private var etypeArr:ArrayCollection = new ArrayCollection([
+				{value:"0",desc:"未标记"},
+				{value:"1",desc:"故障数据"},
+				{value:"2",desc:"维修工作"},
+				{value:"3",desc:"不良数据"}]);
+			
+			/**是否可以设置原值点显示
+			 * */
+			[Bindable]
+			public var isSetInitPoint:Boolean = true;
+			
+			/**是否有5点均
+			 * */
+			public var isAvg5:Boolean = false;//
+			public var isPointChk:Boolean=true;
+			
+			[Bindable]
+			public var avg5Field:String;//5点均字段
+			[Bindable]
+			public var isRedLine:Boolean = false;//是否有红线值
+			[Bindable]
+			private var redlineFieldUpperLimitValue:String;
+			[Bindable]
+			private var redlineFieldLowerLimitValue:String;
+			[Bindable]
+			public var s13s46press_redlineFieldUpperLimitValue:String;//红线值字段
+			[Bindable]
+			public var s13s46press_redlineFieldLowerLimitValue:String;//红线值字段
+			[Bindable]
+			public var s46kvalue_redlineFieldUpperLimitValue:String;//红线值字段
+			[Bindable]
+			public var s46kvalue_redlineFieldLowerLimitValue:String;//红线值字段
+			
+			public var tipFunction:Function;//点提示信息自定义函数
+			
+			public var isAxisSet:Boolean = true;//是否可以设置Y坐标值范围
+			public var isSlope:Boolean = false;//是否显示斜率数据
+			public var isRangeChk:Boolean = false;//是否显示范围
+			private var isZoom:Boolean = false;
+			
+			/** 判断飘点的字段,如果是飘点，该点为空心点 */
+			public var pointTypeField:String = null; 
+			
+			[Bindable]
+			public var changList:ArrayCollection;//切换点			
+			[Bindable]
+			public var allList:ArrayCollection;//普通点			
+			[Bindable]
+			public var slopeList:ArrayCollection;//斜率点
+			private var apmsDest:String = ApmsUIConst.APMS_SERVICE;
+
+			//实际的坐标范围
+			private var realXMin:Number;
+			private var realXMax:Number;
+			private var realYMin:Number;
+			private var realYMax:Number;
+			private var markObj:Object;
+			
+			public var acmodel:String;
+			[Bindable]
+			private var readLineValueArr:ArrayCollection;
+			[Bindable]
+			public var s13s46ChartBoolean:Boolean=false;
+			[Bindable]
+			public var presRateKBoolean:Boolean=false;
+			
+			
+			protected function initializeHandler(event:FlexEvent):void
+			{
+				
+				apmsService.endpoint = endpoint;
+				apmsService.destination = apmsDest;
+				//行程服务添加监听
+				
+				
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(ResultEvent.RESULT,getEventHashVoHandler);
+				apmsService.getSimpleHashVoArrayByDS.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+				apmsService.pointMarkA23.addEventListener(ResultEvent.RESULT,pointMarkOkHandler);
+				apmsService.pointMarkA23.addEventListener(FaultEvent.FAULT,faultHandler);
+				
+			}
+			
+			public function pointMarkOkHandler(event:ResultEvent):void{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("点事件标记成功！ ");
+				
+				PopUpManager.removePopUp(eventWindow);
+			}
+			
+			private function getEventHashVoHandler(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				var res:Array = event.result as Array;
+				markObj = res[0]["dataMap"];
+				
+				if(etypeCmb != null){
+					//显示数据更新
+					eventWindowDataUpdated();
+				}
+				
+				PopUpManager.addPopUp(eventWindow,this);
+				PopUpManager.centerPopUp(eventWindow);
+			}
+			
+			private function eventWindowDataUpdated():void{
+				var type:String = markObj["eventtype"];
+				for each(var obj:Object in etypeCmb.dataProvider){
+					if(type == String(obj["value"])){
+						etypeCmb.selectedItem = obj;
+						break;
+					}
+				}
+				markerLabel.text = markObj["marker"];
+				
+				var time:Date = markObj["marktime"] as Date;
+				markerTime.text = DateUtil.dateToString(time,1);;
+				
+				
+				memoTextArea.text = markObj["markmemo"];
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("远程数据操作出错",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}
+			
+			public function set xMinNum(minNum:Number):void{
+				lineAxis.minimum = minNum;
+			}
+			
+			public function set xMaxNum(maxNum:Number):void{
+				lineAxis.maximum = maxNum;
+				
+			}
+			
+			
+		
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				//为坐标轴设置默认值
+				if(axisX == null)
+					axisX = dayAxis;
+				
+				if(axisY == null)
+					axisY = lineAxis;
+				
+				if(isRedLine == false)
+					headBox.removeChild(redlineChk);
+				
+				if(isAvg5 == false)
+					headBox.removeChild(avg5Chk);
+				if(isPointChk == false)
+					headBox.removeChild(pointChk);
+				
+				if(isSlope == false){
+					headBox.removeChild(slopeChk);
+				}
+				
+				if(tipFunction != null)
+					plotChart.dataTipFunction = tipFunction;
+				
+				if(isAxisSet == false)
+					headBox.removeChild(axisSetBox);
+				
+				if(isRangeChk == false)
+					headBox.removeChild(rangeChk);
+				
+			}
+			
+			protected function s13Chart_itemDoubleClickHandler(event:ChartItemEvent):void
+			{
+				var hitData:HitData = event.hitData;
+				var itemObj:Object = hitData.item;
+				
+				if(hitData.element == allPlot){
+					var pointType:Number = itemObj[pointTypeField] as Number;
+					if(pointType == 1){
+					var msgno:String = itemObj["MSG_NO"];
+					var sql:String = "SELECT T.ID,T.MSG_NO,T.EVENTTYPE,T.MARKMEMO,T.MARKTIME,T.MARKER FROM A_DFD_A23_COMPUTE T WHERE MSG_NO="+msgno;
+					apmsService.getSimpleHashVoArrayByDS(ApmsUIConst.DATASOURCE_APMS,sql);
+					OperatingTipUtil.startOperat("查询该点的标记事件",this);
+					}
+				}
+				
+				
+			}
+			
+			
+			
+			protected function axisSetBtnclickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var min:Number = new Number(minTextInput.text);
+				var max:Number = new Number(maxTextInput.text);
+				
+				if(max <= min){
+					SmartXMessage.show("坐标值范围设置不合法！");
+					return;
+				}
+				
+				lineAxis.minimum = min;
+				lineAxis.maximum = max;
+				
+				PopUpManager.removePopUp(axisSetWindow);
+			}
+			
+			protected function zoomBtn_clickHandler(event:MouseEvent):void
+			{
+				if(isZoom){
+					isZoom = false;
+					zoomLinkBtn.setStyle("icon",AssetsFileLib.zoomInIcon);
+					
+					dayAxis.minimum = DateUtil.parseMsToDate(realXMin);
+					dayAxis.maximum = DateUtil.parseMsToDate(realXMax);
+					
+					lineAxis.minimum = realYMin;
+					lineAxis.maximum = realYMax;
+				}else{
+					if(rangeSel.dLeft >= rangeSel.dRight || rangeSel.dTop <= rangeSel.dBottom){
+						SmartXMessage.show("请选择要缩放的范围！");
+						return ;
+					}
+					
+					realXMin = dayAxis.minimum.getTime();
+					realXMax = dayAxis.maximum.getTime();
+					realYMin = lineAxis.minimum;
+					realYMax = lineAxis.maximum;
+					
+					isZoom = true;
+					zoomLinkBtn.setStyle("icon",AssetsFileLib.zoomNormalIcon);
+					//重新设置坐标值
+					dayAxis.minimum = DateUtil.parseMsToDate(rangeSel.dLeft);
+					dayAxis.maximum = DateUtil.parseMsToDate(rangeSel.dRight);
+					
+					lineAxis.minimum = rangeSel.dBottom;
+					lineAxis.maximum = rangeSel.dTop;
+				}
+				
+			}
+			
+			protected function axisSetBtn_clickHandler(event:MouseEvent):void
+			{
+				PopUpManager.addPopUp(axisSetWindow,desktop,true);
+				PopUpManager.centerPopUp(axisSetWindow);
+			}
+			
+			protected function axisSetWindow_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(minTextInput != null)
+					minTextInput.text =  lineAxis.minimum + "" ;
+				if(maxTextInput != null)
+					maxTextInput.text = lineAxis.maximum + "";				
+			}
+			
+			//是否显示斜率
+			protected function slopeChk_changeHandler(event:Event):void
+			{
+				var seriesArr:Array = plotChart.series;
+				var i:uint = seriesArr.length;
+				for each(var s:Series in seriesArr){
+					if(s.name == "slopeLS"){
+						s.visible = slopeChk.selected;
+					}
+				}				
+			}
+			
+			private function parseToDate(s:String):Date{
+				var newDate:Date = new Date();
+				if(s.indexOf("-") > 0){
+					//s = "2007-10-15 20:15" 
+					var temp:Array = s.split(" ");   
+					var datepart:String = temp[0];   
+					var datearray:Array = datepart.split("-");   
+					var timepart:String = temp[1];   
+					var timearray:Array = timepart.split(":");
+					newDate = new Date(datearray[0],datearray[1]-1,datearray[2],timearray[0],timearray[1]); 
+				}else{
+					//毫秒数
+					newDate.setTime(Number(s));
+				}
+				
+				return newDate;   
+			}
+			private function fillByType(element:ChartItem, index:Number):IFill {
+				var sc:SolidColor = new SolidColor(0x0000FF);
+				
+				var psItem:PlotSeriesItem = PlotSeriesItem(element);
+				var itemObj:Object = psItem.item;
+				
+				var eventtype:String = itemObj["EVENTTYPE"] as String; //报文点类型
+				var dealStatus:String = itemObj["DEALSTATUS"] as String; //告警消息处理状态，没有告警，有告警，告警已处理
+				var pointType:Number = itemObj[pointTypeField] as Number;
+				
+				if(pointTypeField==null){
+					pointType=0;
+				}
+				if(pointType == 1){ //如果是飘点，直接空心
+					sc.alpha = 0;
+				}else{
+					
+					//告警判断
+					if(dealStatus == "1"){
+						sc.color = 0x00EE00; //已处理，绿色
+					}
+					
+					//根据事件类型，对点进行着色
+					if(eventtype == "0"){
+						//正常点 
+						
+					}else if(eventtype == "1"){
+						//故障数据
+						sc.color = 0xFF34B3;//粉红色
+					}else if(eventtype == "2"){
+						//坏点
+						sc.color = 0x555555;//灰色
+					}
+					
+					if(dealStatus == "0"){
+						sc.color = 0xFFFF00; //未处理，黄色
+					}
+				}
+				
+				return sc;
+			}
+			
+			
+			
+			
+			protected function eventWindow_creationCompleteHandler(event:FlexEvent):void
+			{
+				eventWindowDataUpdated();
+			}
+			
+			private function markEventConfirm():void{
+				var nowData:String= DateUtil.dateToString(new Date(),1);
+				
+				apmsService.pointMarkA23(markObj["msg_no"],etypeCmb.selectedItem["value"],memoTextArea.text,user,nowData);
+				OperatingTipUtil.startOperat("正在更新....",this);
+			}
+			
+			//红线复选框点击 
+			private function redlineChkClick():void{
+				if(redlineChk.selected){
+					if(allList.length<=0){
+						return;
+					}else{
+						s13s46press_redlineFieldUpperLimitValue="S13S46PRESS_REDLINEUPPERLIMITVALUE";
+						s13s46press_redlineFieldLowerLimitValue="S13S46PRESS_REDLINELOWERLIMITVALUE";
+						s46kvalue_redlineFieldUpperLimitValue="S46VALUE_REDLINEFIELDUPPERLIMITVALUE";
+						s46kvalue_redlineFieldLowerLimitValue="S46VALUE_REDLINEFIELDLOWERLIMITVALUE";
+						var s13s46press_upperLimitValueTempl:Number;
+						var s13s46press_lowerLimitValueTempl:Number;
+						
+						var s46kvalue_upperLimitValueTempl:Number;
+						var s46kvalue_lowerLimitValueTempl:Number;
+						
+						
+						var mtd:MetadataTemplet = MetadataTempletUtil.getInstance().findMetadataTemplet("ReadLineConfig");
+						var xml:XML = mtd.contentXML;
+						for(var i:Number = 0;i <xml.children().length();i++){
+							var acmodelStr:String=xml.headitem[i].@acmodel;
+							if(acmodel.localeCompare(acmodelStr)==0){
+								if(s13s46ChartBoolean){
+									s13s46press_upperLimitValueTempl=xml.headitem[i].s13s46press_redlinevalue.@upperlimitvalue;
+									s13s46press_lowerLimitValueTempl=xml.headitem[i].s13s46press_redlinevalue.@lowerlimitvalue;
+								}else if(presRateKBoolean){
+									s46kvalue_upperLimitValueTempl=xml.headitem[i].s46kvalue_redlinevalue.@upperlimitvalue;
+									s46kvalue_lowerLimitValueTempl=xml.headitem[i].s46kvalue_redlinevalue.@lowerlimitvalue;
+								}
+							}
+						}
+						for(var j:int=0;j<allList.length;j++){
+							if(s13s46ChartBoolean){
+								allList[j][s13s46press_redlineFieldUpperLimitValue]=s13s46press_upperLimitValueTempl;
+								allList[j][s13s46press_redlineFieldLowerLimitValue]=s13s46press_lowerLimitValueTempl;
+								redlineFieldUpperLimitValue=s13s46press_redlineFieldUpperLimitValue;
+								redlineFieldLowerLimitValue=s13s46press_redlineFieldLowerLimitValue;
+							}else if(presRateKBoolean){
+								allList[j][s46kvalue_redlineFieldUpperLimitValue]=s46kvalue_upperLimitValueTempl;
+								allList[j][s46kvalue_redlineFieldLowerLimitValue]=s46kvalue_lowerLimitValueTempl;
+								redlineFieldUpperLimitValue=s46kvalue_redlineFieldUpperLimitValue;
+								redlineFieldLowerLimitValue=s46kvalue_redlineFieldLowerLimitValue;
+							}
+						}
+					}
+				}	
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:LinearAxis id="lineAxis" autoAdjust="true" baseAtZero="false"/>
+		<mx:DateTimeAxis id="dayAxis" dataUnits="days" labelUnits="days" parseFunction="parseToDate"/> 
+		
+		<mx:SolidColor id="blueColor" color="blue"/>
+		<mx:SolidColor id="redColor" color="red"/>
+		
+		<s:SolidColorStroke id="pointStroke" alpha="1" weight="1"/>
+		<s:SolidColorStroke id="slopeStroke" alpha="1" weight="1"/>
+		<s:SolidColorStroke id="avgLineStroke" alpha="1" color="0x33CC66" weight="2"/>
+		<s:SolidColorStroke id="lineStroke" alpha="0.5" weight="1"/>
+		<s:SolidColorStroke id="redLineStroke" alpha="1" color="0xFF0000" weight="2"/>
+		
+		<mx:TitleWindow id="axisSetWindow" width="280" height="160"
+						close="{PopUpManager.removePopUp(axisSetWindow)}"
+						creationComplete="axisSetWindow_creationCompleteHandler(event)"
+						layout="vertical" showCloseButton="true" title="Y坐标轴范围设置">
+			<mx:HBox id="axisSetBox" width="100%" height="100%" horizontalAlign="center">
+				<mx:TextInput id="minTextInput" width="50" restrict="0-9\-\." text="0"/>
+				<mx:Label text="--&gt;"/>
+				<mx:TextInput id="maxTextInput" width="50" restrict="0-9\-\." text="100"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button id="setOkBtn" label="确认" click="axisSetBtnclickHandler(event)"/>
+			</mx:HBox>
+		</mx:TitleWindow>
+		
+		<mx:TitleWindow id="eventWindow" layout="vertical" height="360" width="480" showCloseButton="true"
+						creationComplete="eventWindow_creationCompleteHandler(event)"
+						close="PopUpManager.removePopUp(eventWindow)" >
+			<mx:Label text="事件类型"/>
+			<mx:ComboBox id="etypeCmb" text="box" dataProvider="{etypeArr}" labelField="desc" />
+			<mx:Label text="标记说明:" />
+			
+			<mx:TextArea id="memoTextArea" width="400" height="150" />
+			<mx:HBox width="100%">
+				<mx:Label text="标记人："/>  
+				<mx:Label id="markerLabel" text="" color="red"/>
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Label text="标记时间："/>
+				<mx:Label id="markerTime" text="" color="red"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="确定"  click="markEventConfirm()" height="22"/>
+				<mx:Button label="取消"  click="PopUpManager.removePopUp(eventWindow)"  height="22"/>
+			</mx:HBox>
+		</mx:TitleWindow>
+		
+		
+		
+	</fx:Declarations>
+	
+	<mx:HBox id="headBox" width="100%" horizontalGap="1" paddingRight="10">                                                
+		<mx:Label text="{chartName}"/>
+		<mx:LinkButton id="zoomLinkBtn" click="zoomBtn_clickHandler(event)"
+					   icon="{AssetsFileLib.zoomInIcon}" toolTip="选中范围，进行图表放大"/>
+		<mx:LinkButton id="axisSetBtn" click="axisSetBtn_clickHandler(event)"
+					   icon="{AssetsFileLib.axisZoomIcon}" toolTip="设置图表Y轴范围"/>
+		<mx:Spacer width="100%"/>
+		<mx:CheckBox id="slopeChk" label="斜率"  selected="false"
+					 toolTip="是否显示斜率线"/>
+		<mx:CheckBox id="rangeChk" label="范围" selected="false" toolTip="是否显示范围"/>
+		<mx:CheckBox id="redlineChk" label="红线" selected="false" click="redlineChkClick()"/>                                   
+		<mx:CheckBox id="avg5Chk" label="5点均" selected="false" toolTip="是否显示5点均线"/>                                                      
+		<mx:CheckBox id="pointChk" visible="{isSetInitPoint}" label="原值点" selected="true"/>
+	</mx:HBox>                                                                                        
+	<mx:PlotChart id="plotChart" width="98%" height="240" doubleClickEnabled="true"
+				  horizontalAxis="{dayAxis}" itemDoubleClick="s13Chart_itemDoubleClickHandler(event)"
+				  showDataTips="true" verticalAxis="{lineAxis}" >                    
+		<mx:series>                                                                                     
+			<mx:PlotSeries id="changePlot" dataProvider="{changList}" displayName="{chartName}"
+						   fill="{blueColor}" itemRenderer="mx.charts.renderers.DiamondItemRenderer"
+						   radius="{changePointRadius}" xField="{xField}" yField="{valField}"/> 
+			<mx:PlotSeries id="allPlot" visible="{pointChk.selected}" dataProvider="{allList}"
+						   displayName="{chartName}" fillFunction="fillByType"
+						   itemRenderer="mx.charts.renderers.CircleItemRenderer" radius="3"
+						   stroke="{pointStroke}" xField="{xField}" yField="{valField}"/> 
+			<mx:LineSeries id="avg5Line" visible="{avg5Chk.selected}" dataProvider="{allList}"
+						   displayName="5点均" lineStroke="{avgLineStroke}" radius="1"
+						   xField="{xField}" yField="{avg5Field}"/>
+			<mx:LineSeries id="rlLine1" visible="{redlineChk.selected}" 
+						   displayName="红线值(上限)" lineStroke="{redLineStroke}" radius="1" dataProvider="{allList}"
+						   xField="{xField}" yField="{redlineFieldUpperLimitValue}"/>
+			<mx:LineSeries id="rlLine2" visible="{redlineChk.selected}" 
+						   displayName="红线值(下限)" lineStroke="{redLineStroke}" radius="1" dataProvider="{allList}"
+						   xField="{xField}" yField="{redlineFieldLowerLimitValue}"/>
+			
+			<mx:LineSeries id="slopeLine" visible="{slopeChk.selected}" dataProvider="{slopeList}"
+						   displayName="斜率" interpolateValues="false" lineStroke="{slopeStroke}"
+						   radius="1" xField="x" yField="y"/>
+			<mx:LineSeries id="slopeLineUp" visible="{rangeChk.selected}" dataProvider="{slopeList}"
+						   displayName="范围上限" interpolateValues="false" lineStroke="{slopeStroke}"
+						   radius="1" xField="x" yField="upValue"/>
+			<mx:LineSeries id="slopeLineDown" visible="{rangeChk.selected}"
+						   dataProvider="{slopeList}" displayName="范围下限" interpolateValues="false"
+						   lineStroke="{slopeStroke}" radius="1" xField="x" yField="downValue"/>
+		</mx:series>
+		
+		<mx:annotationElements>
+			<component:RangeSelector id="rangeSel"/>
+		</mx:annotationElements>
+	</mx:PlotChart>                                                                                   
+</mx:VBox>

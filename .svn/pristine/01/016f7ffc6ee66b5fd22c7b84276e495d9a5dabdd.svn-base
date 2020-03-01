@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationComplete()"
+		 verticalGap="2"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var namecolor:uint = 0x0B333C;
+			[Bindable]
+			public var valuecolor:uint = 0x0000FF;
+			
+			[Bindable]
+			public var namecn:String="  ";
+			
+			[Bindable]
+			public var valuecn:String="";
+			
+			private function creationComplete():void
+			{
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:Label id="nameLabel" text="{namecn}" color="{namecolor}" />
+	<mx:Label id="valLabel" text="{valuecn}" color="{valuecolor}" />
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+</mx:VBox>
+

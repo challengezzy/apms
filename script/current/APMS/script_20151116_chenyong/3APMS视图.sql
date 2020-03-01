@@ -1,0 +1,58 @@
+//查看46号报文列表指定元原模板数据源
+create view "V_TELEGRAPH_A46_VIEW" as
+SELECT T.ID,  --ENGINE REPORT
+       T.MSG_NO,
+       H.DATE_UTC,
+       H.RPTNO,
+       H.ACNUM,
+       H.DMU,
+       L.ESN_1,
+       L.ESN_2,
+       H.ACMODEL MODELCODE,
+       AC.ACMODELID,
+       AC.BASEORGID,
+       AC.AIRLINEID,
+       T.MODELSERIES,
+       T.TEL_CONTENT,
+       T.RECORD_TIME,
+       T.ERRINT,
+       T.ERRMESSAGE
+  FROM A_ACARS_TELEGRAPH_DFD T, A_DFD_HEAD H,B_AIRCRAFT AC,a_dfd_a46_list L
+ WHERE H.MSG_NO = T.MSG_NO AND L.MSG=H.MSG_NO AND AC.AIRCRAFTSN=H.ACNUM;
+ 
+//选中单条报文查看报文内容指定数据源 
+ CREATE OR REPLACE VIEW V_A46LIST_VIEW AS
+SELECT
+H.RPTNO,
+H.FLY_FROM,
+H.FLY_TO,
+H.FLT,
+H.PH,
+H.CNT,
+H.CODE,
+H.BLEED_STATUS,
+H.APU,
+H.TAT,
+H.ALT,
+H.CAS,
+H.MN,
+H.GW,
+H.CG,
+H.DMU,
+H.STATUS,
+T.ID,
+T.MSG,
+T.ACNUM,
+H.DATE_UTC,
+T.esn_1,
+T.ehrs_1,
+T.ecyc_1,
+T.per_1,
+T.esn_2,
+T.ehrs_2,
+T.ecyc_2,
+T.RECDATETIME
+  FROM a_dfd_a46_list T, A_DFD_HEAD H
+ WHERE H.MSG_NO = T.MSG;
+ 
+ 

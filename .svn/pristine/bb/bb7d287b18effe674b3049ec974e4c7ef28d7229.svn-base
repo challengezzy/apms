@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*"
+					   width="600" height="300" allowClose="true" allowDrag="true"
+					   allowMaximize="true" allowResize="true"
+					   close="PopUpManager.removePopUp(this)" creationComplete="creationComplete()"
+					   initialize="initHandler(event)" layout="vertical" title="LLP部件设置"
+					   verticalGap="1" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.text.engine.TabAlignment;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+
+			[Bindable]
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable]
+			public var debugMode:Boolean = true;
+			
+			public var selectedFunc:Function;//选中后处理函数
+			public var structId:String;//
+			
+			public var selectObj:Object;//选中的数据
+			
+			private function creationComplete():void
+			{
+				partnumList.addEventListener(MouseEvent.DOUBLE_CLICK,listDoubleClickHandler);
+				
+				var queryCond:String = "LLP_STRUCT_ID=" + structId;
+				partnumList.initQueryCondition = queryCond;
+				
+				partnumList.query();
+			}
+			
+			protected function initHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function listDoubleClickHandler(event:MouseEvent):void
+			{
+				if(partnumList.getSelectedRowValues().length != 1){
+					SmartXMessage.show("请选择一条数据！");
+					return;
+				}else{
+					selectObj = partnumList.getSelectedRowValue();
+					selectedFunc();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top">
+		<core:BillListPanel width="100%" height="100%" id="partnumList"  endpoint="{endpoint}"
+							templetCode="T_B_ENG_LLP_PARTNUM" debugMode="{debugMode}"
+							editable="false" cacheMode="{BillListPanel.CACHE_MODE_YES}"/>
+	</mx:VBox>
+</containers:SuperPanel>

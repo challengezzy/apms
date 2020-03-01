@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="00%">
+	<fx:Declarations>
+		<!-- 单元格背景色渲染，为控制字显示准备 -->
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			public var dataField:String ;//数据字段值
+			
+			public var dataTipField:String ;//数据提示值
+			
+			public var colorFunc:Function;//获取颜色的函数
+			
+			public var doubleClickFunc:Function;//双击事件处理函数
+			
+			public var colorField:String;//判断显示颜色的字段
+			
+			public var isTip:Boolean = true;
+			
+			[Bindable]
+			private var _colData:String;
+			
+			[Bindable]
+			private var _colDataTip:String;
+			
+			private var dataValue:Object;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				dataValue = value;
+				_colData = data[dataField];
+				_colDataTip = data[dataTipField];
+				
+				if(colorFunc != null){
+					var color:uint = colorFunc(dataField,value,colorField);//当前行数据值，当前字段名
+					
+					if(color != 0 ){
+						setStyle("backgroundColor",color);
+					}else{
+						setStyle("backgroundColor",undefined);
+					}
+				}
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(doubleClickFunc == null){
+					cellLabel.doubleClickEnabled = false;
+				}
+			}
+			
+			protected function doubleClickHandler(event:MouseEvent):void
+			{
+				if(doubleClickFunc != null){
+					doubleClickFunc(dataField, dataValue);
+				}
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<mx:Label id="cellLabel" width="100%" height="100%" paddingLeft="2"
+			  text="{_colData}" toolTip="{_colDataTip}" doubleClick="doubleClickHandler(event)" doubleClickEnabled="true" />
+</mx:HBox>

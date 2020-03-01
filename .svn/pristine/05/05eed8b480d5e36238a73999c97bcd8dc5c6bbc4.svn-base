@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="creationCompleteHandler(event)"
+		 horizontalGap="1"
+		 width="173" height="25">
+		<fx:Declarations>
+			<mx:TitleWindow id="chooserTitle" fontSize="10" showCloseButton="true" layout="vertical"
+							creationComplete="chooserTitle_creationCompleteHandler(event)" alpha="1"
+							close="closeHandler(event)">
+				<mx:HBox width="100%" height="20">
+					<mx:NumericStepper id="year" stepSize="1" minimum="1970" maximum="2099" width="65"
+									   change="yearChangeHandler(event)" />
+					<mx:Label text="年" width="15" textAlign="center"/>
+					<mx:NumericStepper id="month" stepSize="1" minimum="1" maximum="12" width="60"
+									   change="monthChangeHandler(event)" />
+					<mx:Label text="月" width="15" textAlign="center"/>
+				</mx:HBox>
+				<mx:HBox width="180" height="20">
+					<mx:Label text="日" textAlign="center" width="18" color="red" fontSize="10"/>
+					<mx:Label text="一" textAlign="center" width="18"  fontSize="10"/>
+					<mx:Label text="二" textAlign="center" width="18" fontSize="10"/>
+					<mx:Label text="三" textAlign="center" width="18" fontSize="10"/>
+					<mx:Label text="四" textAlign="center" width="18" fontSize="10"/>
+					<mx:Label text="五" textAlign="center" width="18" fontSize="10"/>
+					<mx:Label text="六" textAlign="center" width="18" fontSize="10"/>
+				</mx:HBox>
+				
+				<mx:HBox id="dayBox" width="100%">
+					
+				</mx:HBox>
+				<mx:HBox width="100%" height="20" horizontalAlign="center">
+					<mx:NumericStepper id="hour" stepSize="1" minimum="0" maximum="23" width="55" keyDown="hour_keyDownHandler(event)"
+									   change="hourChangeHandler(event)" />
+					<mx:Label text="时" width="15" textAlign="center"/>
+					<mx:NumericStepper id="minute" stepSize="1" minimum="0" maximum="59" width="55" keyDown="minute_keyDownHandler(event)"
+									   change="minuteChangeHandler(event)" />
+					<mx:Label text="分" width="15" textAlign="center"/>
+				</mx:HBox>
+				
+			</mx:TitleWindow>
+		</fx:Declarations>
+		<fx:Script>
+		<![CDATA[
+			import com.apms.flex.util.DateUtil;
+			
+			import mx.containers.HBox;
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.Button;
+			import mx.controls.Label;
+			import mx.controls.NumericStepper;
+			import mx.controls.Text;
+			import mx.controls.TileList;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.NumericStepperEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var initvalue:String;
+			
+			[Bindable]
+			private var textEditable:Boolean;
+			
+			[Bindable]
+			public var _nowTime:Date;
+			
+			[Bindable]
+			private var dayRowCount:Number = 5;
+			
+			[Bindable] 
+			private var daysArray:Array;//日期数组
+			
+			private var weekName:Array = new Array("日","一","二","三","四","五","六");
+			
+			[Bindable]
+			private var resultValue:String;
+			private var dayTileList:TileList;
+			
+			/** 1, "YYYY-MM-DD JJ:NN:SS"  2,"YYYY-MM-DD"  3,"YYYY-MM-DD JJ:NN:SS:QQQ" 4,"MM/DD/YYYY" */
+			[Bindable]
+			public var formatterType:Number=1;
+			
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				resultValue = initvalue;
+				if(_nowTime == null){
+					if(resultValue != null && resultValue.length > 10){
+						_nowTime = DateUtil.stringToDate(resultValue);
+					}
+				}
+				//在不指定初始值时，空间显示为空 
+				if( _nowTime != null ){
+					dateTimeChangeHander();
+				}
+				
+				if(formatterType == 2){
+					returnTime.width = 80;
+					this.width = 113;
+				}
+			}
+			
+			
+			protected function chooserTitle_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(_nowTime == null){
+					_nowTime = new Date();
+				}
+					
+				year.value = _nowTime.fullYear;
+				month.value  = _nowTime.month+1;
+				hour.value = _nowTime.hours;
+				minute.value = _nowTime.minutes;
+				dayTileReset();				
+			}
+			
+			private function dayTileReset():void{
+				
+				//本月总天数
+				var tmpDate:Date = new Date(_nowTime.fullYear,_nowTime.month+1,0);
+				var sumDay:Number = tmpDate.date ;				
+				//本月第一天
+				var firstDay:Date = new Date(_nowTime.fullYear,_nowTime.month,1);
+				var wday:Number = firstDay.day ;				
+				//今日
+				var todayNum:Number = _nowTime.date;				
+				dayRowCount = Math.ceil((sumDay+wday)/7);
+				
+				daysArray = new Array();
+				for(var i:Number=0; i<sumDay; i++){
+					daysArray.push((i+1).toString());
+				}
+				for(i=0; i<wday; i++){
+					daysArray.unshift(null);
+				}
+				
+				dayTileList = new TileList();
+				dayTileList.setStyle("fontSize",10);
+				dayTileList.columnCount=7;
+				dayTileList.rowCount=dayRowCount;
+				dayTileList.width = 7*25;
+				dayTileList.height = dayRowCount * 25;
+				
+				dayTileList.doubleClickEnabled = true;
+				dayTileList.addEventListener(ListEvent.ITEM_CLICK,dayChangeHandler);
+				dayTileList.addEventListener(ListEvent.ITEM_DOUBLE_CLICK,closeHandler);
+				dayTileList.addEventListener(MouseEvent.DOUBLE_CLICK,closeHandler);
+				
+				dayTileList.height = dayRowCount * 25;
+				
+				dayTileList.dataProvider = daysArray;
+				dayTileList.selectedIndex = wday+todayNum - 1; 
+				
+				//直接使用dayTileList.dataProvider 绑定时存在数据刷新不完全的问题，这里重新创建一个TileList对象
+				if(dayBox.getChildren().length > 0)
+					dayBox.removeChildAt(0);
+				
+				dayBox.addChild(dayTileList);
+			}
+			
+			private function yearChangeHandler(evt:NumericStepperEvent):void{
+				_nowTime.setFullYear(evt.value,_nowTime.month,_nowTime.date);
+				dateTimeChangeHander();
+				dayTileReset();
+			}
+			
+			private function monthChangeHandler(evt:NumericStepperEvent):void{
+				_nowTime.setFullYear(_nowTime.fullYear,evt.value-1,_nowTime.date);
+				dateTimeChangeHander();
+				dayTileReset();
+			}
+			
+			private function hourChangeHandler(evt:NumericStepperEvent):void{
+				_nowTime.setHours(evt.value,_nowTime.minutes,_nowTime.seconds,_nowTime.milliseconds);
+				dateTimeChangeHander();
+			}
+			
+			private function minuteChangeHandler(evt:NumericStepperEvent):void{
+				_nowTime.setHours(_nowTime.hours,evt.value,_nowTime.seconds,_nowTime.milliseconds);
+				dateTimeChangeHander();
+			}
+			
+			private function dayChangeHandler(event:ListEvent):void{
+				
+				_nowTime.setFullYear(_nowTime.fullYear,_nowTime.month,dayTileList.selectedItems);
+				dateTimeChangeHander();
+			}
+			
+			private function dateTimeChangeHander():void{
+				if(formatterType==2){
+					resultValue =  _nowTime.fullYear + "-" + (_nowTime.month+1) + "-" 
+						+ _nowTime.date;
+				}else{
+					resultValue =  _nowTime.fullYear + "-" + (_nowTime.month+1) + "-" 
+						+ _nowTime.date + " " + _nowTime.hours
+						+ ":" + _nowTime.minutes + ":" +_nowTime.seconds;
+				}
+
+			}
+			
+			private function closeHandler(event:Event):void{
+				dateTimeChangeHander();
+				
+				PopUpManager.removePopUp(chooserTitle);
+			}
+			
+			[Bindable]
+			public function set nowTime(_time:Date):void{
+				this._nowTime = _time;
+				
+				if( _nowTime != null ){
+					dateTimeChangeHander();
+				}
+			}
+			
+			public function get nowTime():Date{
+				return _nowTime;
+			}
+			
+			public function set text(str:String):void{
+				initvalue = str ;
+				resultValue = initvalue;
+				if(resultValue != null && resultValue.length > 10){
+					_nowTime = DateUtil.stringToDate(resultValue);
+				}
+			}
+			public function get text():String{
+				return returnTime.text ;
+			}
+			
+			public function set editable(str:Boolean):void{
+				textEditable = str;
+			}
+			public function get editable(): Boolean{
+				return returnTime.editable;
+			}
+			
+			private function openChooser(event:MouseEvent):void{
+				PopUpManager.addPopUp(chooserTitle,this,true);
+				
+				chooserTitle.move(event.stageX+event.target.width-event.localX+5,event.stageY-event.localY);
+			}
+
+			
+			protected function hour_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER){
+					closeHandler(null);
+				}
+				
+			}
+			
+			protected function minute_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER){
+					closeHandler(null);
+				}				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<mx:TextInput id="returnTime" width="143" editable="{textEditable}" text="{resultValue}"/>
+	<mx:Button width="22" height="22" click="openChooser(event)" fontWeight="normal"
+			   icon="@Embed(source='mx/controls/DateChooser.png')"/>
+</mx:HBox>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   creationComplete="creationComplete()"
+			   close="PopUpManager.removePopUp(this)" layout="vertical"
+			   xmlns:containers="net.brandonmeyer.containers.*" 
+			   width="1000" height="600" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+			   title="A02CFM报文内容查看" allowDrag="true" allowClose="true" 
+			   allowMaximize="true" allowMinimize="true" allowResize="true" 
+			   xmlns:report="com.apms.flex.modules.report.*"
+			   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, leftVal objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.text.engine.TabAlignment;
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a02cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a02cData:Object;//译后报文内容
+					
+			
+			
+			
+			private function creationComplete():void
+			{
+				a02cData = a02cvo.dataMap;
+				telegraphContent=a02cData.tel_content;
+		
+			}
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A02 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator width="100%" height="100%">
+	<mx:HDividedBox id="contentBox" width="980" height="100%"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+		<mx:VBox width="25%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="true" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="75%" height="100%" verticalGap="1" id="formatBox">
+			<mx:HBox width="100%">
+				<mx:Label text="译后报文 ENGINE GAS PATH ADV REPORT (02)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="ENGINE CRUISE REPORT(02)" fontWeight="bold" />
+			</mx:HBox>
+			<report:ReportHeaderPanel headHashVo="{a02cvo}" height="190"/>
+			
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="EC" rightVal="EE" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="ESN" chineseName1="序号" leftVal="{a02cData.esn_1}" rightVal="{a02cData.esn_2}"/>
+				<report:TwoValuesReportPanel englishName="EHRS" chineseName1="飞行小时" leftVal="{a02cData.ehrs_1}" rightVal="{a02cData.ehrs_2}"/>
+				<report:TwoValuesReportPanel englishName="ERT" chineseName1="运行小时" leftVal="{a02cData.ert_1}" rightVal="{a02cData.ert_2}"/>
+				<report:TwoValuesReportPanel englishName="ECYC" chineseName1="循环数" leftVal="{a02cData.ecyc_1}" rightVal="{a02cData.ecyc_2}"/>
+				<report:TwoValuesReportPanel englishName="AP" chineseName1="自动驾驶状态" leftVal="{a02cData.ap_1}" rightVal="{a02cData.ap_2}" boxWidth="90"/>
+				<report:TwoValuesReportPanel englishName="QA" chineseName1="" leftVal="{a02cData.qa_ec}"/>
+				<report:TwoValuesReportPanel englishName="QE" chineseName1="稳态数据量" leftVal="{a02cData.qe_ec}"  boxWidth="75"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="N1" rightVal="N2" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="N1" chineseName1="实际N1转速" leftVal="{a02cData.n1_1}" rightVal="{a02cData.n1_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="N1C" chineseName1="指令N1转速" leftVal="{a02cData.n1c_1}" rightVal="{a02cData.n1c_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="N2" chineseName1="实际N2转速" leftVal="{a02cData.n2_1}" rightVal="{a02cData.n2_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="EGT" chineseName1="排气温度" leftVal="{a02cData.egt_1}" rightVal="{a02cData.egt_2}"/>
+				<report:TwoValuesReportPanel englishName="FF" chineseName1="燃油流量" leftVal="{a02cData.ff_1}" rightVal="{a02cData.ff_2}"/>
+				<report:TwoValuesReportPanel englishName="PS13" chineseName1="1.3位置静态压力" leftVal="{a02cData.ps13_1}" rightVal="{a02cData.ps13_2}" boxWidth="100"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="S1" rightVal="S2" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="P25" chineseName1="2.5位置静态压力" leftVal="{a02cData.p25_1}" rightVal="{a02cData.p25_2}" boxWidth="110"/>
+				<report:TwoValuesReportPanel englishName="T25" chineseName1="2.5位置温度" leftVal="{a02cData.t25_1}" rightVal="{a02cData.t25_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="P3" chineseName1="3位置静态压力" leftVal="{a02cData.p3_1}" rightVal="{a02cData.p3_2}" boxWidth="110"/>
+				<report:TwoValuesReportPanel englishName="T3" chineseName1="3位置温度" leftVal="{a02cData.t3_1}" rightVal="{a02cData.t3_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="T5" chineseName1="5位置温度" leftVal="{a02cData.t5_1}" rightVal="{a02cData.t5_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="VSV" chineseName1="VSV角度" leftVal="{a02cData.vsv_1}" rightVal="{a02cData.vsv_2}"/>
+				<report:TwoValuesReportPanel englishName="VBV" chineseName1="VBV角度" leftVal="{a02cData.vbv_1}" rightVal="{a02cData.vbv_2}"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="T1" rightVal="T2" boxWidth="30" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="HPT" chineseName1="高压涡轮" chineseName2="间隙控制" leftVal="{a02cData.hpt_1}" rightVal="{a02cData.hpt_2}" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="LPT" chineseName1="低压涡轮" chineseName2="间隙控制" leftVal="{a02cData.lpt_1}" rightVal="{a02cData.lpt_2}" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="GLE" chineseName1="发电机负载" leftVal="{a02cData.gle_1}" rightVal="{a02cData.gle_2}" boxWidth="75" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PD" chineseName1="引气预冷器" chineseName2="进口压力" leftVal="{a02cData.pd_1}" rightVal="{a02cData.pd_2}" boxWidth="75" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="TN" chineseName1="吊架温度" leftVal="{a02cData.tn_1}" rightVal="{a02cData.tn_2}" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PT2" chineseName1="位置2总压" leftVal="{a02cData.pt2_1}" rightVal="{a02cData.pt2_2}" boxWidth="75"  name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="OIQH" chineseName1="上个航段" chineseName2="油消耗率" leftVal="{a02cData.oiqh_1}" rightVal="{a02cData.oiqh_2}"  name2ToVisible="true"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="V1" rightVal="V2" boxWidth="30" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VN" chineseName1="前部风扇段N1" chineseName2="最高抖动值" leftVal="{a02cData.vn_1}" rightVal="{a02cData.vn_2}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VL" chineseName1="后部涡轮段N1" chineseName2="最高抖动值" leftVal="{a02cData.vl_1}" rightVal="{a02cData.vl_2}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHA" chineseName1="前部风扇抖" chineseName2="动向量角度" leftVal="{a02cData.pha_1}" rightVal="{a02cData.pha_2}" boxWidth="75" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHT" chineseName1="后部涡轮段抖"  chineseName2="动向量角度" leftVal="{a02cData.pht_1}" rightVal="{a02cData.pht_2}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VC" chineseName1="前部风扇段N2" chineseName2="最高抖动值" leftVal="{a02cData.vc_1}" rightVal="{a02cData.vc_2}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VH" chineseName1="后部涡轮段N2" chineseName2="最高抖动值" leftVal="{a02cData.vh_1}" rightVal="{a02cData.vh_2}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="EVM" chineseName1="控制字" leftVal="{a02cData.evm_1}" rightVal="{a02cData.evm_2}" name2ToVisible="true"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="STABLE DESCENT" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="V3"  rightVal="V4" boxWidth="30" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VN" chineseName1="前部风扇段N1" chineseName2="最高抖动值" leftVal="{a02cData.vn_1_sd}" rightVal="{a02cData.vn_2_sd}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VL" chineseName1="后部涡轮段N1" chineseName2="最高抖动值" leftVal="{a02cData.vl_1_sd}" rightVal="{a02cData.vl_2_sd}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHA" chineseName1="前部风扇抖" chineseName2="动向量角度" leftVal="{a02cData.pha_1_sd}" rightVal="{a02cData.pha_2_sd}" boxWidth="75" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHT" chineseName1="后部涡轮段抖" chineseName2="动向量角度" leftVal="{a02cData.pht_1_sd}" rightVal="{a02cData.pht_2_sd}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="N1" chineseName1="N1" leftVal="{a02cData.n1_1_sd}" rightVal="{a02cData.n1_2_sd}" name2ToVisible="true"/>
+			</mx:HBox>	
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="STABLE CLIMB" fontWeight="bold" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="V5" rightVal="V6" boxWidth="30" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VN" chineseName1="前部风扇段N1" chineseName2="最高抖动值" leftVal="{a02cData.vn_1_sc}" rightVal="{a02cData.vn_2_sc}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="VL" chineseName1="后部涡轮段N1" chineseName2="最高抖动值" leftVal="{a02cData.vl_1_sc}" rightVal="{a02cData.vl_2_sc}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHA" chineseName1="前部风扇抖" chineseName2="动向量角度" leftVal="{a02cData.pha_1_sc}" rightVal="{a02cData.pha_2_sc}" boxWidth="75" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="PHT" chineseName1="后部涡轮段抖" chineseName2="动向量角度" leftVal="{a02cData.pht_1_sc}" rightVal="{a02cData.pht_2_sc}" boxWidth="90" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="N1" chineseName1="N1" leftVal="{a02cData.n1_1_sc}" rightVal="{a02cData.n1_2_sc}" name2ToVisible="true"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="V7" rightVal="V8" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="OIP" chineseName1="滑油压力" leftVal="{a02cData.oip_1}" rightVal="{a02cData.oip_2}"/>
+				<report:TwoValuesReportPanel englishName="OIT" chineseName1="滑油温度" leftVal="{a02cData.oit_1}" rightVal="{a02cData.oit_2}"/>
+				<report:TwoValuesReportPanel englishName="ECW1" chineseName1="告警控制字" leftVal="{a02cData.ecw_1}" rightVal="{a02cData.ecw_2}" boxWidth="75"/>
+				<report:TwoValuesReportPanel englishName="SSEL" chineseName1="控制字" leftVal="{a02cData.ssel_1}" rightVal="{a02cData.ssel_2}" boxWidth="180"/>
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="X1" rightVal="X2" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="WFQ" chineseName1="内侧油箱" chineseName2="燃油量kg" leftVal="{a02cData.wfq_1}" rightVal="{a02cData.wfq_2}" boxWidth="70" name2ToVisible="true"/>
+				<report:TwoValuesReportPanel englishName="ELEV" chineseName1="升降舵" chineseName2="位置deg" leftVal="{a02cData.elev_1}" rightVal="{a02cData.elev_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="AOA" chineseName1="俯仰角度" chineseName2="deg" leftVal="{a02cData.aoa_1}" rightVal="{a02cData.aoa_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="SLP" chineseName1="侧滑角" chineseName2="deg" leftVal="{a02cData.slp_1}" rightVal="{a02cData.slp_1}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="CFPG" chineseName1="计算航路" chineseName2="加速度deg" leftVal="{a02cData.cfpg_1}" rightVal="{a02cData.cfpg_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="CIVV" chineseName1="计算惯性垂直" chineseName2="速度 ft/min" leftVal="{a02cData.civv_1}" rightVal="{a02cData.civv_1}" boxWidth="85" name2ToVisible="true" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="X3" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="RUDD" chineseName1="方向舵" chineseName2="角度deg" leftVal="{a02cData.rudd}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="RUDT" chineseName1="方向舵配平" chineseName2="位置deg" leftVal="{a02cData.rudt}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="AILL" chineseName1="左副翼" chineseName2="位置deg" leftVal="{a02cData.aill}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="AILR" chineseName1="右副翼" chineseName2="位置deg" leftVal="{a02cData.ailr}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="STAB" chineseName1="增稳器位置" chineseName2="deg" leftVal="{a02cData.stab}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="ROLL" chineseName1="滚转角度" chineseName2="deg" leftVal="{a02cData.roll}"  boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="YAW" chineseName1="偏航角度" chineseName2="deg" leftVal="{a02cData.yaw}"  boxWidth="70" name2ToVisible="true" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel  leftVal="X4" rightVal="X5" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="RSP2" chineseName1="滚转扰流板" chineseName2="2位置" leftVal="{a02cData.rsp2_1}" rightVal="{a02cData.rsp2_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="RSP3" chineseName1="滚转扰流板" chineseName2="3位置" leftVal="{a02cData.rsp3_1}" rightVal="{a02cData.rsp3_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="RSP4" chineseName1="滚转扰流板" chineseName2="4位置" leftVal="{a02cData.rsp4_1}" rightVal="{a02cData.rsp4_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="RSP5" chineseName1="滚转扰流板" chineseName2="5位置" leftVal="{a02cData.rsp5_1}" rightVal="{a02cData.rsp5_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="FLAP" chineseName1="襟翼位置" chineseName2="deg" leftVal="{a02cData.flap_1}" rightVal="{a02cData.flap_2}" boxWidth="70" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="SLAT" chineseName1="缝翼位置" chineseName2="deg" leftVal="{a02cData.slat_1}" rightVal="{a02cData.slat_2}" boxWidth="70" name2ToVisible="true" />
+			</mx:HBox>
+			<mx:HBox>
+				<report:TwoValuesReportPanel leftVal="X6" rightVal="X7" boxWidth="30"/>
+				<report:TwoValuesReportPanel englishName="THDG" chineseName1="真航向" chineseName2="deg" leftVal="{a02cData.thdg_1}" rightVal="{a02cData.thdg_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="LONP" chineseName1="经度" chineseName2="deg" leftVal="{a02cData.lonp_1}" rightVal="{a02cData.lonp_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="LATP" chineseName1="纬度" chineseName2="deg" leftVal="{a02cData.latp_1}" rightVal="{a02cData.latp_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="WS" chineseName1="风速" chineseName2="kts" leftVal="{a02cData.ws_1}" rightVal="{a02cData.ws_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="WD" chineseName1="风向" chineseName2="deg" leftVal="{a02cData.wd_1}" rightVal="{a02cData.wd_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="FT" chineseName1="燃油温度" chineseName2="度" leftVal="{a02cData.ft_1}" rightVal="{a02cData.ft_2}" boxWidth="60" name2ToVisible="true" />
+				<report:TwoValuesReportPanel englishName="FD" chineseName1="燃油密度" chineseName2="kg/l" leftVal="{a02cData.fd_1}" rightVal="{a02cData.fd_2}" boxWidth="60" name2ToVisible="true" />
+			</mx:HBox>
+		</mx:VBox>
+	</mx:HDividedBox>
+		<component:EngPicPanel eng_model="{a02cData.acmodel}" rptno="A02"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

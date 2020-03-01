@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<login>
+		<!-- 记录登录用户的信息，便于自动登录 -->
+		<username value=""/>
+		<password value=""/>
+	</login>
+	<datagrid_set>
+		<columns>
+			<!-- 记录每个列的顺序、宽度、和是否显示  -->
+			<column seq="1" headerText="分公司" dataField="co_seq_name" width="50" visible="false" />
+			<column seq="1" headerText="航班日期" dataField="flt_date_str" width="90" visible="true"/>
+			<column seq="1" headerText="航班号" dataField="flightno_union" width="130" visible="true"/>
+			<column seq="1" headerText="机号" dataField="acnum" width="65"/>
+			<column seq="1" headerText="机型" dataField="acmodel" width="50" />
+			<column seq="1" headerText="经停航站" dataField="apt_union" width="140" />
+			<column seq="1" headerText="维护" dataField="maintaintype" width="55" />
+			<column seq="1" headerText="计划到达/起飞" dataField="stda" width="120" />
+			<column seq="1" headerText="机位" dataField="ac_stop" width="45" />
+			<column seq="1" headerText="预达" dataField="t_eta" width="65" />
+			<column seq="1" headerText="预起" dataField="t_etd" width="65" />
+			<column seq="1" headerText="到达剩余" dataField="remain_min_arr" width="55" visible="true"/>
+			<column seq="1" headerText="飞机状态" dataField="acportstate" width="65" id="acportstateDgc"/>
+			<column seq="1" headerText="工作状态" dataField="workforce_state_name" width="70" />
+			<column seq="1" headerText="DD" dataField="flag_ddm" width="40" />
+			<column seq="1" headerText="提醒单" dataField="flag_tip" width="55" />
+			<column seq="1" headerText="故障" dataField="ishavefault" width="70"  />
+			<column seq="1" headerText="告警" dataField="ishavewarning" width="70" />
+			<column seq="1" headerText="放行人" dataField="release_user" width="70" />
+			<column seq="1" headerText="维修人" dataField="maintain_user" width="70" />
+			<column seq="1" headerText="勤务人" dataField="duty_user" width="70" />
+			<column seq="1" headerText="接机人" dataField="guardian_user" width="70" />
+			<column seq="1" headerText="出港人" dataField="handover_user" width="70" />
+			<column seq="1" headerText="起飞剩余" dataField="remain_min_dep" width="55" visible="true"/>
+			<column seq="1" headerText="OMIS备注" dataField="memo" width="180"/>
+			<column seq="1" headerText="航班备注" dataField="flightdesc" width="180"/>
+		</columns>
+	</datagrid_set>
+</root>

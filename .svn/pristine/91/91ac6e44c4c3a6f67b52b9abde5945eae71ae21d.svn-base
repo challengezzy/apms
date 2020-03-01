@@ -1,0 +1,947 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns="http://openscales.org"
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		 paddingLeft="5" paddingRight="5" paddingBottom="3" paddingTop="3"
+		 initialize="initializeHandler(event)"
+		 resize="resizeOverviewMap()" 
+		 creationComplete="creationCompleteHandler(event)"
+		 xmlns:layer="org.openscales.fx.layer.*" xmlns:map="com.apms.flex.modules.map.*" xmlns:item="com.cool.components.item.*" >
+	
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="flightService" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="getAirportPositionList" result="result4getAirportPositionList(event)" 
+					   fault="fault4getAirportPositionList(event)">
+			</mx:method>
+			<mx:method name="getAirportBuildingList" result="result4getAirportBuildingList(event)" 
+					   fault="fault4getAirportBuildingList(event)">
+			</mx:method>
+			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFeature;
+			import com.apms.flex.modules.login.LoginWindow;
+			import com.apms.flex.modules.map.feature.AcFlightFeature;
+			import com.apms.flex.modules.map.vo.AcstopVo;
+			import com.apms.flex.modules.map.window.AcstopBasicInfoWindow;
+			import com.apms.flex.modules.map.window.AcstopEditWindow;
+			import com.apms.flex.modules.map.window.AirportChangeWindow;
+			import com.apms.flex.modules.map.window.FlightFeatureDetailWindow;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.apms.flex.vo.LoginUserVo;
+			import com.cool.components.event.ItemComponentEvent;
+			
+			import flashx.textLayout.elements.BreakElement;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.states.SetStyle;
+			
+			import org.openscales.core.Map;
+			import org.openscales.core.basetypes.Resolution;
+			import org.openscales.core.events.FeatureEvent;
+			import org.openscales.core.events.MapEvent;
+			import org.openscales.core.feature.CustomPointFeature;
+			import org.openscales.core.feature.Feature;
+			import org.openscales.core.feature.Marker;
+			import org.openscales.core.feature.PointFeature;
+			import org.openscales.core.i18n.provider.I18nJSONProvider;
+			import org.openscales.core.layer.ImageTMS;
+			import org.openscales.core.layer.VectorLayer;
+			import org.openscales.core.style.Rule;
+			import org.openscales.core.style.Style;
+			import org.openscales.core.style.fill.SolidFill;
+			import org.openscales.core.style.font.Font;
+			import org.openscales.core.style.marker.DisplayObjectMarker;
+			import org.openscales.core.style.marker.FlightMarker;
+			import org.openscales.core.style.marker.ImageGifMarker;
+			import org.openscales.core.style.marker.ImageMarker;
+			import org.openscales.core.style.marker.WellKnownMarker;
+			import org.openscales.core.style.stroke.Stroke;
+			import org.openscales.core.style.symbolizer.PointSymbolizer;
+			import org.openscales.core.style.symbolizer.TextSymbolizer;
+			import org.openscales.fx.popup.FxPopup;
+			import org.openscales.fx.popup.renderer.FxPopupRenderer;
+			import org.openscales.geometry.Point;
+			import org.openscales.geometry.basetypes.Location;
+			import org.openscales.geometry.basetypes.Pixel;
+			import org.openscales.geometry.basetypes.Size;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.Hashtable;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleRefItemVO;
+			import smartx.flex.components.vo.TempletItemVO;
+			
+			[Bindable]
+			private var smartxDest:String = GlobalConst.SERVICE_FORM;
+			[Bindable] 
+			private var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			[Bindable] 
+			private var webroot:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_WEBROOT) as String;
+			
+			private var planeUtil:PlaneFeatureUtil = new PlaneFeatureUtil();
+			
+			private var loginvo:LoginUserVo;
+			[Bindable]
+			private var isLogin:Boolean = false; //是否已登录
+			private var loginWindow:LoginWindow = new LoginWindow();
+			
+			private var changeWindow:AirportChangeWindow = new AirportChangeWindow();
+			private var detailWindow:FlightFeatureDetailWindow = new FlightFeatureDetailWindow();
+			private var stopEditwindow:AcstopEditWindow = new AcstopEditWindow();
+			private var acstopBasicInfoWindow:AcstopBasicInfoWindow;
+			[Bindable]
+			private var mapUrl:String = "http://121.197.15.177:8080/apms/airportmap";
+			private var viewResolution:Number = 0.0636;
+			
+			private var aptCodeCur:String = "";
+			private var aptIdCur:String = "";
+			private var aptNameCur:String = "";
+			
+			private var map:Map;
+			/** 机场底图图层 */
+			private var backgroudLayer:ImageTMS;
+			private var linesplitLayer:ImageTMS;
+			
+			private var fxpopup:FxPopup;
+			
+			private var zoomOld:Number = 0;//旧缩放级别
+			private var zoomCur:Number = 3;//当前地图缩放级别
+			
+			private var planeLayer:VectorLayer = new VectorLayer("planeLayer");
+			private var acstopLayer:VectorLayer = new VectorLayer("acstopLayer");
+			private var buildingLayer:VectorLayer = new VectorLayer("buildingLayer");
+			
+			/** 机位与航班映射关系 stopkey, ArrayCollection.<FlightData> */
+			private static var stopFlightMap:Hashtable = new Hashtable();
+			
+			[Bindable]
+			private var aptItemVo:TempletItemVO = new TempletItemVO();
+			
+			private var acstopMap:Hashtable = new Hashtable(); 
+			private var acstopArr:ArrayCollection = new ArrayCollection();
+			private var buildingArr:ArrayCollection = new ArrayCollection();
+			
+			private var arrFlight:ArrayCollection = new ArrayCollection(); //查询到的航班列表
+			
+			protected function initializeHandler(event:FlexEvent):void{
+				mapUrl = webroot + "airportmap";
+				
+				aptItemVo = new TempletItemVO();
+				aptItemVo.itemtype="参照";
+				aptItemVo.itemname="选择航站";
+				aptItemVo.itemkey="APT";
+				aptItemVo.refdesc="SELECT id id#,lower(CODE_3) 三字码,NAME 名称 FROM V_AIRPORT_REFQUERY;ds=datasource_apms";
+				
+				//获取机位缓存信息
+				//TODO 1, 获取机位信息到缓存中
+				//2, 获取已在港飞机和1小时内预达的飞机
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void{
+				map = fxMap.map;
+				backgroudLayer = new ImageTMS("机场背景图",mapUrl,aptCodeCur);
+				linesplitLayer = new ImageTMS("线分割图",mapUrl,aptCodeCur);
+				
+				buildingLayer.visible = false;
+				
+//				resizeOverviewMap();
+//				miniMap.overviewMap.removeAllLayers();
+//				var overviewLayer:ImageTMS = new ImageTMS("缩略图地图",mapUrl,aptCodeCur);
+//				overviewLayer.layerName = "pudong_wgs84";
+//				miniMap.overviewMap.addLayer(overviewLayer);
+				
+				mousePosition.selectedIndexUnit = 1;
+				
+				//添加监听
+				map.addEventListener(MapEvent.RESOLUTION_CHANGED,onMapResolutionChangeHandler);
+				
+				//airportChange("PVG");
+				aptRef.editable = false;
+				
+				flightMonitor.flightListPanel.dataListGrid.doubleClickEnabled = true;
+				flightMonitor.flightListPanel.dataListGrid.addEventListener(MouseEvent.DOUBLE_CLICK,onFlightListDoubleClick);
+				
+				flightMonitor.flightListPanel.addEventListener("showDataFinish", onDataRefreshedHandler );
+				
+				//地图机位编辑功能
+				map.doubleClickEnabled = false;
+				map.mouseChildren = true; //TODO 此处设置TRUE后，地图双击失效，图标双击生效
+				
+			
+				map.addEventListener(FeatureEvent.FEATURE_OVER, onFeatureOver);
+				map.addEventListener(FeatureEvent.FEATURE_OUT, onFeatureOut);
+				map.addEventListener(FeatureEvent.FEATURE_CLICK, onFeatureClick);
+				map.addEventListener(FeatureEvent.FEATURE_DOUBLECLICK, onFeatureDoubleClick);
+				loginBtn_clickHandler(null);
+			}
+			
+			private function onMapDoubleClick(event:MouseEvent):void{
+				//SmartXMessage.show("地图双击 x:="+ mousePosition.longitude +", y = " + mousePosition.latitude);
+				if( !isLogin){
+					return;
+				}
+				
+				stopEditwindow.aptId = aptIdCur;
+				stopEditwindow.aptName = aptNameCur;
+				stopEditwindow.stopRotation = "0";
+				stopEditwindow.acstop = "" ;
+				stopEditwindow.stopX = mousePosition.longitude;
+				stopEditwindow.stopY = mousePosition.latitude;
+				stopEditwindow.confirmFunc = refreshAcstopCache;
+				
+				PopUpManager.addPopUp(stopEditwindow,mapBox);
+				PopUpManager.centerPopUp(stopEditwindow);
+			}
+			
+			protected function onChangeAptClickHandler(event:MouseEvent):void
+			{
+				//机场切换窗口
+				changeWindow.airportCode = aptCodeCur;
+				changeWindow.confirmFunc = airportChange;
+				
+				PopUpManager.addPopUp(changeWindow,this);
+				PopUpManager.centerPopUp(changeWindow);
+			}
+			
+			//机位信息查询相关
+			private function fault4getAirportPositionList(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("获取机位信息失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4getAirportPositionList(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				acstopArr = event.result as ArrayCollection;
+				AirportMapCache.setAcstopMap(acstopArr);
+				acstopMap = AirportMapCache.acstopMap;
+				
+				resetAcstopLayer();
+				
+				//列表数据刷新
+				flightMonitor.onQuery(null);
+			}
+			
+			private function fault4getAirportBuildingList(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("获取机坪建筑物信息失败",SmartXMessage.MESSAGE_ERROR,event.fault.faultString);
+			}	
+			
+			private function result4getAirportBuildingList(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				buildingArr = event.result as ArrayCollection;
+				
+				resetBuildingLayer();
+			}
+			
+			private function aptChangeHandler(event:ItemComponentEvent):void{
+				if(aptRef.returnVO != null){
+					//获取参照的返回值
+					var aptcode:String = aptRef.returnVO.code.toUpperCase();
+					aptIdCur = aptRef.returnVO.id;
+					aptNameCur = aptRef.returnVO.name;
+					
+					flightMonitor.aptcode = aptcode;
+					flightMonitor.aptid = aptIdCur;
+					flightMonitor.aptname = aptNameCur;
+					
+					if(aptCodeCur != aptcode){
+						//机场没有变更，不处理
+						flightService.getAirportPositionList(aptIdCur);
+						flightService.getAirportBuildingList(aptIdCur);
+						
+						OperatingTipUtil.startOperat("刷新机位缓存信息");
+						
+					}
+					airportChange(aptcode); //处理机场变更的情况
+				}
+			}
+			
+			private function airportChange(aptcode:String):void{
+				
+				if(aptCodeCur == aptcode){
+					//机场没有变更，不处理
+					return;
+				}
+				
+				aptCodeCur = aptcode;
+				map.removeAllLayers(); //移除所有图层
+				
+				var location:Location = new Location(0,0);
+				if(aptCodeCur == "SHA"){
+//					backgroudLayer.layerName = "hongqiao_background";
+//					linesplitLayer.layerName = "hongqiao_linesplit";
+					//定位中心点
+					location = new Location( -13 , -37 );
+				}else if(aptCodeCur == "PVG"){
+//					backgroudLayer.layerName = "pudong_background";
+//					linesplitLayer.layerName = "pudong_linesplit";
+					//linenoLayer.layerName = "pudong_lineno";
+					
+					location = new Location( -30 , 10 );
+				}else if(aptCodeCur == "HGH"){
+//					backgroudLayer.layerName = "hangzhou_background";
+//					linesplitLayer.layerName = "hangzhou_linesplit";
+					
+					location = new Location( 19 , -26 );
+				}
+				
+				var aptcode_low:String = aptCodeCur.toLowerCase();
+				backgroudLayer.layerName = aptcode_low + "_background";
+				linesplitLayer.layerName = aptcode_low + "_linesplit";
+				
+				map.addLayer(backgroudLayer);
+				//map.addLayer(linenoLayer);
+				map.addLayer(linesplitLayer);
+				map.addLayer(acstopLayer);
+				map.addLayer(planeLayer);
+				map.addLayer(buildingLayer);
+				
+				map.center = location;
+				
+				resetBuildingLayer();
+				
+			}
+			
+			//鹰眼图
+			private function resizeOverviewMap():void {
+//				var viewWidth:Number = 0.5 * this.width;
+//				var viewHeight:Number = this.height* viewWidth / this.width ;
+//				var viewSize:Size = new Size(400, 200);
+//				miniMap.overviewMap.size = viewSize;
+			}
+			
+			private function onMapResolutionChangeHandler(event:MapEvent):void{
+				zoomCur = backgroudLayer.getZoomForResolution(event.newResolution.value);
+				trace("new resolution :" + event.newResolution.value + " ,  zoom :" + zoomCur );
+				if(zoomOld != zoomCur){//缩放级别变化
+					zoomOld = zoomCur;
+					resetBuildingLayer();
+					resetAcstopLayer();
+					resetPlaneLayer();
+				}
+			}
+			
+			private function onDataRefreshedHandler(event:FlexEvent):void{
+				//SmartXMessage.show("数据已刷新");
+				//拿到列表数据，显示到地图上
+				arrFlight = flightMonitor.flightListPanel.dataListGrid.dataProvider as ArrayCollection;
+				
+				stopFlightMap = new Hashtable();
+				//数据预处理，判断机位冲突
+				for(var i:int =0; i< arrFlight.length; i++){
+					var fltObj:Object = arrFlight.getItemAt(i) ;
+					var fltnoA:String = fltObj["flightno_a"]==null ?"" :fltObj["flightno_a"];
+					var fltnoD:String = fltObj["flightno_d"]==null ?"" :fltObj["flightno_d"];
+					fltObj["flight_mapdesc"] = fltnoA +"\n "+ fltObj["acnum"] +"\n" + fltnoD;
+					fltObj["feature_name"] = "flight";
+					fltObj["acstop_conflict"] = false;
+					var stopstr:String = fltObj["ac_stop"];
+					
+					var stopkey:String = aptIdCur+"_"+stopstr;
+					//判断该机位是否已经被占用
+					var stopFlightArr:ArrayCollection = stopFlightMap.find(stopkey) as ArrayCollection;
+					
+					if(stopFlightArr != null){
+						//查到该机位已有其它航班信息,判断时间是否冲突
+						judgeFlightIsConflict(fltObj,stopFlightArr);
+						stopFlightArr.addItem(fltObj);
+					}else{
+						stopFlightArr = new ArrayCollection();
+						stopFlightArr.addItem(fltObj);
+						stopFlightMap.add(stopkey,stopFlightArr);
+					}
+				}
+				resetPlaneLayer();
+			}
+			
+			//刷新建筑物图层
+			private function resetBuildingLayer():void{
+				buildingLayer.removeFeatures(buildingLayer.features);
+				var buidingVo:Object;
+				var feature:Feature;
+				
+				for(var i:int =0; i< buildingArr.length; i++){
+					buidingVo = buildingArr.getItemAt(i);
+					
+					var bx:Number = new Number(buidingVo["x"]);
+					var by:Number = new Number(buidingVo["y"]);
+					if(buidingVo["x"] == null || buidingVo["x"] == "0" || buidingVo["y"] == null || buidingVo["y"] == "0" ){
+						continue;
+					}
+					feature = planeUtil.getBuildingFeature(buidingVo,bx, by, zoomCur);
+					
+					buildingLayer.addFeature(feature);
+					
+				}
+				
+				buildingLayer.redraw();
+				/*
+				buidingVo = new Object();
+				buidingVo["buiding_name"] = "26号机坪门";
+				feature = planeUtil.getBuildingFeature(buidingVo,-57,25, zoomCur);
+				buildingLayer.addFeature(feature);
+				
+				buidingVo = new Object();
+				buidingVo["buiding_name"] = "27号机坪门";
+				feature = planeUtil.getBuildingFeature(buidingVo,-20,25, zoomCur);
+				
+				buildingLayer.addFeature(feature);
+				*/
+				
+			}
+			
+			private function resetAcstopLayer():void{
+				
+				acstopLayer.removeFeatures( acstopLayer.features);
+				
+				var acstop:AcstopVo;
+				var feature:Feature;
+				
+				for(var i:int =0; i< acstopArr.length; i++){
+					acstop = acstopArr.getItemAt(i) as AcstopVo;
+					if(acstop == null || acstop.x ==0 || acstop.y == 0){
+						//没有查询到对应的机位，不显示
+						continue;
+					}
+					feature = planeUtil.getAcstopFeature(acstop,acstop.x, acstop.y, zoomCur);
+					feature.doubleClickEnabled = true;
+					//feature.addEventListener(MouseEvent.DOUBLE_CLICK, onAcstopFeatureDoubleClick );
+					acstopLayer.addFeature(feature);
+					
+					//增加工作梯图标
+					var workladdernum:Number = acstop.workladdernum;
+					if(workladdernum > 0 && zoomCur >= 3){
+						var workladderData:Object = new Object();
+						workladderData["feature_name"] = "workladder";
+						workladderData["workladdernum"]= acstop.workladdernum;
+						var workladderFeature:PointFeature = planeUtil.getWorkladderFeature(workladderData,acstop.x, acstop.y, acstop.rotation,zoomCur);
+						acstopLayer.addFeature(workladderFeature);
+					}
+					
+				}
+			}
+			
+			private function resetPlaneLayer():void{
+				//删除元素重新构建
+				planeLayer.removeFeatures( planeLayer.features);
+				stopFlightMap = new Hashtable();
+				
+				for(var i:int =0; i< arrFlight.length; i++){
+					var fltObj:Object = arrFlight.getItemAt(i) ;
+					
+					
+					var stopstr:String = fltObj["ac_stop"];					
+					var stopkey:String = aptIdCur+"_"+stopstr;
+					//判断该机位是否已经被占用
+					var stopFlightArr:ArrayCollection = stopFlightMap.find(stopkey) as ArrayCollection;
+					if(stopFlightArr != null){
+						stopFlightArr.addItem(fltObj);
+						continue;
+					}else{
+						stopFlightArr = new ArrayCollection();
+						stopFlightArr.addItem(fltObj);
+						stopFlightMap.add(stopkey,stopFlightArr);
+					}
+					
+					var isConflict: Boolean = false; 
+					isConflict = fltObj["acstop_conflict"] as Boolean;
+					var acstop:AcstopVo = AirportMapCache.getAcstopVo(aptIdCur, stopstr);
+					if(acstop == null || acstop.x ==0 || acstop.y == 0){
+						//没有查询到对应的机位，不显示
+						continue;
+					}
+					
+					var planeFeature:Feature = planeUtil.getFlightFeature(fltObj, acstop.x, acstop.y, acstop.rotation, zoomCur, isConflict);
+					//zhangzy 20140925 推出推入动画的情况，响应双击事件只能从这里响应。地图上无法探测到动画的双击事件
+					//planeFeature.addEventListener(MouseEvent.DOUBLE_CLICK, onPlaneFeatureDoubleClick );
+					planeLayer.addFeature(planeFeature);
+					
+					//人员到岗，添加工作人员图标
+					var workstate:Number = fltObj["workforce_state"];
+					if(workstate >= 10 && zoomCur >= 3){
+						var workerData:Object = new Object();
+						workerData["feature_name"] = "worker";
+						workerData["release_user"] = fltObj["release_user"];
+						workerData["maintain_user"] = fltObj["maintain_user"];
+						workerData["duty_user"] = fltObj["duty_user"];
+						workerData["guardian_user"] = fltObj["guardian_user"];
+						workerData["handover_user"] = fltObj["handover_user"];
+						workerData["workforce_state_name"] = fltObj["workforce_state_name"];
+						workerData["workforce_state"] = workstate;
+						
+						var workFeature:PointFeature = planeUtil.getWorkerFeature(workerData,acstop.x, acstop.y, acstop.rotation,zoomCur);
+						planeLayer.addFeature(workFeature);
+					} 
+					
+					//增加cfd故障和告警图标
+					var fault:String = fltObj["ishavefault"];
+					var warning:String = fltObj["ishavewarning"];
+					if(fault == "是" && zoomCur >= 3||warning == "是" && zoomCur >= 3){
+						var faultData:Object = new Object();
+						faultData["feature_name"] = "fault";
+						faultData["ishavefault"]=fltObj["ishavefault"];
+						var faultFeature:PointFeature = planeUtil.getFaultFeature(faultData,acstop.x, acstop.y, acstop.rotation,zoomCur);
+						planeLayer.addFeature(faultFeature);
+					}
+					
+				}
+				
+				//添加飞机图标结束
+//				var point:org.openscales.geometry.Point = new org.openscales.geometry.Point(-43, 40);
+//				var markerStyle:Style = new Style();
+//				var rule:Rule = new Rule();
+//				
+//				var workerIcon:Class = AssetsFeature.workman_64;
+//				var disMarker:ImageGifMarker = new ImageGifMarker(null,0,0,48,64,32,1,0);
+//				
+//				rule.symbolizers.push( new PointSymbolizer(disMarker) );
+//				markerStyle.rules.push(rule);
+//				
+//				var workerFeature:PointFeature = new PointFeature(point,null,markerStyle);
+//				planeLayer.addFeature(workerFeature);
+				
+				
+			}
+			
+			private function addTestFeature(icon:Class,x:Number, y:Number):void{
+				var point:org.openscales.geometry.Point = new org.openscales.geometry.Point(x, y);
+				var markerStyle:Style = new Style();
+				var rule:Rule = new Rule();
+				var disMarker:ImageMarker = new ImageMarker(icon, -24 , -24, 48, 48 , 48 , 1, rotation );
+				
+				rule.symbolizers.push( new PointSymbolizer(disMarker) );
+				markerStyle.rules.push(rule);
+				
+				var workerFeature:PointFeature = new PointFeature(point,null,markerStyle);
+				planeLayer.addFeature(workerFeature);
+			}
+			
+			private function judgeFlightIsConflict(curFlightObj:Object,stopFlightArr:ArrayCollection):Boolean{
+				var isConflict:Boolean = false;
+				var cta:Date = null; //航前，提前12个小时占位
+				var ctd:Date = null;
+				if(curFlightObj["maintaintype"] == "AF"){
+					cta = curFlightObj["cta"] as Date;
+					ctd = DateUtil.moveHour(cta,12);
+				}else if(curFlightObj["maintaintype"] == "PF"){
+					ctd = curFlightObj["ctd"] as Date;
+					cta = DateUtil.moveHour(ctd,-12);
+				}else if(curFlightObj["maintaintype"] == "TR"){
+					cta = curFlightObj["cta"] as Date;
+					ctd = curFlightObj["ctd"] as Date;
+				}
+				
+				for(var m:int=0; m<stopFlightArr.length; m++){
+					var tempObj:Object = stopFlightArr.getItemAt(m);
+					var tempCta:Date = null; //航前，提前12个小时占位
+					var tempCtd:Date = null;
+					if(tempObj["maintaintype"] == "AF"){
+						tempCta = tempObj["cta"] as Date;
+						tempCtd = DateUtil.moveHour(tempCta,12);
+					}else if(tempObj["maintaintype"] == "PF"){
+						tempCtd = tempObj["ctd"] as Date;
+						tempCta = DateUtil.moveHour(tempCtd,-12);
+					}else if(tempObj["maintaintype"] == "TR" || tempObj["maintaintype"] == "AF+PF"){
+						tempCta = tempObj["cta"] as Date;
+						tempCtd = tempObj["ctd"] as Date;
+					}
+					
+					//防止出现空值异常，暂未查到原因
+					if(cta == null){
+						cta = new Date();
+					}
+					if(ctd == null){
+						ctd = new Date();
+					}
+					if(tempCtd == null){
+						tempCtd = new Date();
+					}
+					if(tempCta == null){
+						tempCta = new Date();
+					}
+					
+					var diff1:Number = DateUtil.minuteDiff(cta, tempCtd);
+					var diff2:Number = DateUtil.minuteDiff(ctd, tempCta);
+					//如果两个差值正负保持一致，则说明两个时间范围段不冲突
+					if( diff1*diff2 <= 0){
+						isConflict = true;
+						curFlightObj["acstop_conflict"] = true;
+						tempObj["acstop_conflict"] = true;
+					}
+				}
+				
+				return isConflict ;
+				
+			}
+			
+			private function onFlightListDoubleClick(event:MouseEvent):void{
+				var fltObj:Object = flightMonitor.flightListPanel.dataListGrid.selectedItem;
+				if(fltObj != null){
+					var stopstr:String = fltObj["ac_stop"];
+					var acstop:AcstopVo = AirportMapCache.getAcstopVo(aptIdCur, stopstr);
+					if(acstop == null || acstop.x ==0 || acstop.y == 0){
+						//没有查询到对应的机位，不显示
+					}else{
+						var location:Location = new Location(acstop.x, acstop.y);
+						var res:Resolution =  new Resolution(0.0636); //缩放到level4
+						map.resolution = res ;
+						map.center = location;
+					}
+				}
+				
+//				var fea:Feature = planeLayer.features.pop();
+//				fea.style = Style.getDefaultPointStyle();
+//				fea.selected = true;
+//				fea.draw();
+			}
+			
+			private function onFeatureOver(event:FeatureEvent):void {
+				var featureData:Object = event.feature.data;
+				if(featureData == null){
+					return;
+				}
+				
+				var featureName:String = featureData["feature_name"];
+				if( featureName != "flight" ){
+					return ; //暂时不显示机位提醒信息
+				}
+				
+				if(fxpopup){
+					fxpopup.destroy();
+				}
+				fxpopup = null;
+				fxpopup = new FxPopup();
+				fxpopup.fxmap = fxMap;
+				var content:String="";
+				var title:String = "";
+				
+				if(featureData["feature_name"] == "flight" ){
+					fxpopup.WIDTH = 210;
+					fxpopup.HEIGHT = 260;
+					var fltData:Object = event.feature.data;
+					title = fltData["flightno_union"];
+					content = content + "<b>" + "航班日期" + "</b> : " + fltData["flt_date_str"] + "<br />";
+					content = content + "<b>" + "机号/机型" + "</b> : " + fltData["acnum"]+"/"+fltData["acmodel"] + "<br />";
+					content = content + "<b>" + "经停航站" + "</b> : " + fltData["apt_union"] + "<br />";
+					content = content + "<b>" + "维护类型" + "</b> : " + fltData["maintaintype"] + "<br />";
+					content = content + "<b>" + "机        位" + "</b> : " + null2Blank(fltData["ac_stop"]) + "<br />";
+					content = content + "<b>" + "工作状态" + "</b> : " + fltData["workforce_state_name"] + "<br />";
+					content = content + "<b>" + "飞机状态" + "</b> : " + fltData["acportstate"] + "<br />";
+					content = content + "<b>" + "放行人员" + "</b> : " + null2Blank(fltData["release_user"]) + "<br />";
+					content = content + "<b>" + "维修人员" + "</b> : " + null2Blank(fltData["maintain_user"]) + "<br />";
+					content = content + "<b>" + "勤务人员" + "</b> : " + null2Blank(fltData["duty_user"]) + "<br />";
+					content = content + "<b>" + "预达/预起      " + "</b> : " + null2Blank(fltData["t_eta"]) +" / "+null2Blank(fltData["t_etd"]) + "<br />";
+					content = content + "<b>" + "计划到达起飞" + "</b> : " + null2Blank(fltData["stda"]) + "<br />";
+					content = content + "<b>" + "到达剩余" + "</b> : " + null2Blank(fltData["remain_min_arr"]) + "<br />";
+					content = content + "<b>" + "OMIS备注" + "</b> : " + null2Blank(fltData["memo"]) + "<br />";
+				}
+//				else if(featureData["feature_name"] == "worker"){
+//					fxpopup.WIDTH = 120;
+//					fxpopup.HEIGHT = 140;
+//					//title = featureData["workforce_state_name"];
+//					content = content + "<b>" + "工作状态" + "</b> : " + featureData["workforce_state_name"] + "<br />";
+//					content = content + "<b>" + "放行人员" + "</b> : " + null2Blank(featureData["release_user"]) + "<br />";
+//					content = content + "<b>" + "维修人员" + "</b> : " + null2Blank(featureData["maintain_user"]) + "<br />";
+//					content = content + "<b>" + "勤务人员" + "</b> : " + null2Blank(featureData["duty_user"]) + "<br />";
+//					content = content + "<b>" + "接机人员" + "</b> : " + null2Blank(featureData["guardian_user"]) + "<br />";
+//					content = content + "<b>" + "出港人员" + "</b> : " + null2Blank(featureData["handover_user"]) + " ";
+//					
+//				}
+				
+				var fxpopupRenderer:FxPopupRenderer = new FxPopupRenderer();
+				fxpopup.popupRenderer = fxpopupRenderer;
+				
+				fxpopup.feature = event.feature;
+				var px:Pixel = fxpopup.fxmap.map.getMapPxFromLocation(event.feature.lonlat);
+				fxpopup.relativePosition = fxpopup.calculateRelativePosition(px);
+				fxpopup.position = px;
+				fxpopup.setCurrentState(fxpopup.relativePosition,false);
+				
+				fxpopupRenderer.titleContent = title;
+				fxpopupRenderer.content = content;
+				
+				fxMap.addFxPopup(fxpopup,true);
+				fxpopup.visible = true;
+			}
+			
+			private function null2Blank(str:String):String{
+				if(str == null){
+					return "";
+				}
+				return str;
+			}
+			
+			private function onFeatureOut(event:FeatureEvent):void {
+				if(fxpopup){
+					fxpopup.destroy();
+				}
+			}
+			
+			private function onFeatureClick(event:FeatureEvent):void {
+				//swf动画可以响应单击事件,机位使用双击，航班使用单击 zhangzy 20140928
+				if(event.feature is PointFeature || event.feature is CustomPointFeature){
+					var pointfeature:Feature = event.feature as Feature;
+					var pointdata:Object = pointfeature.data;
+					if(pointdata != null && pointdata["feature_name"] == "flight"){
+						flightMonitor.flightListPanel.dataListGrid.selectedItem = pointdata;
+						detailWindow = new FlightFeatureDetailWindow();
+						detailWindow.flightlistMonitor = flightMonitor;
+						
+						detailWindow.flightFeatureData = pointdata;
+						PopUpManager.addPopUp(detailWindow,mapBox);
+						PopUpManager.centerPopUp(detailWindow);
+					}
+				}
+			}
+			
+			private function onFeatureDoubleClick(event:FeatureEvent):void{
+				var pointfeature:Feature = event.feature as Feature;
+				var pointdata:Object = pointfeature.data;
+				if(event.feature is PointFeature || event.feature is CustomPointFeature){
+					if(pointdata != null && pointdata["feature_name"] == "acstop"){
+						acstopBasicInfoWindow= new AcstopBasicInfoWindow();
+						var acstopVo:AcstopVo = pointdata["acstop_vo"] as AcstopVo;
+						acstopBasicInfoWindow.acstopVo = acstopVo;
+						acstopBasicInfoWindow.aptName = aptNameCur;
+						acstopBasicInfoWindow.aptCode = aptCodeCur;
+						acstopBasicInfoWindow.popupParent=flightMonitor.popupParent;
+						PopUpManager.addPopUp(acstopBasicInfoWindow,mapBox);
+						PopUpManager.centerPopUp(acstopBasicInfoWindow);
+					}
+					//不处理飞机的双击事件，单击已经处理
+//					else if(pointdata != null && pointdata["feature_name"] == "flight"){
+//						
+//						flightMonitor.flightListPanel.dataListGrid.selectedItem = pointdata;
+//						detailWindow = new FlightFeatureDetailWindow();
+//						detailWindow.flightlistMonitor = flightMonitor;
+//						
+//						detailWindow.flightFeatureData = pointdata;
+//						PopUpManager.addPopUp(detailWindow,mapBox);
+//						PopUpManager.centerPopUp(detailWindow);
+//					}
+				}
+			}
+			
+			private function onPlaneFeatureDoubleClick(event:MouseEvent):void{
+				//飞机推出的swf动画响应不了双击事件，这是一个问题
+				if(event.target is CustomPointFeature){
+					var pointfeature:CustomPointFeature = event.target as CustomPointFeature;
+					var pointdata:Object = pointfeature.data;
+					
+					flightMonitor.flightListPanel.dataListGrid.selectedItem = pointdata;
+					detailWindow = new FlightFeatureDetailWindow();
+					detailWindow.flightlistMonitor = flightMonitor;
+					
+					detailWindow.flightFeatureData = pointdata;
+					PopUpManager.addPopUp(detailWindow,mapBox);
+					PopUpManager.centerPopUp(detailWindow);
+				}
+				event.stopImmediatePropagation();
+			}
+			
+			
+			private function onAcstopFeatureDoubleClick(event:MouseEvent):void{
+				if(event.target is CustomPointFeature){
+					var pointfeature:PointFeature = event.target as PointFeature;
+					var data:Object = pointfeature.data;
+					var acstopVo:AcstopVo = data["acstop_vo"] as AcstopVo;
+					
+					stopEditwindow.aptId = acstopVo.airportid;
+					stopEditwindow.aptName = aptNameCur;
+					stopEditwindow.stopRotation = acstopVo.rotation + "";
+					stopEditwindow.acstop = acstopVo.code ;
+					stopEditwindow.stopX = acstopVo.x + "";
+					stopEditwindow.stopY = acstopVo.y + "";
+					stopEditwindow.confirmFunc = refreshAcstopCache;
+					
+					PopUpManager.addPopUp(stopEditwindow,mapBox);
+					PopUpManager.centerPopUp(stopEditwindow);
+				}
+				event.stopImmediatePropagation();
+			}
+			
+			private function refreshAcstopCache():void{
+				flightService.getAirportPositionList(aptIdCur);
+				OperatingTipUtil.startOperat("刷新机位缓存信息");
+			}
+			
+			protected function onAcstopLocationHandler(event:MouseEvent):void
+			{
+				//根据输入的机位号进行地图定位
+//				var location:Location = new Location(-73.2, 7.76);
+				var res:Resolution =  new Resolution(0.0636); //缩放到level4
+				var stopVo:AcstopVo = AirportMapCache.getAcstopVo(aptIdCur,txtAcstop.text);
+				if(stopVo != null && stopVo.x !=0 && stopVo.y != 0){
+					var location:Location = new Location( Number(stopVo.x) , Number(stopVo.y) );
+					
+					map.center = location;
+					map.resolution = res ;
+				}else if(stopVo == null) {
+					SmartXMessage.show("查询的机位[" + txtAcstop.text + "]不存在！");
+				}else if(stopVo.x == 0 && stopVo.y == 0){
+					SmartXMessage.show("查询的机位[" + txtAcstop.text + "]X或Y坐标为空！");
+				}				
+			}
+			
+			protected function txtAcstop_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER){
+					onAcstopLocationHandler(null);
+				}
+			}
+			
+			protected function loginBtn_clickHandler(event:MouseEvent):void
+			{
+				loginWindow.loginOkFunc = onLoginOK;
+				PopUpManager.addPopUp(loginWindow,this,true);
+				PopUpManager.centerPopUp(loginWindow);
+			}
+			
+			private function onLoginOK():void{
+				isLogin = true;
+				loginvo = ClientEnviorment.getInstance().getVar("LOGIN_USERVO") as LoginUserVo;
+				loginBtn.label = loginvo.name;
+				flightMonitor.loginUser = loginvo.name;//把用户的名称传递给列表
+				//loginBtn.enabled = false;
+				
+				//设置登录用户
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_ID, loginvo.id);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_LOGINNAME, loginvo.loginname);
+				ClientEnviorment.getInstance().putVar(ClientEnviorment.KEY_LOGIN_USER_NAME, loginvo.name);
+				
+				//设置默认机场
+				if(loginvo.airportCode != null && loginvo.airportCode != ""){
+					var aptvo:SimpleRefItemVO = new SimpleRefItemVO();
+					aptvo.id= loginvo.airportId;
+					aptvo.code = loginvo.airportCode;
+					aptvo.name = loginvo.airportName;
+					aptRef.setRealValue(aptvo); 
+					
+					aptRef.editable = true;
+				}
+				
+			}
+			
+			protected function onEditchangeHandler(event:Event):void
+			{
+				//切换编辑模式
+				map.mouseChildren = !editBtn.selected;
+				map.doubleClickEnabled = editBtn.selected;
+				if(editBtn.selected){
+					map.addEventListener(MouseEvent.DOUBLE_CLICK, onMapDoubleClick );
+				}else{
+					map.removeEventListener(MouseEvent.DOUBLE_CLICK,onMapDoubleClick);
+				}
+				
+			}
+			
+			protected function onAcstopFeatureVisibleHandler(event:Event):void
+			{
+				//切换图层显示
+				acstopLayer.visible = acstopVisibleCb.selected;				
+			}
+			protected function onBackgroudVisibleHandler(event:Event):void
+			{
+				backgroudLayer.visible = backgroudVisibelCb.selected;				
+			}
+			protected function onLineSplitvisibleHandler(event:Event):void
+			{
+				linesplitLayer.visible = linesplitVisibelCb.selected;				
+			}
+			protected function onBuidingsVisibleHandler(event:Event):void
+			{
+				buildingLayer.visible = buildingVisibelCb.selected;				
+			}
+			
+			private function openUrl():void{
+				navigateToURL(new URLRequest("http://gps2.shedi.com/webgis-v1/dynamic.html"), '_blank');
+			}
+			 
+//			
+//			protected function linkBtn_mouseOverHandler(event:MouseEvent):void
+//			{
+//				linkBtn.setStyle('textDecoration','underline');
+//				linkBtn.setStyle("rollOverColor","0xffffff");
+//			}
+//			
+//			protected function linkBtn_mouseOutHandler(event:MouseEvent):void
+//			{
+//				linkBtn.setStyle("textDecoration","none");
+//			}
+			
+//			protected function linkBtn_mouseDownHandler(event:MouseEvent):void
+//			{
+//				linkBtn.
+//			}
+			
+		]]>
+	</fx:Script>
+
+	<mx:HDividedBox width="100%" height="100%"  backgroundColor="0xB4EEB4" backgroundAlpha="0.3">
+		<mx:VBox width="65%" height="100%" borderStyle="solid" id="mapBox">
+			<mx:HBox width="100%" verticalAlign="middle" height="35" paddingLeft="10" paddingRight="10" >
+				<mx:Button id="loginBtn" label="登录"  click="loginBtn_clickHandler(event)" toolTip="点击切换登录" icon="{AssetsFileLib.userIcon}" />
+				<mx:HBox id="aptBox">
+					<mx:Label text="航站"/>
+					<item:ItemRefField id="aptRef" templetItemVO="{aptItemVo}" destination="{smartxDest}" endpoint="{endpoint}"
+									   showLabel="false" realValueChange="aptChangeHandler(event)" />
+				</mx:HBox>
+				<!--
+				<mx:Button id="btnChangeApt" label="机场切换" click="onChangeAptClickHandler(event)" visible="false"  />
+				-->
+				<mx:LinkButton id="linkBtn" label="航材专线GPS图" textDecoration="underline" color="0x0000ff"   click="openUrl()"/>
+				<s:Spacer width="100%" />
+				<mx:CheckBox id="backgroudVisibelCb" label="背景" selected="true" change="onBackgroudVisibleHandler(event)" />
+				<mx:CheckBox id="linesplitVisibelCb" label="机坪线" selected="true" change="onLineSplitvisibleHandler(event)" />
+				<mx:CheckBox id="buildingVisibelCb" label="建筑物/资源" selected="false" change="onBuidingsVisibleHandler(event)" />
+				<mx:CheckBox id="acstopVisibleCb" label="机位" selected="true" change="onAcstopFeatureVisibleHandler(event)" />
+				<s:Spacer width="20" />
+				<mx:CheckBox id="editBtn" label="机位编辑" selected="false" change="onEditchangeHandler(event)" />
+				<mx:TextInput id="txtAcstop" width="45" keyDown="txtAcstop_keyDownHandler(event)" editable="{isLogin}"  />
+				<mx:Button width="30" click="onAcstopLocationHandler(event)" enabled="{isLogin}" 
+						   icon="{AssetsFileLib.downIcon}" toolTip="定位到机位" />
+			</mx:HBox>
+			<Map id="fxMap" width="100%" height="100%" center="-50,20" 
+				 maxResolution="0.28" minResolution="0.035" resolution="0.15" 
+				 maxExtent="-180,-90,180,90"  > <!-- resolution="0.12" projection="EPSG:4326" -->
+				
+				<Zoom id="zoom" x="{fxMap.x-60}" y="{fxMap.y-35}"/>
+				<DragHandler/>
+				<WheelHandler/>
+				
+				<MousePosition id="mousePosition" name="mousepositionname" x="10" y="{fxMap.y+fxMap.height-60}" 
+							   availableProjSrsList="EPSG:4326" displayProjection="EPSG:4326" />
+				
+				<!--
+				<SelectFeaturesHandler id="selectFeaturesHandler" enableOverSelection="false"
+				enableBoxSelection="false"
+				enableClickSelection="false" active="true" />
+				<ClickHandler id="clickHandler" active="true" />
+				<s:Panel id="miniMapPanel" title="Overview map" x="10" y="10">
+					<OverviewMap id="miniMap" width="100%" height="100%" extentColor="0xFF3300" newExtentColor="0x00FF33" />	
+				</s:Panel>
+				-->
+			</Map>
+		</mx:VBox> 
+		<mx:VBox width="35%" height="100%" borderStyle="solid" id="dataBox">
+			<map:FlightScheduleMapMonitor id="flightMonitor" width="100%" height="100%" popupParent="{this}">
+				
+			</map:FlightScheduleMapMonitor>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:VBox>

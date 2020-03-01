@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="100%" height="100%" verticalGap="1" xmlns:core="smartx.flex.components.core.*"
+					   title="A10CFM报文内容查看" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" 
+					   xmlns:report="com.apms.flex.modules.report.*"
+					   xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.assets.AssetsFileLib;
+			import com.apms.flex.util.PictureExportUtil;
+			
+			import flash.text.engine.TabAlignment;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.mxml.RemoteObject;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			import smartx.flex.components.vo.SimpleHashVO;
+			//绑定表格用的数据    
+			[Bindable]  
+			private var arrS:ArrayCollection;
+			[Bindable]  
+			private var arrT:ArrayCollection;
+			[Bindable]
+			public var  dataGridWith:Number=60;
+			[Bindable]
+			public var telegraphContent:String;
+			
+			[Bindable]
+			public var a10cvo:SimpleHashVO;
+			
+			[Bindable]
+			public var a10cData:Object;//译后报文内容
+			
+			private function creationComplete():void
+			{
+				
+				a10cData = a10cvo.dataMap;	
+				telegraphContent=a10cData.tel_content;
+				dataGridWith=(dgS.width-50)/8;
+				var str_return:String = "";
+				var old_item:String="/";
+				var str_remain:String=telegraphContent;
+				var li_pos:int=-1;
+				while ((li_pos = str_remain.indexOf(old_item))>=0) {
+					var str_prefix:String = str_remain.substring(0, li_pos);
+					var str_remain_length:int=str_remain.length;
+					str_return = str_return + str_prefix + "/\n"; // 将结果字符串加上原来前辍
+					str_remain = str_remain.substring(li_pos + old_item.length, str_remain_length);
+				}
+				str_return = str_return + str_remain; // 将剩余的加上
+				telegraphContent=str_return;
+				arrS= new ArrayCollection([
+					{sort:"S1",n1:a10cData.n1_s1, n2:a10cData.n2_s1 , egt:a10cData.egt_s1,ff:a10cData.ff_s1,fmv:a10cData.fmv_s1,t25:a10cData.t25_s1,pd:a10cData.pd_s1},  
+					{sort:"S2",n1:a10cData.n1_s2, n2:a10cData.n2_s2 , egt:a10cData.egt_s2,ff:a10cData.ff_s2,fmv:a10cData.fmv_s2,t25:a10cData.t25_s2,pd:a10cData.pd_s2},  
+					{sort:"S3",n1:a10cData.n1_s3, n2:a10cData.n2_s3 , egt:a10cData.egt_s3,ff:a10cData.ff_s3,fmv:a10cData.fmv_s3,t25:a10cData.t25_s3,pd:a10cData.pd_s3}, 
+					{sort:"S4",n1:a10cData.n1_s4, n2:a10cData.n2_s4 , egt:a10cData.egt_s4,ff:a10cData.ff_s4,fmv:a10cData.fmv_s4,t25:a10cData.t25_s4,pd:a10cData.pd_s4},  
+					{sort:"S5",n1:a10cData.n1_s5, n2:a10cData.n2_s5 , egt:a10cData.egt_s5,ff:a10cData.ff_s5,fmv:a10cData.fmv_s5,t25:a10cData.t25_s5,pd:a10cData.pd_s5},  
+					{sort:"S6",n1:a10cData.n1_s6, n2:a10cData.n2_s6 , egt:a10cData.egt_s6,ff:a10cData.ff_s6,fmv:a10cData.fmv_s6,t25:a10cData.t25_s6,pd:a10cData.pd_s6},  
+					{sort:"S7",n1:a10cData.n1_s7, n2:a10cData.n2_s7 , egt:a10cData.egt_s7,ff:a10cData.ff_s7,fmv:a10cData.fmv_s7,t25:a10cData.t25_s7,pd:a10cData.pd_s7},  
+				]);   
+				arrT= new ArrayCollection([
+					{sort:"T1",p3:a10cData.p3_t1, t3:a10cData.t3_t1 , vsv:a10cData.vsv_t1,vbv:a10cData.vbv_t1,t5:a10cData.t5_t1,oit:a10cData.oit_t1,ecw5:a10cData.ecw5_t1},  
+					{sort:"T2",p3:a10cData.p3_t2, t3:a10cData.t3_t2 , vsv:a10cData.vsv_t2,vbv:a10cData.vbv_t2,t5:a10cData.t5_t2,oit:a10cData.oit_t2,ecw5:a10cData.ecw5_t2},  
+					{sort:"T3",p3:a10cData.p3_t3, t3:a10cData.t3_t3 , vsv:a10cData.vsv_t3,vbv:a10cData.vbv_t3,t5:a10cData.t5_t3,oit:a10cData.oit_t3,ecw5:a10cData.ecw5_t3},  
+					{sort:"T4",p3:a10cData.p3_t4, t3:a10cData.t3_t4 , vsv:a10cData.vsv_t4,vbv:a10cData.vbv_t4,t5:a10cData.t5_t4,oit:a10cData.oit_t4,ecw5:a10cData.ecw5_t4},  	
+					{sort:"T5",p3:a10cData.p3_t5, t3:a10cData.t3_t5 , vsv:a10cData.vsv_t5,vbv:a10cData.vbv_t5,t5:a10cData.t5_t5,oit:a10cData.oit_t5,ecw5:a10cData.ecw5_t5},				
+					{sort:"T6",p3:a10cData.p3_t6, t3:a10cData.t3_t6 , vsv:a10cData.vsv_t6,vbv:a10cData.vbv_t6,t5:a10cData.t5_t6,oit:a10cData.oit_t6,ecw5:a10cData.ecw5_t6},  
+					{sort:"T7",p3:a10cData.p3_t7, t3:a10cData.t3_t7 , vsv:a10cData.vsv_t7,vbv:a10cData.vbv_t7,t5:a10cData.t5_t7,oit:a10cData.oit_t7,ecw5:a10cData.ecw5_t7},  
+				]);  
+				
+			}
+			
+			protected function exportHandler(event:MouseEvent):void
+			{
+				PictureExportUtil.exportChart(contentBox,"A10 报文查看");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator>
+	<mx:HDividedBox id="contentBox" width="900" height="600"  paddingLeft="5" paddingRight="5" paddingTop="3" label="报文信息">
+		<mx:VBox width="30%" height="100%">
+			<mx:Label text="原始报文" fontWeight="bold"/>
+			<mx:TextArea text="{telegraphContent}" editable="false" height="100%" width="100%">
+			</mx:TextArea>
+		</mx:VBox>
+		<mx:VBox width="70%" height="100%" verticalGap="1">
+			<mx:HBox width="100%">
+				<mx:Label text="译后报文 ENGINE GAS PATH ADV REPORT (10)" fontWeight="bold"/>
+				<mx:Spacer width="100%"/>
+				<mx:LinkButton icon="{AssetsFileLib.savePicIcon}" click="exportHandler(event)" toolTip="导出为图片" />
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="ENGINE CRUISE REPORT(10)" fontWeight="bold" />
+			</mx:HBox>
+			<report:ReportHeaderPanel headHashVo="{a10cvo}" height="190"/>
+			<mx:HBox>
+				<report:TwoValuesReportPanel   name1ToVisible="false" leftVal="EC" rightVal="EE" boxWidth="30"/>
+				<report:TwoValuesReportPanel  englishName="ESN" name1ToVisible="false" leftVal="{a10cData.esn_1}" rightVal="{a10cData.esn_2}"/>
+				<report:TwoValuesReportPanel  englishName="EHRS" name1ToVisible="false" leftVal="{a10cData.ehrs_1}" rightVal="{a10cData.ehrs_2}"/>
+				<report:TwoValuesReportPanel  englishName="ERT" name1ToVisible="false" leftVal="{a10cData.ert_1}" rightVal="{a10cData.ert_2}"/>
+				<report:TwoValuesReportPanel  englishName="ECYC" name1ToVisible="false" leftVal="{a10cData.ecyc_1}" rightVal="{a10cData.ecyc_2}"/>
+				<report:TwoValuesReportPanel  englishName="AP" name1ToVisible="false" leftVal="{a10cData.ap_1}" rightVal="{a10cData.ap_2}"/>
+				<report:TwoValuesReportPanel  englishName="Y1" name1ToVisible="false" leftVal="{a10cData.y1_ec}" rightVal=""/>
+				<report:TwoValuesReportPanel  englishName="Y2" name1ToVisible="false" leftVal="{a10cData.y2_ec}" rightVal=""/>
+
+			</mx:HBox>
+			
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Label text="LIMIT EXCEEDANCE SUMMARY" fontWeight="bold" />
+			</mx:HBox>
+			
+			<mx:HBox>
+				<report:TwoValuesReportPanel  englishName="" name1ToVisible="false" valToVisible="false" rightVal="N1" boxWidth="30"/>
+				<report:TwoValuesReportPanel  englishName="E" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.e}"/>
+				<report:TwoValuesReportPanel  englishName="MAX" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.max}"/>
+				<report:TwoValuesReportPanel  englishName="LIM" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.lim}"/>
+				<report:TwoValuesReportPanel  englishName="TOL" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.tol}"/>
+				<report:TwoValuesReportPanel  englishName="TTP" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.ttp}"/>
+				<report:TwoValuesReportPanel  englishName="FF" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.ff}"/>
+                <report:TwoValuesReportPanel  englishName="PD" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.pd}"/>
+				<report:TwoValuesReportPanel  englishName="SM" name1ToVisible="false" valToVisible="false" rightVal="{a10cData.sm}"/>
+			</mx:HBox>
+			
+			<s:DataGrid id="dgS" width="100%" height="100%"  dataProvider="{arrS}"  sortableColumns="false">
+				<s:columns>
+					<s:ArrayList> 
+						<s:GridColumn dataField="sort" headerText="" width="{dataGridWith}"/>
+						<s:GridColumn dataField="n1" headerText="N1" width="{dataGridWith}"/>
+						<s:GridColumn dataField="n2" headerText="N2" width="{dataGridWith}"/>
+						<s:GridColumn dataField="egt" headerText="EGT" width="{dataGridWith}"/>
+						<s:GridColumn dataField="ff" headerText="FF" width="{dataGridWith}"/>
+						<s:GridColumn dataField="fmv" headerText="FMV" width="{dataGridWith}"/>
+						<s:GridColumn dataField="t25" headerText="T25" width="{dataGridWith}"/>
+						<s:GridColumn dataField="pd" headerText="PD" width="{dataGridWith}"/>
+					</s:ArrayList> 
+				</s:columns>
+			</s:DataGrid>
+		
+			<s:DataGrid id="dgT" width="100%" height="100%"  dataProvider="{arrT}"  sortableColumns="false">
+				<s:columns>
+					<s:ArrayList> 
+						<s:GridColumn dataField="sort" headerText="" width="{dataGridWith}"/>
+						<s:GridColumn dataField="p3" headerText="P3" width="{dataGridWith}"/>
+						<s:GridColumn dataField="t3" headerText="T3" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vsv" headerText="VSV" width="{dataGridWith}"/>
+						<s:GridColumn dataField="vbv" headerText="VBV" width="{dataGridWith}"/>
+						<s:GridColumn dataField="t5" headerText="T5" width="{dataGridWith}"/>
+						<s:GridColumn dataField="oit" headerText="OIT" width="{dataGridWith}"/>
+						<s:GridColumn dataField="ecw5" headerText="ECW5" width="{dataGridWith}"/>
+					</s:ArrayList> 
+				</s:columns>
+			</s:DataGrid>
+			
+		</mx:VBox>
+	</mx:HDividedBox>
+	<component:EngPicPanel eng_model="{a10cData.acmodel}" rptno="A10"/>
+	</mx:TabNavigator>
+</containers:SuperPanel>

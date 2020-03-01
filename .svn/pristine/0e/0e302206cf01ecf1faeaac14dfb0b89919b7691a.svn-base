@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="1000" height="550"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="航班工作分配"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" xmlns:component="com.apms.flex.component.*" 
+					   >
+	<fx:Declarations>
+		<mx:RemoteObject endpoint="{endpoint}" id="srvFlight" destination="{ApmsUIConst.FLIGHT_SERVICE}">
+			<mx:method name="flightTaskDispatch" result="result4flightTaskDispatch(event)" 
+					   fault="fault4flightTaskDispatch(event)">
+			</mx:method>			
+		</mx:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.modules.flight.vo.FlightConstVo;
+			import com.apms.flex.util.DateUtil;
+			import com.apms.flex.vo.ApmsUIConst;
+			import com.apms.flex.vo.LoginUserVo;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.IUIComponent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.DragManager;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.core.BillListPanel;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.util.OperatingTipUtil;
+			import smartx.flex.components.util.SmartXMessage;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var flightObj:Object;
+			
+			//航班相关信息
+			public var fltpk_a:String = "";
+			public var fltpk_d:String = "";
+			
+			[Bindable]
+			public var acnum:String = "";
+			[Bindable]
+			public var acmodel:String = "";
+			[Bindable]
+			public var flightno_union:String = "";
+			[Bindable]
+			public var apt_union:String = "";
+			[Bindable]
+			public var maintainType:String="";
+			
+			public var acmodelId:String = "0";
+			
+			//人员信息
+			[Bindable]
+			public var releaseUser:String="";
+			[Bindable]
+			public var maintainUser:String="";
+			[Bindable]
+			public var dutyUser:String="";
+			[Bindable]
+			public var guardianUser:String="";
+			[Bindable]
+			public var handoverUser:String="";
+			[Bindable]
+			public var cleanUser:String="";
+			[Bindable]
+			public var pickupcrewUser:String="";
+			[Bindable]
+			public var sewageUser:String="";
+			[Bindable]
+			public var auto_power:String="";
+			[Bindable]
+			public var auto_airsrc:String="";
+			[Bindable]
+			public var auto_aircond:String="";
+			[Bindable]
+			public var auto_trailer:String="";
+			[Bindable]
+			public var auto_snowrm:String="";
+			[Bindable]
+			public var auto_lift:String="";
+			[Bindable]
+			public var airpress_user:String="";
+			[Bindable]
+			public var poweron_user:String="";
+			[Bindable]
+			public var sign2_user:String="";
+			[Bindable]
+			public var area_user:String="";
+			
+			[Bindable]
+			private var userArrDg:ArrayCollection = new ArrayCollection();//当前页显示的记录
+			
+			public var aptcode:String ;//查询机号
+			public var aptid:String ;//查询机号
+			public var aptname:String ;//查询机号
+			
+			//航班列表引用对象
+			public var flightDataGrid:AdvDataGridPanel;
+			
+			[Bindable]
+			private var queryColumns:Array = new Array();
+			
+			[Bindable]
+			private var sqlUser:String = "";
+			
+			private var loginvo:LoginUserVo;
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				queryColumns.push("username");
+				queryColumns.push("linename");
+				queryColumns.push("caplevel_name");
+				
+				userListPanel.refresh();
+				userListPanel.dataListGrid.dragEnabled = true;
+			}
+			
+			public function setFlightValue(value:Object):void{
+				this.flightObj = value;
+				acnum = flightObj["acnum"];
+				acmodel = flightObj["acmodel"];
+				flightno_union = flightObj["flightno_union"];
+				apt_union = flightObj["apt_union"];
+				
+				acmodelId = flightObj["acmodelid"];
+				fltpk_a = flightObj["flt_pk_a"];
+				fltpk_d = flightObj["flt_pk_d"];
+				maintainType = flightObj["maintaintype"];
+				
+				releaseUser = flightObj["release_user"];
+				maintainUser = flightObj["maintain_user"];
+				dutyUser = flightObj["duty_user"];
+				guardianUser = flightObj["guardian_user"];
+				handoverUser = flightObj["handover_user"];
+				pickupcrewUser = flightObj["pickupcrew_user"];
+				cleanUser = flightObj["clean_user"];
+				sewageUser = flightObj["sewage_user"];
+				
+				auto_power    =flightObj["auto_power"];
+				auto_airsrc   =flightObj["auto_airsrc"];
+				auto_aircond  =flightObj["auto_aircond"];
+				auto_trailer  =flightObj["auto_trailer"];
+				auto_snowrm   =flightObj["auto_snowrm"];
+				auto_lift     =flightObj["auto_lift"];
+				airpress_user =flightObj["airpress_user"];
+				poweron_user  =flightObj["poweron_user"];
+				sign2_user    =flightObj["sign2_user"];
+				area_user     =flightObj["area_user"];
+				
+				var timeDate:Date = flightObj["timefilter"] as Date;
+				
+				var timeStr:String =  "TO_DATE('" + DateUtil.dateToString(timeDate) + "', 'YYYY-MM-DD HH24:MI:SS')";
+				
+				sqlUser = "select  t.id,t.userid,t.username,t.airportname,t.workschemaname "
+				sqlUser += ",nvl((select max(c.level_capacity) from v_capacity_user_acmodel c where c.userid=u.id and c.acmodelid="+acmodelId+" ),10) caplevel"
+				sqlUser += ",(SELECT VALUECN FROM B_DICTIONARY D WHERE D.CLASSNAME='CAPACITY' AND D.ATTRIBUTENAME='LEVEL' AND D.VALUE=(select max(c.level_capacity) "
+				sqlUser += " from v_capacity_user_acmodel c where c.userid = u.id and c.acmodelid = "+acmodelId+")) caplevel_name"
+				sqlUser += ",u.orgid_line,(select o.name from b_organization o where o.id=u.orgid_line) linename "
+				sqlUser += ",u.orgid_section,(select o.name from b_organization o where o.id=u.orgid_section) sectionname "
+				sqlUser += ",u.telephone,s.schematype "
+				sqlUser += " from w_user_workschedule t,b_user u,b_onduty_schema s  "
+				sqlUser += " where u.id=t.userid and s.id=t.workschemaid and s.schematype =0" //班次为上班
+				sqlUser += "  and t.starttime <= "+timeStr+" and "+timeStr+" <= t.endtime  " //时间过滤
+				sqlUser += " and t.airportname = '"+aptname+"'"; //机场条件
+				
+				loginvo = ClientEnviorment.getInstance().getVar("LOGIN_USERVO") as LoginUserVo;
+				//添加用户组或车间判断条件
+				if(loginvo.leadertype ==0 || loginvo.leadertype == 1){ //普通员工，按组过滤
+					sqlUser += " and u.orgid_group =  " + loginvo.orgid_group;
+				}else if(loginvo.leadertype == 2){
+					sqlUser += " and u.orgid_section =  " + loginvo.orgid_section;
+				}else if(loginvo.leadertype == 3){
+					sqlUser += " and u.orgid_line =  " + loginvo.orgid_line;
+				} //基地的用户则不用条件过滤
+				
+				sqlUser += " order by caplevel desc ";
+				
+				if(userListPanel != null){
+					userListPanel.refresh();
+				}
+			}
+			
+			
+			protected function onOkClickHandler(event:MouseEvent):void
+			{
+				releaseUser = txtRelease.text;
+				maintainUser = txtMaintain.text;
+				dutyUser = txtDuty.text;
+				guardianUser = txtGuardian.text;
+				handoverUser = txtHandover.text;
+				pickupcrewUser = txtPickupcrew.text;
+				cleanUser = txtClean.text;
+				sewageUser = txtSewage.text;
+				auto_power 	= txtauto_power.text;
+				auto_airsrc   = txtauto_airsrc.text;
+				auto_aircond  = txtauto_aircond.text;
+				auto_trailer  = txtauto_trailer.text;
+				auto_snowrm   = txtauto_snowrm.text;
+				auto_lift     = txtauto_lift.text;
+				airpress_user = txtairpress_user.text;
+				poweron_user  = txtpoweron_user.text;
+				sign2_user    = txtsign2_user.text;
+				area_user     = txtarea_user.text;
+				
+				var optUser:String = loginvo.name;
+				srvFlight.flightTaskDispatch(releaseUser,maintainUser,dutyUser,guardianUser,handoverUser
+					,auto_power,auto_airsrc,auto_aircond,auto_trailer,auto_snowrm
+					,auto_lift,airpress_user,poweron_user,sign2_user,area_user
+					,pickupcrewUser,cleanUser,sewageUser
+					, fltpk_a, fltpk_d,optUser);
+				OperatingTipUtil.startOperat("正在保存!");
+			}
+			
+			//	分页查询相关		begin
+			private function fault4flightTaskDispatch(event:FaultEvent):void
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("分配航班["+ flightno_union +"]工作人员失败！");
+			}	
+			
+			private function result4flightTaskDispatch(event:ResultEvent):void 
+			{
+				OperatingTipUtil.endOperat();
+				SmartXMessage.show("分配航班["+ flightno_union +"]工作人员成功！");
+				PopUpManager.removePopUp(this);
+				
+				//更新界面数据
+				flightObj["release_user"] = releaseUser;
+				flightObj["maintain_user"] = maintainUser;
+				flightObj["duty_user"] = dutyUser;
+				flightObj["guardian_user"] = guardianUser;
+				flightObj["handover_user"] = handoverUser;
+				flightObj["pickupcrew_user"] = pickupcrewUser;
+				flightObj["clean_user"] = cleanUser;
+				flightObj["sewage_user"] = sewageUser;
+				
+				flightObj["auto_power"] =    auto_power   ;
+				flightObj["auto_airsrc"] =   auto_airsrc  ;
+				flightObj["auto_aircond"] =  auto_aircond ;
+				flightObj["auto_trailer"] =  auto_trailer ;
+				flightObj["auto_snowrm"] =   auto_snowrm  ;
+				flightObj["auto_lift"] =     auto_lift    ;
+				flightObj["airpress_user"] = airpress_user;
+				flightObj["poweron_user"] =  poweron_user ;
+				flightObj["sign2_user"] =    sign2_user   ;
+				flightObj["area_user"] =     area_user    ;
+				
+				if(flightObj["workforce_state_name"] == "未安排"){
+					flightObj["workforce_state_name"] = "已安排";
+				}
+				if(flightDataGrid != null){
+					flightDataGrid.dataListGrid.invalidateList();
+				}
+				
+			}
+			
+			private var selectedUser:Object;
+			
+			//判断是否选中了一个用户
+			private function checkUserSelect():Boolean{
+				selectedUser = userListPanel.getSelectedRowValue();
+				
+				if(selectedUser == null){
+					SmartXMessage.show("请先选择一个人员！");
+					return false;
+				}
+				
+				return true;
+			}
+			
+			protected function releaseBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO 添加资质判断
+				if( checkUserSelect() ){
+					
+					if(releaseUser == null || releaseUser == ""){
+						releaseUser = selectedUser["username"];
+					}else{
+						releaseUser += "," + selectedUser["username"];
+					}
+					
+				}
+				
+			}
+			
+			protected function maintainBtn_clickHandler(event:MouseEvent):void
+			{
+				// TODO 添加资质判断
+				if( checkUserSelect() ){
+					if(maintainUser == null || maintainUser == ""){
+						maintainUser = selectedUser["username"];
+					}else{
+						maintainUser += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function guardianBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if( guardianUser == null || guardianUser == ""){
+						guardianUser = selectedUser["username"];
+					}else{
+						guardianUser += "," + selectedUser["username"];
+					}
+				}
+				
+			}
+			
+			protected function dutyBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if(dutyUser == null || dutyUser == ""){
+						dutyUser = selectedUser["username"];
+					}else{
+						dutyUser += "," + selectedUser["username"];
+					}
+				}
+				
+			}
+			
+			protected function handoverBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if(handoverUser == null || handoverUser == ""){
+						handoverUser = selectedUser["username"];
+					}else{
+						handoverUser += "," + selectedUser["username"];
+					}
+				}
+				
+			}
+			
+			protected function pickupcrewBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if( pickupcrewUser == null || pickupcrewUser == ""){
+						pickupcrewUser = selectedUser["username"];
+					}else{
+						pickupcrewUser += "," + selectedUser["username"];
+					}
+				}
+				
+			}
+			
+			protected function cleanBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if(cleanUser == null || cleanUser == ""){
+						cleanUser = selectedUser["username"];
+					}else{
+						cleanUser += "," + selectedUser["username"];
+					}
+				}
+				
+			}
+			
+			protected function sewageBtn_clickHandler(event:MouseEvent):void
+			{
+				if( checkUserSelect() ){
+					if(sewageUser == null || sewageUser == ""){
+						sewageUser = selectedUser["username"];
+					}else{
+						sewageUser += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_powerBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_power == null || auto_power == ""){
+						auto_power = selectedUser["username"];
+					}else{
+						auto_power += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_airsrcBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_airsrc == null || auto_airsrc == ""){
+						auto_airsrc = selectedUser["username"];
+					}else{
+						auto_airsrc += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_aircondBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_aircond == null || auto_aircond == ""){
+						auto_aircond = selectedUser["username"];
+					}else{
+						auto_aircond += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_trailerBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_trailer == null || auto_trailer == ""){
+						auto_trailer = selectedUser["username"];
+					}else{
+						auto_trailer += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_snowrmBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_snowrm == null || auto_snowrm == ""){
+						auto_snowrm = selectedUser["username"];
+					}else{
+						auto_snowrm += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function auto_liftBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(auto_lift == null || auto_lift == ""){
+						auto_lift = selectedUser["username"];
+					}else{
+						auto_lift += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function airpress_userBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(airpress_user == null || airpress_user == ""){
+						airpress_user = selectedUser["username"];
+					}else{
+						airpress_user += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function poweron_userBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(poweron_user == null || poweron_user == ""){
+						poweron_user = selectedUser["username"];
+					}else{
+						poweron_user += "," + selectedUser["username"];
+					}
+				}
+			}
+			protected function sign2_userBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(sign2_user == null || sign2_user == ""){
+						sign2_user = selectedUser["username"];
+					}else{
+						sign2_user += "," + selectedUser["username"];
+					}
+				}
+			}
+			protected function area_userBtn_clickHandler(event:MouseEvent):void{
+				if( checkUserSelect() ){
+					if(area_user == null || area_user == ""){
+						area_user = selectedUser["username"];
+					}else{
+						area_user += "," + selectedUser["username"];
+					}
+				}
+			}
+			
+			protected function txtDragEnterHandler(event:DragEvent):void
+			{
+				var obj:IUIComponent = IUIComponent(event.currentTarget);
+				DragManager.acceptDragDrop(obj);
+			}
+			
+			protected function txtRelease_dragDropHandler(event:DragEvent):void
+			{
+				releaseBtn_clickHandler(null);
+				
+			}
+			
+			protected function txtHandover_dragDropHandler(event:DragEvent):void
+			{
+				handoverBtn_clickHandler(null);
+			}
+			
+			protected function txtGuardian_dragDropHandler(event:DragEvent):void
+			{
+				guardianBtn_clickHandler(null);
+			}
+			
+			protected function txtDuty_dragDropHandler(event:DragEvent):void
+			{
+				dutyBtn_clickHandler(null);
+			}
+			
+			protected function txtMaintain_dragDropHandler(event:DragEvent):void
+			{
+				maintainBtn_clickHandler(null);
+			}
+			
+			protected function txtPickupcrew_dragDropHandler(event:DragEvent):void
+			{
+				pickupcrewBtn_clickHandler(null);
+			}
+			
+			protected function txtClean_dragDropHandler(event:DragEvent):void
+			{
+				cleanBtn_clickHandler(null);
+			}
+			
+			protected function txtSewage_dragDropHandler(event:DragEvent):void
+			{
+				sewageBtn_clickHandler(null);
+			}
+			
+			protected function txtauto_power_dragDropHandler(event:DragEvent):void
+			{
+				auto_powerBtn_clickHandler(null);
+			}
+			
+			protected function txtauto_airsrc_dragDropHandler(event:DragEvent):void
+			{
+				auto_airsrcBtn_clickHandler(null);
+			}
+			protected function txtauto_aircond_dragDropHandler(event:DragEvent):void
+			{
+				auto_aircondBtn_clickHandler(null);
+			}
+			protected function txtauto_trailer_dragDropHandler(event:DragEvent):void
+			{
+				auto_trailerBtn_clickHandler(null);
+			}
+			protected function txtauto_snowrm_dragDropHandler(event:DragEvent):void
+			{
+				auto_snowrmBtn_clickHandler(null);
+			}
+			protected function txtauto_lift_dragDropHandler(event:DragEvent):void
+			{
+				auto_liftBtn_clickHandler(null);
+			}
+			protected function txtairpress_user_dragDropHandler(event:DragEvent):void
+			{
+				airpress_userBtn_clickHandler(null);
+			}
+			protected function txtpoweron_user_dragDropHandler(event:DragEvent):void
+			{
+				poweron_userBtn_clickHandler(null);
+			}
+			protected function txtsign2_user_dragDropHandler(event:DragEvent):void
+			{
+				sign2_userBtn_clickHandler(null);
+			}
+			protected function txtarea_user_dragDropHandler(event:DragEvent):void
+			{
+				area_userBtn_clickHandler(null);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:VBox width="100%" horizontalAlign="center" verticalAlign="middle" height="100%" 
+				 paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5">
+			<mx:HBox width="100%">
+				<mx:Label text="航班号" width="60" />
+				<mx:TextInput editable="false" width="120" text="{flightno_union}" />
+				<s:Spacer width="10" />
+				<mx:Label text="经停站" width="60" />
+				<mx:TextInput editable="false" width="120" text="{apt_union}" />
+			</mx:HBox>
+			<mx:HBox width="100%">
+				<mx:Label text="飞机号" width="60" />
+				<mx:TextInput editable="false" width="120" text="{acnum}" />
+				<s:Spacer width="10" />
+				<mx:Label text="机型" width="60"/>
+				<mx:TextInput editable="false" width="80" text="{acmodel}" />
+				<s:Spacer width="10" />
+				<mx:Label text="维护种类" width="60"/>
+				<mx:TextInput editable="false" width="80" text="{maintainType}" />
+			</mx:HBox>
+			<mx:HRule width="100%" />
+			<mx:HBox width="100%" height="100%" horizontalAlign="center">
+				<mx:VBox width="180"  height="100%" paddingLeft="1">
+					<s:Spacer height="3" />
+					<mx:Label text="放行人员:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtRelease" editable="true" width="110" text="{releaseUser}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtRelease_dragDropHandler(event)" />
+						<mx:Button id="releaseBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="releaseBtn_clickHandler(event)" />
+					</mx:HBox>
+					
+					<s:Spacer height="3" />
+					<mx:Label text="维修人员:" fontWeight="bold"/>
+					<mx:HBox >
+						<mx:TextInput id="txtMaintain" editable="true" width="110" text="{maintainUser}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtMaintain_dragDropHandler(event)" />
+						<mx:Button id="maintainBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="maintainBtn_clickHandler(event)" />
+					</mx:HBox>
+						
+					<s:Spacer height="3" />
+					<mx:Label text="勤务人员:" fontWeight="bold"/>
+					<mx:HBox >
+					<mx:TextInput id="txtDuty" editable="true" width="110" text="{dutyUser}" 
+								  dragEnter="txtDragEnterHandler(event)" dragDrop="txtDuty_dragDropHandler(event)" />
+						<mx:Button id="dutyBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="dutyBtn_clickHandler(event)"/>
+					</mx:HBox>
+					
+					<s:Spacer height="3" />
+					<mx:Label text="接机人员:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtGuardian" editable="true" width="110" text="{guardianUser}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtGuardian_dragDropHandler(event)" />
+						<mx:Button id="guardianBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="guardianBtn_clickHandler(event)" />
+					</mx:HBox>
+			
+					<s:Spacer height="3" />
+					<mx:Label text="出港人员:" fontWeight="bold"/>
+					<mx:HBox >
+						<mx:TextInput id="txtHandover" editable="true" width="110" text="{handoverUser}" 
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtHandover_dragDropHandler(event)" />
+						<mx:Button id="handoverBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="handoverBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="接机组人员:" fontWeight="bold"/>
+					<mx:HBox >
+						<mx:TextInput id="txtPickupcrew" editable="true" width="110" text="{pickupcrewUser}" 
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtPickupcrew_dragDropHandler(event)" />
+						<mx:Button id="pickupcrewBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="pickupcrewBtn_clickHandler(event)"/>
+					</mx:HBox>
+				</mx:VBox>
+				<mx:VBox width="180"  height="100%" paddingLeft="1">
+					<s:Spacer height="3" />
+					<mx:Label text="清洁人员:" fontWeight="bold"/>
+					<mx:HBox >
+						<mx:TextInput id="txtClean" editable="true" width="110" text="{cleanUser}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtClean_dragDropHandler(event)" />
+						<mx:Button id="cleanBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="cleanBtn_clickHandler(event)" />
+					</mx:HBox>
+					
+					<s:Spacer height="3" />
+					<mx:Label text="污水车:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtSewage" editable="true" width="110" text="{sewageUser}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtSewage_dragDropHandler(event)" />
+						<mx:Button id="sewageBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="sewageBtn_clickHandler(event)" />
+					</mx:HBox>
+					
+					<s:Spacer height="3" />
+					<mx:Label text="测量气压:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtairpress_user" editable="true" width="110" text="{airpress_user}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtairpress_user_dragDropHandler(event)" />
+						<mx:Button id="airpress_userBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="airpress_userBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="通电:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtpoweron_user" editable="true" width="110" text="{poweron_user}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtpoweron_user_dragDropHandler(event)" />
+						<mx:Button id="poweron_userBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="poweron_userBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="双签:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtsign2_user" editable="true" width="110" text="{sign2_user}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtsign2_user_dragDropHandler(event)" />
+						<mx:Button id="sign2_userBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="sign2_userBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="区域负责人:" fontWeight="bold"/>
+					<mx:HBox>
+						<mx:TextInput id="txtarea_user" editable="true" width="110" text="{area_user}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtarea_user_dragDropHandler(event)" />
+						<mx:Button id="area_userBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="area_userBtn_clickHandler(event)" />
+					</mx:HBox>
+										
+				</mx:VBox>
+				
+				<mx:VBox width="180"  height="100%" paddingLeft="1">
+					<s:Spacer height="3" />
+					<mx:Label text="电源车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_power" editable="true" width="110" text="{auto_power}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_power_dragDropHandler(event)" />
+						<mx:Button id="auto_powerBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_powerBtn_clickHandler(event)" />
+					</mx:HBox>
+					
+					<s:Spacer height="3" />
+					<mx:Label text="气源车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_airsrc" editable="true" width="110" text="{auto_airsrc}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_airsrc_dragDropHandler(event)" />
+						<mx:Button id="auto_airsrcBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_airsrcBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="空调车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_aircond" editable="true" width="110" text="{auto_aircond}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_aircond_dragDropHandler(event)" />
+						<mx:Button id="auto_aircondBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_aircondBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="拖车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_trailer" editable="true" width="110" text="{auto_trailer}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_trailer_dragDropHandler(event)" />
+						<mx:Button id="auto_trailerBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_trailerBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="除雪车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_snowrm" editable="true" width="110" text="{auto_snowrm}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_snowrm_dragDropHandler(event)" />
+						<mx:Button id="auto_snowrmBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_snowrmBtn_clickHandler(event)" />
+					</mx:HBox>
+					<s:Spacer height="3" />
+					<mx:Label text="客梯车:" fontWeight="bold" />
+					<mx:HBox >
+						<mx:TextInput id="txtauto_lift" editable="true" width="110" text="{auto_lift}"
+									  dragEnter="txtDragEnterHandler(event)" dragDrop="txtauto_lift_dragDropHandler(event)" />
+						<mx:Button id="auto_liftBtn" icon="{AssetsFileLib.laststepIcon}" width="40" click="auto_liftBtn_clickHandler(event)" />
+					</mx:HBox>
+				</mx:VBox>
+				
+				<mx:VBox width="100%" height="100%">
+					<component:AdvDataGridPanel id="userListPanel" width="100%" height="100%" sql="{sqlUser}" searchCondVisible="true" 
+												pageSize="300" 
+												dataSource="{ApmsUIConst.DATASOURCE_APMS}" queryColumns="{queryColumns}" >
+						<component:columns> 
+							<mx:DataGridColumn dataField="linename" headerText="车间" width="120"/>
+							<mx:DataGridColumn dataField="sectionname" headerText="工段" width="80"/>
+							<mx:DataGridColumn dataField="username" headerText="姓名" width="80"/>
+							<mx:DataGridColumn dataField="caplevel_name" headerText="机型资质" width="75"/>
+							<mx:DataGridColumn dataField="workschemaname" headerText="班次" width="80"/>
+						</component:columns>
+					</component:AdvDataGridPanel>
+				</mx:VBox>
+				
+			</mx:HBox>
+			
+		</mx:VBox>
+		<mx:HRule width="100%" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button icon="{AssetsFileLib.okIcon}" label="分配" click="onOkClickHandler(event)" />
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="取消" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

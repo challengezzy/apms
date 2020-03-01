@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   layout="vertical" width="1200" height="570"
+					   allowClose="true" allowDrag="true"
+					   close="PopUpManager.removePopUp(this);"
+					   title="航班信息详情"
+					   creationComplete="creationCompleteHandler(event)"
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:containers="net.brandonmeyer.containers.*"
+					   xmlns:core="smartx.flex.components.core.*" xmlns:info="com.apms.flex.modules.flight.info.*" 
+					   >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.basic.ClientEnviorment;
+			import smartx.flex.components.event.BillCardPanelEvent;
+			import smartx.flex.components.vo.GlobalConst;
+			
+			[Bindable]
+			public var endpoint:String = ClientEnviorment.getInstance().getVar(ClientEnviorment.KEY_SERVICE_ENDPOINT) as String;
+			
+			private var flightObj:Object;
+			
+			[Bindable]
+			private var acnum:String = "XXX";
+			
+			public function set flightValue(value:Object):void{
+				this.flightObj = value;
+				acnum = flightObj["ACNUM"];
+				
+				if(fltCardPanel != null){
+					fltCardPanel.setDataValue(flightObj);
+				}
+				
+				ddInfoPanel_showHandler(null);
+				defectTipPanel_showHandler(null);
+			}
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function fltCardPanel_initCompleteHandler(event:BillCardPanelEvent):void
+			{
+				fltCardPanel.setDataValue(flightObj);
+			}
+			
+			protected function ddInfoPanel_showHandler(event:FlexEvent):void
+			{
+				if(ddInfoPanel != null){
+					ddInfoPanel.acnum = acnum;
+				}
+			}
+			
+			protected function defectTipPanel_showHandler(event:FlexEvent):void
+			{
+				if(defectTipPanel != null){
+					defectTipPanel.acnum = acnum;
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:VBox width="100%" height="100%">
+		<mx:TabNavigator width="100%" height="100%" creationPolicy="all">
+			<core:BillCardPanel label="航班详情" id="fltCardPanel" width="100%" height="100%" editable="false" insertMode="false"
+								endpoint="{endpoint}" templetCode="T_FLIGHTSCH_MONITOR_CARD"
+								initComplete="fltCardPanel_initCompleteHandler(event)" defaultItemUIComponentLabelWidth="80"
+								layoutType="{GlobalConst.LAYOUTTYPE_BILLCARDPANEL_TILE}"
+								>
+			</core:BillCardPanel>
+			<info:FlightDdInfoPanel label="DD单" width="100%" height="100%" id="ddInfoPanel" acnum="{acnum}" > 
+				
+			</info:FlightDdInfoPanel>
+			<info:FlightDefectTipPanel  label="故障提醒单" width="100%" height="100%" id="defectTipPanel" acnum="{acnum}">
+				
+			</info:FlightDefectTipPanel>
+		</mx:TabNavigator>
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28">
+			<mx:Button label="确定" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+</containers:SuperPanel>

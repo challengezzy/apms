@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<containers:SuperPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   creationComplete="creationComplete()"
+					   close="PopUpManager.removePopUp(this)" layout="vertical"
+					   xmlns:containers="net.brandonmeyer.containers.*" 
+					   width="800" height="460" verticalGap="1"   xmlns:core="smartx.flex.components.core.*"
+					   title="机位提醒信息" allowDrag="true" allowClose="true" 
+					   allowMaximize="true" allowMinimize="true" allowResize="true" xmlns:component="com.apms.flex.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.apms.flex.vo.ApmsUIConst;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import smartx.flex.components.assets.AssetsFileLib;
+			[Bindable]
+			public var faultVersion:ArrayCollection;//各版本的故障提醒信息
+			[Bindable]
+			private var querySql:String = "";
+			[Bindable]
+			public var ap_positionid:String;
+			[Bindable]
+			public var airport_id:String;
+			[Bindable]
+			public var ap_name:String;
+			[Bindable]
+			public var airport_name:String;
+			[Bindable]
+			private var apmsDs:String = ApmsUIConst.DATASOURCE_APMS;
+			[Bindable]
+			private var dataGridWith:int=900/6;
+			private function creationComplete():void
+			{
+				faultVersionDg.simpleQueryPanel.height=0;
+				querySql="SELECT '"+airport_name+"' name,'"+ap_name+"' code,CASE WHEN a.TYPE=0 THEN '提示' ELSE '警示' END type,a.TIPINFO," +
+					"TO_CHAR(a.UPDATETIME,'YYYY-MM-DD HH24:MI:SS') updatetime,a.UPDATEUSER " +
+					"from B_AIRPORT_POSITIONTIP a " +
+					"where a.AP_POSITIONID="+ap_positionid+" ORDER BY a.UPDATETIME DESC";
+				faultVersionDg.refresh();
+			}
+			/**
+			 * 单击列表中一行在textArea中展示数据
+			 */ 
+			private function DataGrid_Click():void{
+				
+				var obj:Object=this.faultVersionDg.getSelectedRowValue();
+				if(obj!=null){
+					tipinfo.text=obj.tipinfo;
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10">
+		<component:AdvDataGridPanel id="faultVersionDg" width="100%" height="50%" sql="{querySql}" dataSource="{apmsDs}" click="DataGrid_Click()">
+			<component:columns>			
+				<mx:DataGridColumn dataField="name" headerText="机场" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="code" headerText="机位" width="{dataGridWith/2}"/>
+				<mx:DataGridColumn dataField="type" headerText="类型" width="{dataGridWith/3}"/>
+				<mx:DataGridColumn dataField="tipinfo" headerText="提醒信息" width="{dataGridWith*3}"/>
+				<mx:DataGridColumn dataField="updatetime" headerText="更新时间" width="{dataGridWith}"/>
+				<mx:DataGridColumn dataField="updateuser" headerText="更新人" width="{dataGridWith/6}"/>
+			</component:columns>
+		</component:AdvDataGridPanel>
+		<mx:VBox  width="100%" height="50%">
+			<mx:Label text="提醒信息："/>
+			<s:TextArea id="tipinfo" width="100%" height="100%"/>
+		</mx:VBox>
+		<s:Spacer height="5" />
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" height="28" paddingBottom="5">
+			<mx:Button icon="{AssetsFileLib.closeIcon}" label="关闭" click="PopUpManager.removePopUp(this);" />
+		</mx:HBox>
+	</mx:VBox>
+	
+</containers:SuperPanel>
